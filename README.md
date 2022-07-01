@@ -1,18 +1,18 @@
 ## Development
 
-**install**
+**install packages**
 
 ```
 npm install
 ```
 
-** Live development server **
+**Live development server**
 
 ```
 npm run dev
 ```
 
-** Publish website **
+**Publish website**
 
 ```
 npm run build
