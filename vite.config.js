@@ -7,5 +7,5 @@ export default defineConfig({
 
   // makes it so that paths in dist/index.html are 'dist/...' instead of '/dist/...'
   // https://stackoverflow.com/questions/69744253/vite-build-always-using-static-paths
-  base: '/' 
+  base: '' 
 })
