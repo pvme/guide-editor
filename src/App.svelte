@@ -1,4 +1,5 @@
 <script>
+  import "flowbite/dist/flowbite.css"
 </script>
 
 <main>
@@ -7,4 +8,7 @@
 </main>
 
 <style>
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
 </style>
