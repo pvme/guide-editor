@@ -20,6 +20,7 @@
     import Help from './Help.svelte';
     import Info from './Info.svelte';
     import ToggleView from './ToggleView.svelte';
+    import ToggleScrollBottom from './ToggleScrollBottom.svelte';
 
     
     const dispatch = createEventDispatcher();
@@ -59,9 +60,10 @@
         <ToCDropdown></ToCDropdown>
     </ButtonGroup>
     
-    <ButtonGroup ml='auto'>
+    <div class="inline-flex mb-2 mx-2 ml-auto" role="group">
+        <ToggleScrollBottom {dispatch}/>
         <ToggleView {dispatch}/>
         <Help></Help>
         <Info></Info>
-    </ButtonGroup>
+    </div>
 </div>

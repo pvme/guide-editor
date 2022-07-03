@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.cm-s-dracula.CodeMirror.CodeMirror-empty {color: rgb(182, 182, 182) !important;}
+
+.CodeMirror {
+    font-size: 14px !important;
+}
+
+.cm-s-dracula .CodeMirror-activeline-background { background: rgba(255,255,255,0.05) !important; }
+.cm-s-dracula div.CodeMirror-selected { background: #214283 !important; }

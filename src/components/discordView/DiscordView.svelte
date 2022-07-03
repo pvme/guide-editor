@@ -3,7 +3,20 @@
     import Avatar from './Avatar.svelte';
     import Bot from './Bot.svelte';
 
+    import { onMount, afterUpdate } from 'svelte';
+
+
     export let text;
+    export let scrollBottom = false;
+    let scrollViewElement;
+
+    onMount(()=>{
+        scrollViewElement = document.getElementById('scroll-view');
+    });
+
+    afterUpdate(() => {
+        if (scrollBottom) scrollViewElement.scrollTop = scrollViewElement.scrollHeight;
+    });
 
     function splitMessages(text) {
         // todo: ignore commands inside code block
@@ -36,7 +49,6 @@
 
         return messages;
     }
-
 </script>
 
 <div class='discord-view'>
