@@ -1,4 +1,5 @@
 import App from './App.svelte'
+import "flowbite/dist/flowbite.css"
 
 
 const app = new App({

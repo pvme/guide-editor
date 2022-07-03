@@ -8,6 +8,7 @@ https://github.com/joel-porquet/CodeMirror-markdown-list-autoindent
 
 and my own modifications for different bullet types, alphabetical character increment.
 */
+import CodeMirror from "codemirror";
 
 
 (function (mod) {

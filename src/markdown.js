@@ -1,5 +1,5 @@
 import { toHTML, rules, htmlTag } from 'discord-markdown';
-import { channels, users, roles, pvmeSpreadsheet } from './constants/discord';
+import { channels, users, roles, pvmeSpreadsheet } from './pvmeSettings';
 import markdown from 'simple-markdown';
 
 

@@ -1,0 +1,1 @@
+<div class='avatar-large animate' style='background-image:url(https://cdn.discordapp.com/avatars/689197754584399963/51fc3581cac941e4adbafd41e7ae2ec3.webp?size=80);'/>

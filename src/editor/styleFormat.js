@@ -11,7 +11,6 @@ function selectionRangeFixedStartEnd(cm) {
         selection.start = selectionRange.head;
         selection.end = selectionRange.anchor;
     }
-    // console.log(`start: (${selection.start.line}, ${selection.start.ch}), end: (${selection.end.line}, ${selection.end.ch})`);
     return selection;
 }
 
@@ -63,7 +62,7 @@ function insideFormatting(cm, fixedSelectionRange, formattingBefore, formattingA
     const lengthBefore = formattingBefore.length;
     const lengthAfter = formattingAfter.length;
     if (formattingBefore === '*') 
-        return insideItalicFormatting(cm, fixedSelectionRange, lengthBefore, lengthAfter);
+        return insideItalicFormatting(cm, fixedSelectionRange);
 
     const containedText = includeBeforeAfterText(cm, fixedSelectionRange, lengthBefore, lengthAfter);
     return containedText.startsWith(formattingBefore) && containedText.endsWith(formattingAfter);

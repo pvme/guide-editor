@@ -1,6 +1,3 @@
-export const avatarURL = 'https://cdn.discordapp.com/avatars/689197754584399963/51fc3581cac941e4adbafd41e7ae2ec3.webp?size=80';
-export const username = 'PvM Encyclopedia';
-
 export let channels = {};
 export let users = {};
 export let roles = {};

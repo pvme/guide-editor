@@ -160,13 +160,13 @@ function findSyntaxErrors(text) {
 						delete json.content;
 
 						if (json.embeds) {
-							if (json.embeds > 1) {
-								const err = new Error("Message too long");
-								err.reply = "Message #" + (messages.length + 1) +
-									" contains multiple embeds, limit 1 embed per" +
-									" message.";
-								throw err;
-							}
+							// if (json.embeds > 1) {
+							// 	const err = new Error("Message too long");
+							// 	err.reply = "Message #" + (messages.length + 1) +
+							// 		" contains multiple embeds, limit 1 embed per" +
+							// 		" message.";
+							// 	throw err;
+							// }
 
 							embed = json.embeds[0];
 						} else if (json.embed) {
