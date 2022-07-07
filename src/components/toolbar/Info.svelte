@@ -12,10 +12,10 @@
 <div id="InfoInformation" class="z-10 hidden rounded shadow bg-slate-700 border border-slate-800 overflow-auto" style="max-height: 80vh;">
   <div class="m-4 flex-col inline-flex text-white text-sm">
     <p>Editor for PVME discord guides.</p>
-    <p>For more info, check the <a href="https://github.com/Towsti/svelte-deploy-test/blob/master/README.md" class="text-blue-400 visited:text-purple-400">README</a>.</p>
+    <p>For more info, check the <a href="https://github.com/pvme/guide-editor/blob/master/README.md" class="text-blue-400 visited:text-purple-400">README</a>.</p>
     <p class="font-bold">Links</p>
     <ul class="list-disc ml-4">
-        <li><a href="https://github.com/Towsti/svelte-deploy-test" class="text-blue-400 visited:text-purple-400">Github repository</a></li>
+        <li><a href="https://github.com/pvme/guide-editor" class="text-blue-400 visited:text-purple-400">Github repository</a></li>
         <li><a href="https://discord.gg/6djqFVN" class="text-blue-400 visited:text-purple-400">PVME Discord</a></li>
         <li><a href="https://pvme.github.io/" class="text-blue-400 visited:text-purple-400">PVME website</a></li>
         <li><a href="https://pvme.github.io/rotation-builder/" class="text-blue-400 visited:text-purple-400">Rotation builder</a></li>
