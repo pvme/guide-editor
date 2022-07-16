@@ -12,7 +12,6 @@
 <div id="InfoInformation" class="z-10 hidden rounded shadow bg-slate-700 border border-slate-800 overflow-auto" style="max-height: 80vh;">
   <div class="m-4 flex-col inline-flex text-white text-sm">
     <p>Editor for <a href="https://discord.gg/6djqFVN" class="text-blue-400 visited:text-purple-400">PVME Discord</a> guides.</p>
-    <p>For more info, check the <a href="https://github.com/pvme/guide-editor/blob/master/README.md" class="text-blue-400 visited:text-purple-400">README</a>.</p>
     <p>For any questions, feel free to ask in the PVME Discord or DM me Pleb#0025.</p>
     <h2 class="text-lg">Links</h2>
     <ul class="list-disc ml-4">
@@ -26,7 +25,7 @@
     <p>The Discord preview is a recreation of Discord that is not 100% accurate.</p>
     <p>For example, embedded urls:</p>
     <p><img src="https://i.imgur.com/5L9iJF1.png" alt="preview-compare" class="media"></p>
-    <p>The preview is therefore not a replacement for <code>pvme$txtpost</code>.</p>
+    <p>The preview is therefore not a replacement of <code>pvme$txtpost</code>.</p>
   </div>
 </div>
 

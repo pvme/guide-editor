@@ -7,6 +7,10 @@ Most of the Discord HTML structure is based on leovoel's [embed-visualizer](http
 
 ## Development
 
+I should mention that I'm a complete beginner at JavaScript and component frameworks. 
+
+A eventual rewrite was therefore considered from the start. Check out the issues for more information on the goal for the rewrite. 
+
 **install packages**
 
 ```
