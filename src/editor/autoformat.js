@@ -1,4 +1,4 @@
-import { channelsFormat, rolesFormat, emojisFormat } from './../pvmeSettings';
+import { channelsFormat, rolesFormat, emojisFormat, usersFormat } from './../pvmeSettings';
 
 
 function formatEmojis(cm) {
@@ -53,6 +53,25 @@ function formatRoles(cm) {
     return formattedText;
 }
 
+
+function formatUsers(cm) {
+    /* Format named users to user ID's. 
+    INPUT: "text ;@pleb; more text" 
+    OUTPUT: "text<@207588> more text" */
+    const formattedText = cm.getValue();
+    const regexp = /;@([^;]+);/g;
+    const results = [...formattedText.matchAll(regexp)];
+    for (const result of results.reverse()) {
+        const [match, name] = result;
+        const userID = usersFormat[name.toLowerCase()];
+        if (userID) {
+            const cursor = getCursorFromIndex(formattedText, result.index);
+            cm.replaceRange(`<@${userID}>`, cursor, {line: cursor.line, ch: cursor.ch + match.length});
+        }
+    }
+}
+
+
 function formatArrows(cm) {
     let formattedText = cm.getValue();
     const regexp = /->/g;
@@ -80,6 +99,7 @@ function getCursorFromIndex(text, index) {
 export default function autoformatText(cm) {
     // ordered so that there are no false results (not mandatory but faster)
     formatArrows(cm);
+    formatUsers(cm);
     formatRoles(cm);
     formatChannels(cm);
     formatEmojis(cm);
