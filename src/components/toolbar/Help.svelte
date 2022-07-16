@@ -47,7 +47,17 @@
           </tr>
         </tbody>
       </table>
-  </div>
+      <h2 class="text-lg">Table of Contents</h2>
+      <p>The table of contents is automatically generated from every <code>.tag:tagname</code>:</p>
+      <p><a href="https://gyazo.com/660bdd70da519834a2250e8523ae7455"><img src="https://i.gyazo.com/660bdd70da519834a2250e8523ae7455.gif" alt="Image from Gyazo" class="media"/></a></p>
+      <h2 class="text-lg">Lists</h2>
+      <p>Use <code>Tab</code> and <code>Shift</code> + <code>Tab</code> to change the bullet type.</p>
+      <p>Press <code>Enter</code> after a empty bullet to close the list.</p>
+      <p><a href="https://gyazo.com/7c4cf8bd4c28ecb8051a1f44b774d047"><img src="https://i.gyazo.com/7c4cf8bd4c28ecb8051a1f44b774d047.gif" alt="Image from Gyazo" class="media"/></a></p>
+      <h2 class="text-lg">Inline formatting</h2>
+      <p>Use a shortcut (see tooltip) or click the formatting options to (un-)format text:</p>
+      <p><a href="https://gyazo.com/541d606b59339ccb21fa85c3f54bffe1"><img src="https://i.gyazo.com/541d606b59339ccb21fa85c3f54bffe1.gif" alt="Image from Gyazo" class="media"/></a></p>
+    </div>
 </div>
 
 <style>
@@ -60,5 +70,9 @@
     code {
         background-color: rgb(30 41 59);
         padding: 1px;
+    }
+
+    h2 {
+      margin-top: 8px;
     }
 </style>
