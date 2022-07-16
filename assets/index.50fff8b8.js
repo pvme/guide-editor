@@ -145,13 +145,13 @@ ${I.join(`,
             <td class="svelte-pt0oe3"><a href="https://raw.githubusercontent.com/pvme/rotation-builder/main/settings.json" class="text-blue-400 visited:text-purple-400">emojis.json</a> (same as <a href="https://pvme.github.io/rotation-builder/" class="text-blue-400 visited:text-purple-400">rotation builder</a>)</td></tr> 
           <tr><td class="svelte-pt0oe3"><code class="svelte-pt0oe3">;#armour-and-weapons;</code></td> 
             <td class="svelte-pt0oe3"><code class="svelte-pt0oe3">&lt;#689235882724818962&gt;</code></td> 
-            <td class="svelte-pt0oe3"><a href="https://raw.githubusercontent.com/pvme/pvme-settings/master/channels.json" class="text-blue-400 visited:text-purple-400">channels.json</a></td></tr> 
+            <td class="svelte-pt0oe3"><a href="https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json" class="text-blue-400 visited:text-purple-400">channels.json</a></td></tr> 
           <tr><td class="svelte-pt0oe3"><code class="svelte-pt0oe3">;@&amp;pride of zaros;</code></td> 
             <td class="svelte-pt0oe3"><code class="svelte-pt0oe3">&lt;@&amp;581216406570532875&gt;</code></td> 
-            <td class="svelte-pt0oe3"><a href="https://github.com/pvme/pvme-settings/blob/master/roles.json" class="text-blue-400 visited:text-purple-400">roles.json</a></td></tr> 
+            <td class="svelte-pt0oe3"><a href="https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/roles.json" class="text-blue-400 visited:text-purple-400">roles.json</a></td></tr> 
           <tr><td class="svelte-pt0oe3"><code class="svelte-pt0oe3">;@pleb;</code></td> 
             <td class="svelte-pt0oe3"><code class="svelte-pt0oe3">&lt;@207588233780002818&gt;</code></td> 
-            <td class="svelte-pt0oe3"><a href="https://raw.githubusercontent.com/Towsti/pvme-settings/master/users.json" class="text-blue-400 visited:text-purple-400">users.json</a></td></tr></tbody></table> 
+            <td class="svelte-pt0oe3"><a href="https://raw.githubusercontent.com/pvme/pvme-settings/settings/users/users.json" class="text-blue-400 visited:text-purple-400">users.json</a></td></tr></tbody></table> 
       <h2 class="text-lg svelte-pt0oe3">Table of Contents</h2> 
       <p>The table of contents is automatically generated from every <code class="svelte-pt0oe3">.tag:tagname</code>:</p> 
       <p><a href="https://gyazo.com/660bdd70da519834a2250e8523ae7455"><img src="https://i.gyazo.com/660bdd70da519834a2250e8523ae7455.gif" alt="Image from Gyazo" class="media"/></a></p> 
