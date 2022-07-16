@@ -33,17 +33,17 @@
           <tr>
             <td><code>;#armour-and-weapons;</code></td>
             <td><code>&lt;#689235882724818962&gt;</code></td>
-            <td><a href="https://raw.githubusercontent.com/pvme/pvme-settings/master/channels.json" class="text-blue-400 visited:text-purple-400">channels.json</a></td>
+            <td><a href="https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json" class="text-blue-400 visited:text-purple-400">channels.json</a></td>
           </tr>
           <tr>
             <td><code>;@&pride of zaros;</code></td>
             <td><code>&lt;@&581216406570532875&gt;</code></td>
-            <td><a href="https://github.com/pvme/pvme-settings/blob/master/roles.json" class="text-blue-400 visited:text-purple-400">roles.json</a></td>
+            <td><a href="https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/roles.json" class="text-blue-400 visited:text-purple-400">roles.json</a></td>
           </tr>
           <tr>
             <td><code>;@pleb;</code></td>
             <td><code>&lt;@207588233780002818&gt;</code></td>
-            <td><a href="https://raw.githubusercontent.com/Towsti/pvme-settings/master/users.json" class="text-blue-400 visited:text-purple-400">users.json</a></td>
+            <td><a href="https://raw.githubusercontent.com/pvme/pvme-settings/settings/users/users.json" class="text-blue-400 visited:text-purple-400">users.json</a></td>
           </tr>
         </tbody>
       </table>
