@@ -14,13 +14,12 @@
     const link = '**Link text** - <https://...>';
     const guide = 
 `> **__Title__**
-.img:[imgur link of picture of boss]
+.img:https://i.imgur.com/gIzPFEV.png
 
 .
 > **__Intro__**
 .tag:intro
 [Describe the boss here]
-.img:[Picture of Weaknesses]
 
 .
 > **__Drops__**
@@ -33,13 +32,13 @@
 ⬥ [describe obscure preset items in bullet points]
 ⬥ [rune pouch contents too]
 .
-.img:[post imgur link of preset here]
-**__Mechanics__**
+.img:https://i.imgur.com/oVjpPka.png
+> **__Mechanics__**
 .tag:mechanics
 ⬥ first mechanic
     • describe the mechanic
         - [describe how to handle mechanic]
-.img:[imgur link of gif of mechanic]
+.img:https://i.imgur.com/oB20Btb.png
 ⬥ [Repeat for the rest of the mechanics]
 
 .
