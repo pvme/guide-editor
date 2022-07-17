@@ -94,7 +94,7 @@
 	}
 
 	function h1() {
-		updateLineFormat('> __**', '**__');	
+		updateLineFormat('> __**', '**__\n.tag:[tagname]');	
 	}
 
 	function h2() {
