@@ -580,7 +580,7 @@
   .message-group .comment .markup code.inline {
     width: auto;
     height: auto;
-    padding: .2em;
+    /* padding: .2em; */
     border-radius: 3px;
     font-size: 85%;
     text-indent: 0
