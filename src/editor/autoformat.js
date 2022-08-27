@@ -1,5 +1,36 @@
 import { channelsFormat, rolesFormat, emojisFormat, usersFormat } from './../pvmeSettings';
 
+const specialCharacters = {
+    'b1': '⬥ ',
+    'b2': '\\u00a0\\u00a0\\u00a0\\u00a0• ',
+    'b3': '\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0- ',
+    'u1': '⬥ ',
+    'u2': '\\u00a0\\u00a0\\u00a0\\u00a0• ',
+    'u3': '\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0- ',
+    'nl': '\\n',
+    'newline': '\\n',
+    'empty': '\\u200B',
+    'space': '\\u00a0'
+}
+
+
+function formatSpecialCharacters(cm) {
+    /* Format special character aliases. 
+    NOTE: Temporary solution for formatting in embeds.
+    INPUT: "text /b2/ more text" 
+    OUTPUT: "text \u00a0\u00a0\u00a0\u00a0•  more text" */
+    const formattedText = cm.getValue();
+    const regexp = /;([a-zA-Z0-9]+);/g;
+    const results = [...formattedText.matchAll(regexp)];
+    for (const result of results.reverse()) {
+        const [match, name] = result;
+        const specialCharacter = specialCharacters[name.toLowerCase()];
+        if (specialCharacter) {
+            const cursor = getCursorFromIndex(formattedText, result.index);
+            cm.replaceRange(specialCharacter, cursor, {line: cursor.line, ch: cursor.ch + match.length});
+        }
+    }
+}
 
 function formatEmojis(cm) {
     /* Format named emojis (or aliases) to emoji ID's. 
@@ -103,4 +134,5 @@ export default function autoformatText(cm) {
     formatRoles(cm);
     formatChannels(cm);
     formatEmojis(cm);
+    formatSpecialCharacters(cm);
 }

@@ -47,6 +47,42 @@
           </tr>
         </tbody>
       </table>
+      <h2 class="text-lg">Embed auto formatting</h2>
+      <p><i>*Will be replaced by <a href="https://github.com/pvme/guide-editor/issues/9" class="text-blue-400 visited:text-purple-400">embed form editor</a>.</i></p>
+      <table class="table-auto my-2">
+        <thead class="bg-slate-800">
+          <tr>
+            <th>Input</th>
+            <th>Output</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>;b1;</code>, <code>;u1;</code></td>
+            <td><code>⬥&nbsp;</code></td>
+          </tr>
+          <tr>
+            <td><code>;b2;</code>, <code>;u2;</code></td>
+            <td><code>\u00a0\u00a0\u00a0\u00a0•&nbsp;</code></td>
+          </tr>
+          <tr>
+            <td><code>;b3;</code>, <code>;u2;</code></td>
+            <td><code>\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0-&nbsp;</code></td>
+          </tr>
+          <tr>
+            <td><code>;nl;</code>, <code>;newline;</code></td>
+            <td><code>\n</code></td>
+          </tr>
+          <tr>
+            <td><code>;empty;</code></td>
+            <td><code>\u200B</code></td>
+          </tr>
+          <tr>
+            <td><code>;space;</code></td>
+            <td><code>\u00a0</code></td>
+          </tr>
+        </tbody>
+      </table>
       <h2 class="text-lg">Table of Contents</h2>
       <p>The table of contents is automatically generated from every <code>.tag:tagname</code>:</p>
       <p><a href="https://gyazo.com/660bdd70da519834a2250e8523ae7455"><img src="https://i.gyazo.com/660bdd70da519834a2250e8523ae7455.gif" alt="Image from Gyazo" class="media"/></a></p>
