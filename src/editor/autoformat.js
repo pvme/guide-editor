@@ -20,7 +20,7 @@ function formatSpecialCharacters(cm) {
     INPUT: "text /b2/ more text" 
     OUTPUT: "text \u00a0\u00a0\u00a0\u00a0•  more text" */
     const formattedText = cm.getValue();
-    const regexp = /;([a-zA-Z0-9]+);/g;
+    const regexp = /;([a-zA-Z0-9_-]+);/g;
     const results = [...formattedText.matchAll(regexp)];
     for (const result of results.reverse()) {
         const [match, name] = result;
@@ -37,7 +37,7 @@ function formatEmojis(cm) {
     INPUT: "text ;gbarge; more text ;greaterbarge;" 
     OUTPUT: "text <:gbarge:1234> more text <:gbarge:1234>" */
     const formattedText = cm.getValue();
-    const regexp = /;([^;]+);/g;
+    const regexp = /;([a-zA-Z0-9_-]+);/g;
     const results = [...formattedText.matchAll(regexp)];
     for (const result of results.reverse()) {
         const [match, name] = result;
@@ -54,7 +54,7 @@ function formatChannels(cm) {
     INPUT: "text ;#eD2-hydrix-drAgOns; more text" 
     OUTPUT: "text <#1234> more text" */
     const formattedText = cm.getValue();
-    const regexp = /;#([^;]+);/g;
+    const regexp = /;#([a-zA-Z0-9_- ]+);/g;
     const results = [...formattedText.matchAll(regexp)];
     for (const result of results.reverse()) {
         const [match, name] = result;
@@ -71,7 +71,7 @@ function formatRoles(cm) {
     INPUT: "text ;@&helPer; more text" 
     OUTPUT: "text <@&1234> more text" */
     const formattedText = cm.getValue();
-    const regexp = /;@&([^;]+);/g;
+    const regexp = /;@&([a-zA-Z0-9_- ]+);/g;
     const results = [...formattedText.matchAll(regexp)];
     for (const result of results.reverse()) {
         const [match, name] = result;
@@ -90,7 +90,7 @@ function formatUsers(cm) {
     INPUT: "text ;@pleb; more text" 
     OUTPUT: "text<@207588> more text" */
     const formattedText = cm.getValue();
-    const regexp = /;@([^;]+);/g;
+    const regexp = /;@([a-zA-Z0-9_- ]+);/g;
     const results = [...formattedText.matchAll(regexp)];
     for (const result of results.reverse()) {
         const [match, name] = result;
