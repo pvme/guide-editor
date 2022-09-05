@@ -1,8 +1,8 @@
 .d-emoji {
     display: inline;    /* added to make sure emojis aren't on a new page */
     object-fit: contain;
-    width: 1.375em;
-    height: 1.375em;
+    width: 1.320em;
+    height: 1.320em;
     vertical-align: middle; /* discord css is bottom but middle looks better */
 }
 
