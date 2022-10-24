@@ -44,7 +44,7 @@ async function rawGithubJSONRequest(url) {
 }
 
 async function setStyleGuide() {
-    styleGuide = await rawGithubTextRequest('https://raw.githubusercontent.com/pvme/pvme-guides/master/guide-writing/style-guide.txt');
+    styleGuide = await rawGithubTextRequest('https://raw.githubusercontent.com/pvme/pvme-guides/master/editor-resources/editor-references/style-guide.txt');
 }
 
 async function setPvmeSpreadsheet() {
