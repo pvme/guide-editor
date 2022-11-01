@@ -6,7 +6,7 @@
 </script>
 
 {#if url}
-    <a target='_blank' rel='noreferrer' href={url} class='embed-title'>{@html markdownToHTML(title)}</a>
+    <a target='_blank' rel='noreferrer' href={url} class='embed-title'>{@html markdownToHTML(title).content}</a>
 {:else}
     <div class='embed-title'>{@html markdownToHTML(title).content}</div>
 {/if}
