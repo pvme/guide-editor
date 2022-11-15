@@ -15,7 +15,7 @@
 
 
 <button id="CommandButton" data-dropdown-toggle="CommandOptions" type="button" class='inline-flex items-center rounded bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-2 active:bg-indigo-800 text-sm border border-indigo-700' title="Insert command">
-  Commmand&nbsp;<CaretDownFill class="mt-1"></CaretDownFill>
+  Command&nbsp;<CaretDownFill class="mt-1"></CaretDownFill>
 </button>
 
 <div id="CommandOptions" class="z-10 hidden rounded shadow bg-slate-700 border border-slate-800">
