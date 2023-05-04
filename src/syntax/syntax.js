@@ -185,22 +185,30 @@ function findSyntaxErrors(text) {
 							embed = json;
 						}
 
-						for(let j = 0 ; j < embed.fields.length; j++) {
-							if(embed.fields[j].name.trim().length == 0) {
-								results.push({
-									line: i + 1,
-									type: "error",
-									text: "JSON embed object is invalid: \"name\" is empty in an embed field"
-								});
-							}
-							if(embed.fields[j].value.trim() == 0) {
-								results.push({
-									line: i + 1,
-									type: "error",
-									text: "JSON embed object is invalid: \"value\" is empty in an embed field"
-								});
+						try {
+							if(embed.fields) {
+								for(let j = 0 ; j < embed.fields.length; j++) {
+									if(embed.fields[j].name.trim().length == 0) {
+										results.push({
+											line: i + 1,
+											type: "error",
+											text: "JSON embed object is invalid: \"name\" is empty in an embed field"
+										});
+									}
+									if(embed.fields[j].value.trim() == 0) {
+										results.push({
+											line: i + 1,
+											type: "error",
+											text: "JSON embed object is invalid: \"value\" is empty in an embed field"
+										});
+									}
+								}
 							}
 						}
+						
+					catch(e) {
+						console.log("Error parsing embed fields: " + e);
+					}
 
 						// TODO: validate embed object
                         const embedValid = validateEmbedSchema(results, i + 1, embed);
