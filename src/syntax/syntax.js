@@ -76,6 +76,16 @@ function findSyntaxErrors(text) {
 					});
 					continue;
 				}
+				else {
+					if(line[line.indexOf(":")+1] == " ") {
+						results.push({
+							line: i + 1,
+							type: "error",
+							text: "Command must not have trailing whitespace after the colon and before the content"
+						});
+						continue;
+					}
+				}
 
 				const parse = line.trim().match(/^(.*?):(.*)$/);
 				const base = parse[1];
@@ -175,6 +185,23 @@ function findSyntaxErrors(text) {
 							embed = json;
 						}
 
+						for(let j = 0 ; j < embed.fields.length; j++) {
+							if(embed.fields[j].name.trim().length == 0) {
+								results.push({
+									line: i + 1,
+									type: "error",
+									text: "JSON embed object is invalid: \"name\" is empty in an embed field"
+								});
+							}
+							if(embed.fields[j].value.trim() == 0) {
+								results.push({
+									line: i + 1,
+									type: "error",
+									text: "JSON embed object is invalid: \"value\" is empty in an embed field"
+								});
+							}
+						}
+
 						// TODO: validate embed object
                         const embedValid = validateEmbedSchema(results, i + 1, embed);
 
@@ -210,6 +237,20 @@ function findSyntaxErrors(text) {
 
 	for (let i = 0; i < messages.length; i ++) {
 		const message = messages[i];
+		let msgLinks = message.text.match(/\_[a-zA-Z0-9]*\$/gm);
+		if(msgLinks) {
+			for(let j = 0 ; j < msgLinks.length ; j++) {
+				let keyword = msgLinks[j].slice(1,-1);
+				if(!tags.has(keyword)) {
+					results.push({
+						line: [ message.firstline, message.lastline ],
+						type: "warn",
+						text: `Message uses a "linkmsg_${keyword}$ without ${keyword} being defined in a .tag: command`
+					});
+				}
+			}
+		}
+		
 		message.text = message.text
 			.slice(1)
 			.replace(/\$linkmsg_(.*?)\$/g, "https://discordapp.com/channels/00000000000000000000/00000000000000000000/00000000000000000000");
