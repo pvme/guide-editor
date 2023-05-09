@@ -37,6 +37,7 @@
 			cursorScrollMargin: 12,
 			showTrailingSpace: true,
 			styleActiveLine: true,
+			viewportMargin: Infinity
 		});
 
 		editor.setSize('100%', '100%');
