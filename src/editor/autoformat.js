@@ -3,10 +3,10 @@ import { channelsFormat, rolesFormat, emojisFormat, usersFormat } from './../pvm
 const specialCharacters = {
     'b1': '⬥ ',
     'b2': '\\u00a0\\u00a0\\u00a0\\u00a0• ',
-    'b3': '\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0- ',
+    'b3': '\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0⬩ ',
     'u1': '⬥ ',
     'u2': '\\u00a0\\u00a0\\u00a0\\u00a0• ',
-    'u3': '\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0- ',
+    'u3': '\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0\\u00a0⬩ ',
     'nl': '\\n',
     'newline': '\\n',
     'empty': '\\u200B',

@@ -129,12 +129,12 @@ function findStyleErrors(text) {
 				}
 			}
 
-			if (match = mlines[i].match(/^(\s*)-/)) {
+			if (match = mlines[i].match(/^(\s*)⬩/)) {
 				if (match[1] !== "        ") {
 					results.push({
 						line: message.firstline + i,
 						type: "error",
-						text: "The '-' character should be indented by exactly eight spaces"
+						text: "The '⬩' character should be indented by exactly eight spaces"
 					});
 				}
 			}

@@ -21,9 +21,9 @@ import CodeMirror from "codemirror";
 })(function (CodeMirror) {
     "use strict";
 
-    var listRE = /^(\s*)([-⬥•]\s|(\w|\d+)(\.))(\s*)/,
-        emptyListRE = /^(\s*)([-⬥•]|(\w|\d+)\.)(\s*)$/,
-        unorderedListRE = /[-⬥•]/,
+    var listRE = /^(\s*)([⬩⬥•]\s|(\w|\d+)(\.))(\s*)/,
+        emptyListRE = /^(\s*)([⬩⬥•]|(\w|\d+)\.)(\s*)$/,
+        unorderedListRE = /[⬩⬥•]/,
         numberedListRE = /\d+\./,
         alphabeticalListRE = /\w\./;
 
@@ -203,13 +203,13 @@ import CodeMirror from "codemirror";
     function getAlphaNumericalType(ch) {
         if (ch <= 0) return '1.';
         if (ch === 4) return 'a.';
-        return '-';
+        return '⬩';
     }
 
     function getBulletType(ch) {
         if (ch <= 0) return '⬥';
         if (ch === 4) return '•';
-        return '-';
+        return '⬩';
     }
 
     CodeMirror.commands.autoUnindentMarkdownList = function (cm) {

@@ -37,7 +37,7 @@
 .tag:mechanics
 ⬥ first mechanic
     • describe the mechanic
-        - [describe how to handle mechanic]
+        ⬩ [describe how to handle mechanic]
 .img:https://i.imgur.com/oB20Btb.png
 ⬥ [Repeat for the rest of the mechanics]
 
