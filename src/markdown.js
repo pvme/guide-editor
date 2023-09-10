@@ -63,7 +63,29 @@ function formatPVMESpreadsheet(originalContent) {
     return content;
 }
 
-export default function markdownToHTML(messageContent, embed=false) {
+function formatSpecialChannels(originalContent) {
+    /* Overide inline code formatting to use discord format.
+    FROM:
+    <id:customize>
+    <id:guide>
+
+    TO:
+    <span class="d-mention d-channel">#Channels & Roles</span>
+    <span class="d-mention d-channel">#Server Guide</span>
+    */
+    
+    // known bug: currently formats links in code blocks
+    let content = originalContent;
+    
+    content = content.replaceAll('&lt;id:customize&gt;', `<span class="d-mention d-channel">#Channels & Roles</span>`);
+    // content.replaceAll('&lt;id:customize&gt;', "hi");
+    content = content.replaceAll('&lt;id:guide&gt;', `<span class="d-mention d-channel">#Server Guide</span>`);
+    // content.replaceAll('cool', 'not');
+
+    return content;
+}
+
+export default function markdownToHTML(messageContent) {
     // todo: linkmsg formatting
     messageAttachments = [];
 
@@ -74,9 +96,16 @@ export default function markdownToHTML(messageContent, embed=false) {
             user: node => '@' + users[node.id],
             role: node => '@' + roles[node.id]
         },
-        embed: embed    // allow for named links: [name](url)
+        // allow for named links: [name](url)
+        // may need to be disabled for embed titles? but should never happen
+        embed: true    
     });
-       
+
+    // format PVME spreadsheet
     content = formatPVMESpreadsheet(content);
+
+    // format <id:guide> and <id:customize>
+    content = formatSpecialChannels(content);
+
     return { content, messageAttachments };
 }
