@@ -9,7 +9,7 @@ export const embedSchema = {
   'properties': {
     'title': { 'type': 'string', 'maxLength': 256},
     'url': { 'type': 'string' },
-    'description': { 'type': 'string', 'maxLength': 2048},
+    'description': { 'type': 'string', 'maxLength': 4096},
     'timestamp': { 'type': 'string', 'pattern': ISO_8601.source },
     'color': { 'type': 'integer', 'maximum': UINT24_MAX },
     'footer': {
