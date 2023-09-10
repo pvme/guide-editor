@@ -63,6 +63,28 @@ function formatPVMESpreadsheet(originalContent) {
     return content;
 }
 
+function formatSpecialChannels(originalContent) {
+    /* Overide inline code formatting to use discord format.
+    FROM:
+    <id:customize>
+    <id:guide>
+
+    TO:
+    <span class="d-mention d-channel">#Channels & Roles</span>
+    <span class="d-mention d-channel">#Server Guide</span>
+    */
+    
+    // known bug: currently formats links in code blocks
+    let content = originalContent;
+    
+    content = content.replaceAll('&lt;id:customize&gt;', `<span class="d-mention d-channel">#Channels & Roles</span>`);
+    // content.replaceAll('&lt;id:customize&gt;', "hi");
+    content = content.replaceAll('&lt;id:guide&gt;', `<span class="d-mention d-channel">#Server Guide</span>`);
+    // content.replaceAll('cool', 'not');
+
+    return content;
+}
+
 export default function markdownToHTML(messageContent, embed=false) {
     // todo: linkmsg formatting
     messageAttachments = [];
@@ -76,7 +98,21 @@ export default function markdownToHTML(messageContent, embed=false) {
         },
         embed: embed    // allow for named links: [name](url)
     });
-       
+
+    // format PVME spreadsheet
     content = formatPVMESpreadsheet(content);
+
+    // format <id:guide> and <id:customize>
+    content = formatSpecialChannels(content);
+
+    // let oldContent = content
+    // content = content.replaceAll('&lt;id:customize&gt;', 'hello');
+    // content = content.replaceAll('cool', 'not');
+
+    // if (oldContent != content) {
+    //     console.log(content);
+    //     console.log(channels);
+    // }
+
     return { content, messageAttachments };
 }
