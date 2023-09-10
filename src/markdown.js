@@ -85,7 +85,7 @@ function formatSpecialChannels(originalContent) {
     return content;
 }
 
-export default function markdownToHTML(messageContent, embed=false) {
+export default function markdownToHTML(messageContent) {
     // todo: linkmsg formatting
     messageAttachments = [];
 
@@ -96,7 +96,9 @@ export default function markdownToHTML(messageContent, embed=false) {
             user: node => '@' + users[node.id],
             role: node => '@' + roles[node.id]
         },
-        embed: embed    // allow for named links: [name](url)
+        // allow for named links: [name](url)
+        // may need to be disabled for embed titles? but should never happen
+        embed: true    
     });
 
     // format PVME spreadsheet
@@ -104,15 +106,6 @@ export default function markdownToHTML(messageContent, embed=false) {
 
     // format <id:guide> and <id:customize>
     content = formatSpecialChannels(content);
-
-    // let oldContent = content
-    // content = content.replaceAll('&lt;id:customize&gt;', 'hello');
-    // content = content.replaceAll('cool', 'not');
-
-    // if (oldContent != content) {
-    //     console.log(content);
-    //     console.log(channels);
-    // }
 
     return { content, messageAttachments };
 }
