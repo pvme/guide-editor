@@ -153,6 +153,9 @@ async function rawGithubJSONRequest(url) {
 }
 export async function loadGuide() {
 	editor.setValue(await rawGithubTextRequest(guideUrl));
+	
+	// remove /?id= when loading a guide from ID
+	window.history.pushState({}, document.title, "/" + "");
 }
 </script>
 
