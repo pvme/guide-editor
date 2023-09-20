@@ -18,6 +18,7 @@
 	import autoformatText from './editor/autoformat';  
 	import { populateConstants } from './pvmeSettings';
 	import { text } from './stores';
+	import Modal from './modal.svelte'
 
 
 	let editor;
@@ -25,7 +26,7 @@
 	let showView = true;
   let scrollBottom = false;
 
-	onMount(()=>{
+	onMount(async ()=>{
 		editor = CodeMirror.fromTextArea(document.getElementById('input'), {
 			theme: 'dracula',
 			lineNumbers: true,
@@ -55,7 +56,17 @@
 			'Tab': 'autoIndentMarkdownList',
 			'Shift-Tab': 'autoUnindentMarkdownList'
 		});
-
+		let showModal = false;
+		const urlParams = new URLSearchParams(window.location.search);
+		if(urlParams.has('id')) {
+			const channelsJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json');
+			for(const channel of channelsJSON) {
+				if(channel.id === urlParams.get('id')) {
+					editor.setValue(await rawGithubTextRequest(`https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`));
+					break;
+				}
+			}
+		}
 		editor.setValue($text);
 		validateText();
 	});
@@ -115,6 +126,25 @@
     scrollBottom = !scrollBottom;
     editor.focus();
   }
+  async function rawGithubGetRequest(url) {
+    const res = await fetch(url, {
+        method: 'GET'
+    });
+    
+    if (!res.ok)
+        throw new Error(await res.text());
+
+    return res;
+}
+async function rawGithubTextRequest(url) {
+    const res = await rawGithubGetRequest(url);
+    return await res.text();
+}
+
+async function rawGithubJSONRequest(url) {
+    const res = await rawGithubGetRequest(url);
+    return await res.json();
+}
 </script>
 
 <main>
@@ -153,3 +183,4 @@
 		</div>
     </div>
 </main>
+
