@@ -18,13 +18,13 @@
 	import autoformatText from './editor/autoformat';  
 	import { populateConstants } from './pvmeSettings';
 	import { text } from './stores';
-	import Modal from './modal.svelte'
 
 
 	let editor;
 	let validText = $text;	//  bug: exiting last session with invalid text
 	let showView = true;
   let scrollBottom = false;
+  let guideUrl = '';
 
 	onMount(async ()=>{
 		editor = CodeMirror.fromTextArea(document.getElementById('input'), {
@@ -56,19 +56,25 @@
 			'Tab': 'autoIndentMarkdownList',
 			'Shift-Tab': 'autoUnindentMarkdownList'
 		});
-		let showModal = false;
+		editor.setValue($text);
+		validateText();
 		const urlParams = new URLSearchParams(window.location.search);
 		if(urlParams.has('id')) {
 			const channelsJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json');
 			for(const channel of channelsJSON) {
 				if(channel.id === urlParams.get('id')) {
-					editor.setValue(await rawGithubTextRequest(`https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`));
+					//showModal = true;
+					guideUrl = `https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`;
+					if(window.confirm(`Click confirm to overwrite your current progress with the ${channel.name} guide`)) {
+						loadGuide();
+					}
+					
 					break;
 				}
 			}
 		}
-		editor.setValue($text);
-		validateText();
+		
+		
 	});
 	
 	function newInput(cm, change) {
@@ -144,6 +150,9 @@ async function rawGithubTextRequest(url) {
 async function rawGithubJSONRequest(url) {
     const res = await rawGithubGetRequest(url);
     return await res.json();
+}
+export async function loadGuide() {
+	editor.setValue(await rawGithubTextRequest(guideUrl));
 }
 </script>
 
