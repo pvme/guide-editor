@@ -16,7 +16,7 @@
   import { onMount } from 'svelte';
 	import { updateStyleFormat, updateSingleLineStyleFormat } from './editor/styleFormat';
 	import autoformatText from './editor/autoformat';  
-	import { populateConstants } from './pvmeSettings';
+	import { populateConstants, rawGithubJSONRequest, rawGithubTextRequest } from './pvmeSettings';
 	import { text } from './stores';
 
 
@@ -25,7 +25,7 @@
 	let showView = true;
   let scrollBottom = false;
 
-	onMount(()=>{
+	onMount(async ()=>{
 		editor = CodeMirror.fromTextArea(document.getElementById('input'), {
 			theme: 'dracula',
 			lineNumbers: true,
@@ -55,9 +55,12 @@
 			'Tab': 'autoIndentMarkdownList',
 			'Shift-Tab': 'autoUnindentMarkdownList'
 		});
-
 		editor.setValue($text);
-		validateText();
+		const urlParams = new URLSearchParams(window.location.search);
+		if(urlParams.has('id')) {
+			loadGuide(urlParams.get('id'));
+		}
+		validateText();		
 	});
 	
 	function newInput(cm, change) {
@@ -115,6 +118,20 @@
     scrollBottom = !scrollBottom;
     editor.focus();
   }
+  async function loadGuide(paramID) {
+    const channelsJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json');
+	for(const channel of channelsJSON) {
+	  if(channel.id === paramID) {
+	    let guideUrl = `https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`;
+	    if(window.confirm(`Click confirm to overwrite your current progress with the ${channel.name} guide`)) {
+		  editor.setValue(await rawGithubTextRequest(guideUrl));
+		  // remove /?id= when loading a guide from ID
+		  window.history.pushState({}, document.title, "/" + "");
+		}
+		break;
+	  }
+	}
+  }
 </script>
 
 <main>
@@ -153,3 +170,4 @@
 		</div>
     </div>
 </main>
+
