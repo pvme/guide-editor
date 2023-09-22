@@ -33,12 +33,12 @@ async function rawGithubGetRequest(url) {
     return res;
 }
 
-async function rawGithubTextRequest(url) {
+export async function rawGithubTextRequest(url) {
     const res = await rawGithubGetRequest(url);
     return await res.text();
 }
 
-async function rawGithubJSONRequest(url) {
+export async function rawGithubJSONRequest(url) {
     const res = await rawGithubGetRequest(url);
     return await res.json();
 }
