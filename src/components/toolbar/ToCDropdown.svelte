@@ -45,7 +45,6 @@
   }
 
   function generateCompactToC() {
-    console.log("hi");
     const chapters = getToCChapters();
 
     toc = `
