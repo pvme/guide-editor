@@ -22,7 +22,6 @@
     "@macfja/svelte-persistent-store": "^1.3.0",
     "ajv": "^8.11.0",
     "codemirror": "^5.65.2",
-    "discord-markdown": "^2.5.1",
-    "gh-pages": "^4.0.0"
+    "discord-markdown": "^2.5.1"
   }
 }
