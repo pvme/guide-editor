@@ -1,12 +1,12 @@
 <script>
     import { text } from './../../stores'; 
 
-    function exportText() {
-      let hiddenElement = document.createElement('a');
-      hiddenElement.href = 'data:attachment/text,' + encodeURI($text);
-      hiddenElement.target = '_blank';
-      hiddenElement.download = 'GuideEditorExport.txt';
-	    hiddenElement.click();
+  function exportText() {
+    let hiddenElement = document.createElement('a');
+    hiddenElement.href = 'data:attachment/text,' + encodeURI($text);
+    hiddenElement.target = '_blank';
+    hiddenElement.download = 'GuideEditorExport.txt';
+	  hiddenElement.click();
   }
 </script>
 
