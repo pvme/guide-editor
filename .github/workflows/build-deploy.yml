@@ -24,14 +24,29 @@ jobs:
 
       - run: npm run build
       
-      # only publish running pipeline on main branch update
-      # done using conditional step as it doesn't require setting up a new environment
-      # move to different stage/job in case different additional steps/access is required
+      # # only publish running pipeline on main branch update
+      # # done using conditional step as it doesn't require setting up a new environment
+      # # move to different stage/job in case different additional steps/access is required
+      # - name: Publish website
+      #   # if: github.ref == 'refs/heads/main'
+      #   uses: JamesIves/github-pages-deploy-action@v4
+      #   permissions:
+      #     contents: write
+
+  publish:  
+    # if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm ci
+      - run: npm run build
       - name: Publish website
         # if: github.ref == 'refs/heads/main'
         uses: JamesIves/github-pages-deploy-action@v4
-        permissions:
-          contents: write
-
         with:
           folder: dist
