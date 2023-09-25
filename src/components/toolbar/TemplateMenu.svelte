@@ -147,17 +147,7 @@
 .
 **__Example Kills__**
 .
-⬥ [Title](link)
-.
-{
-  "embed": {
-    "title": "__Table of Contents__",
-    "description": "*To edit this guide, visit <id:customize> and select Entry Editor*\n⬥ [Disclaimer]($linkmsg_disclaimer$)\n⬥ [Positioning]($linkmsg_positioning$)\n⬥ [Style1 AFK]($linkmsg_method1$)",
-    "color": 39423
-    }
-}
-.embed:json
-.pin:delete`;
+⬥ [Title](link)`;
     const slayerguide = 
 `**__[Slayer Creature Name]__**
 *Note: a **Table of Contents** can be found in the pins.*
@@ -249,31 +239,7 @@
 .
 **__Example Kills__**
 .
-⬥ [Name](link_to_video)
-.
-
-.
-{
-  "embed": {
-    "title": "__Table of Contents__",
-    "description": "*To edit this guide, visit <id:customize> and select Entry Editor*",
-    "color": 39423,
-    "fields": [
-     {
-        "name": "__Overview__",
-        "value": "⬥ [Introduction]($linkmsg_intro$)\n⬥ [Stats]($linkmsg_stats$)\n⬥ [Desirable Drops]($linkmsg_drops$)\n⬥ [Useful]($linkmsg_useful$)\n⬥ [How to Get There]($linkmsg_location$)",
-        "inline": true
-      },
-      {
-        "name": "__Methods__",
-        "value": "⬥ [Method 1]($linkmsg_method1$)",
-        "inline": true
-      }
-    ]
-  }
-}
-.embed:json
-.pin:delete`;
+⬥ [Name](link_to_video)`;
     const embedTextFormatting = 
 `{
   "embed": {
