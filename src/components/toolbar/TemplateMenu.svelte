@@ -65,7 +65,8 @@
 .
 > **__Example Kills__**
 .tag:example`;
-     const afkguide =
+
+     const afkGuide =
 `**__Title__**
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
 *Note: a **Table of Contents** can be found in the pins.*
@@ -148,7 +149,8 @@
 **__Example Kills__**
 .
 ⬥ [Title](link)`;
-    const slayerguide = 
+
+    const slayerGuide = 
 `**__[Slayer Creature Name]__**
 *Note: a **Table of Contents** can be found in the pins.*
 
@@ -240,6 +242,7 @@
 **__Example Kills__**
 .
 ⬥ [Name](link_to_video)`;
+
     const embedTextFormatting = 
 `{
   "embed": {
@@ -264,7 +267,7 @@
 }
 .embed:json`;
     
-    let templateText = credits;
+    let templateText = link;
     
     async function copyToClipboard() {
         await new Promise(r => setTimeout(r, 400));
@@ -283,7 +286,7 @@
 <div id="TemplateInformation" class="z-10 hidden rounded shadow bg-slate-700 border border-slate-800">
     <div class="flex-grow flex flex-row ">
   <div class="ml-4 my-4 mr-2 inline-flex flex-col text-white text-left text-sm">
-    <button title="Credits" on:click={() => templateText=link} class='rounded-t flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
+    <button title="Link" on:click={() => templateText=link} class='rounded-t flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Link
     </button>
     <button title="Rune pouch" on:click={() => templateText=runePouch} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
@@ -295,11 +298,11 @@
     <button title="Guide" on:click={() => templateText=guide} class='rounded-t flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Guide
     </button>
-    <button title="AFK Guide" on:click={() => templateText=afkguide} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
-        Guide
+    <button title="AFK Guide" on:click={() => templateText=afkGuide} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
+        AFK guide
     </button>
-    <button title="Slayer Guide" on:click={() => templateText=slayerguide} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
-        Guide
+    <button title="Slayer Guide" on:click={() => templateText=slayerGuide} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
+        Slayer guide
     </button>
     <button title="Embed formatting" on:click={() => templateText=embedTextFormatting} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Embed formatting
