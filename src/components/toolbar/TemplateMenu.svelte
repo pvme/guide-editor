@@ -66,7 +66,7 @@
 > **__Example Kills__**
 .tag:example`;
      const afkguide =
-'**__Title__**
+`**__Title__**
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
 *Note: a **Table of Contents** can be found in the pins.*
 
