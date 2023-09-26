@@ -4,17 +4,17 @@
   function exportText() {
     const file = new File([$text], 'GuideEditorExport.txt', {
         type: 'text/plain',
-    })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(file)
+    });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(file);
 
-    link.href = url
-    link.download = file.name
-    document.body.appendChild(link)
-    link.click()
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
 
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 </script>
 
