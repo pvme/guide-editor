@@ -120,7 +120,7 @@
     "title": "",
     "color": 39423,
     "image": {
-            "url": "link_to_image"
+            "url": "https://img.pvme.io/images/GKbvPUR5ia.png"
         },
     "fields": [
       {
@@ -217,7 +217,7 @@
   "embed": {
     "color": 39423,
     "image": {
-            "url": "link_to_preset_image"
+            "url": "https://img.pvme.io/images/GKbvPUR5ia.png"
         },
     "fields":[
     	{
