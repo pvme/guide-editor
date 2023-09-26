@@ -13,7 +13,7 @@
     const link = '**Link text** - <https://...>';
     const guide = 
 `> **__Title__**
-.img:https://i.imgur.com/gIzPFEV.png
+.img:https://img.pvme.io/images/ssAwdSFcqC.png
 
 .
 > **__Intro__**
@@ -28,7 +28,7 @@
     "title": "",
     "color": 39423,
     "image": {
-            "url": "link_to_image"
+            "url": "https://img.pvme.io/images/GKbvPUR5ia.png"
         },
     "fields": [
       {
@@ -47,7 +47,7 @@
 ⬥ first mechanic
     • describe the mechanic
         ⬩ [describe how to handle mechanic]
-.img:https://i.imgur.com/oB20Btb.png
+.img:https://img.pvme.io/images/Ig3eyaJ8gN.png
 ⬥ [Repeat for the rest of the mechanics]
 
 .
