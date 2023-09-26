@@ -2,11 +2,19 @@
   import { text } from './../../stores'; 
 
   function exportText() {
-    let hiddenElement = document.createElement('a');
-    hiddenElement.href = 'data:attachment/text,' + encodeURI($text);
-    hiddenElement.target = '_blank';
-    hiddenElement.download = 'GuideEditorExport.txt';
-    hiddenElement.click();
+    const file = new File([$text], 'GuideEditorExport.txt', {
+        type: 'text/plain',
+    });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(file);
+
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 </script>
 
