@@ -91,20 +91,20 @@
 {
   "embed": {
   "title": "",
-    "description":"⬥ The following **ARE REQUIRED** for this method to work:\n\u00a0\u00a0\u00a0\u00a0• **Cutting corners will result in failure**\n\u00a0\u00a0\u00a0\u00a0• A more extensive list can be found in <#1130180182544744551>",
+    "description":"⬥ The following **ARE REQUIRED** for this method to work:\\n\\u00a0\\u00a0\\u00a0\\u00a0• **Cutting corners will result in failure**\\n\\u00a0\\u00a0\\u00a0\\u00a0• A more extensive list can be found in <#1130180182544744551>",
     "color": 39423,
     "fields": [
       {
         "name": "__Items__",
-        "value": "⬥ [Item](link_to_item) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)\n⬥ [Item](link_to_item) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)\n⬥ [Item](link_to_item) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)"
+        "value": "⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
       },
       {
         "name": "__Abilities__",
-        "value": "⬥ [Greater ability](link_to_ability) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)\n⬥ [Greater ability](link_to_ability) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)\n⬥ [Greater ability](link_to_ability) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)"
+        "value": "⬥ [Greater ability](link_to_ability) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Greater ability](link_to_ability) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Greater ability](link_to_ability) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
       },
       {
         "name": "__Other__",
-        "value": "⬥ [Other](link_to_other) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)\n⬥ [Other](link_to_other) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)\n⬥ [Other](link_to_other) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)"
+        "value": "⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
       }
     ]
    }
@@ -182,11 +182,11 @@
     "fields": [
       {
         "name": "__Items__",
-        "value": "⬥ [Slayer Codex](https://runescape.wiki/w/Slayer_Codex) <:slayercodex:1097517249499254875>\n\u00a0\u00a0\u00a0\u00a0• Once 50 souls are added, it can be used to teleport to the Sunken Pyramid\n⬥ [Demon horn necklace](https://runescape.wiki/w/Demon_horn_necklace) <:demonhornnecklace:975765831248130079> and [Attuned ectoplasmator](https://runescape.wiki/w/Attuned_ectoplasmator) <:ectoplasmator:1023152065431744542>\n\u00a0\u00a0\u00a0\u00a0• Helps sustain your prayer\n⬥ [Item](link_to_item) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)\n⬥ [Item](link_to_item) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)"
+        "value": "⬥ [Slayer Codex](https://runescape.wiki/w/Slayer_Codex) <:slayercodex:1097517249499254875>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Once 50 souls are added, it can be used to teleport to the Sunken Pyramid\\n⬥ [Demon horn necklace](https://runescape.wiki/w/Demon_horn_necklace) <:demonhornnecklace:975765831248130079> and [Attuned ectoplasmator](https://runescape.wiki/w/Attuned_ectoplasmator) <:ectoplasmator:1023152065431744542>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Helps sustain your prayer\\n⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
       },
       {
         "name": "__Other__",
-        "value": "⬥ [Vampyrism aura](https://runescape.wiki/w/Vampyrism_aura) <:vampaura:643505653079343144>\n⬥ [Other](link_to_other) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)\n⬥ [Other](link_to_other) <emoji>\n\u00a0\u00a0\u00a0\u00a0• Notes (if needed)"
+        "value": "⬥ [Vampyrism aura](https://runescape.wiki/w/Vampyrism_aura) <:vampaura:643505653079343144>\\n⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
       }
     ]
    }
@@ -222,7 +222,7 @@
     "fields":[
     	{
     		"name":"__Preset__",
-    		"value":"⬥ [Preset breakdown](link_to_preset)\n If using rune pouches list spells that are needed",
+    		"value":"⬥ [Preset breakdown](link_to_preset)\\n If using rune pouches list spells that are needed",
     		"inline":true
     	}
     ]
