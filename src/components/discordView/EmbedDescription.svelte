@@ -4,4 +4,4 @@
     export let content;
 </script>
 
-<div class='embed-description markup'>{@html markdownToHTML(content, true).content}</div>
+<div class='embed-description markup'>{@html markdownToHTML(content).content}</div>

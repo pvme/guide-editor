@@ -1,7 +1,7 @@
 <script>
-    export let url;
+    export let image;
 </script>
 
-<a class='embed-thumbnail embed-thumbnail-rich' href='\'>
-    <img class='image' role='presentation' src={url} alt='embed'/>
+<a class='embed-thumbnail embed-thumbnail-rich' href='javascript:void(0)'>
+    <img class='image' role='presentation' src={image.url} alt='embed'/>
 </a>
