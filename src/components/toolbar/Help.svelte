@@ -28,7 +28,7 @@
           <tr>
             <td><code>;gbarge;</code>, <code>;greaterbarge;</code></td>
             <td><code>&lt;:gbarge:535532879250456578&gt;</code></td>
-            <td><a href="https://raw.githubusercontent.com/pvme/rotation-builder/main/settings.json" class="text-blue-400 visited:text-purple-400">emojis.json</a> (same as <a href="https://pvme.github.io/rotation-builder/" class="text-blue-400 visited:text-purple-400">rotation builder</a>)</td>
+            <td><a href="https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis.json" class="text-blue-400 visited:text-purple-400">emojis.json</a></td>
           </tr>
           <tr>
             <td><code>;#armour-and-weapons;</code></td>

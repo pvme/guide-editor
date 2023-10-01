@@ -79,11 +79,16 @@ async function setUsers() {
 }
 
 async function setEmojis() {
-    const emojisJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/rotation-builder/main/settings.json');
+    const emojisJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis.json');
     emojisFormat = {};
-    for (const [emoji, aliases] of Object.entries(emojisJSON)) {
-        for (const alias of aliases) {
-            emojisFormat[alias.toLowerCase()] = emoji;
+    for (const category of emojisJSON.categories) {
+        for (const emoji of category.emojis) {
+            const emojiFormat = `<:${emoji.emoji_name}:${emoji.emoji_id}>`;
+            emojisFormat[emoji.emoji_name] = emojiFormat;
+            for (const alias of emoji.aliases) {
+                emojisFormat[alias] = emojiFormat;
+            }
         }
     }
+    console.log(emojisFormat);
 }
