@@ -90,5 +90,4 @@ async function setEmojis() {
             }
         }
     }
-    console.log(emojisFormat);
 }
