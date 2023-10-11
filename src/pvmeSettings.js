@@ -79,7 +79,7 @@ async function setUsers() {
 }
 
 async function setEmojis() {
-    const emojisJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis.json');
+    const emojisJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis/emojis.json');
     emojisFormat = {};
     for (const category of emojisJSON.categories) {
         for (const emoji of category.emojis) {
