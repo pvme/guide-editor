@@ -1,4 +1,4 @@
-import { toHTML, rules, htmlTag } from 'discord-markdown';
+import { toHTML, rules, htmlTag } from '@riskymh/discord-markdown';
 import { channels, users, roles, pvmeSpreadsheet } from './pvmeSettings';
 import markdown from 'simple-markdown';
 
