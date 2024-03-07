@@ -1098,6 +1098,42 @@
   .discord-view strong {
     font-weight: 600
   }
+
+  .discord-view h1 {
+    font-size: revert;
+    font-weight: revert;
+    margin: revert;
+  }
+
+  .discord-view h2 {
+    font-size: revert;
+    font-weight: revert;
+    margin: revert;
+  }
+
+  .discord-view h3 {
+    font-size: revert;
+    font-weight: revert;
+    margin: revert;
+  }
+
+  .discord-view h4 {
+    font-size: revert;
+    font-weight: revert;
+    margin: revert;
+  }
+
+  .discord-view h5 {
+    font-size: revert;
+    font-weight: revert;
+    margin: revert;
+  }
+
+  .discord-view h6 {
+    font-size: revert;
+    font-weight: revert;
+    margin: revert;
+  }
   
   .discord-view button {
     border: 0;
