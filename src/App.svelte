@@ -98,11 +98,11 @@
 	}
 
 	function h1() {
-		updateLineFormat('> __**', '**__\n.tag:[tagname]');	
+		updateLineFormat('## __', '__\n.tag:[tagname]');	
 	}
 
 	function h2() {
-		updateLineFormat('__**', '**__');
+		updateLineFormat('### ');
 	}
 
 	function updater(cm, change) {

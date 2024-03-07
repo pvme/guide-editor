@@ -10,18 +10,18 @@
     
     const eof = '<eofEmoji> with <weaponName> <weaponEmoji>';
     const runePouch = '<pouchEmoji> <rune1> <rune2> ...';
-    const link = '**Link text** - <https://...>';
+    const link = '[Link Text](<https://...>)';
     const guide = 
-`> **__Title__**
+`# Title
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
 
 .
-> **__Intro__**
+## __Intro__
 .tag:intro
 [Describe the boss here]
 
 .
-**__Preset and Relics__**
+## __Presets and Relics__
 .
 {
   "embed": {
@@ -42,7 +42,7 @@
 .embed:json
 
 .
-> **__Mechanics__**
+## __Mechanics__
 .tag:mechanics
 ⬥ first mechanic
     • describe the mechanic
@@ -51,42 +51,42 @@
 ⬥ [Repeat for the rest of the mechanics]
 
 .
-> **__The Fight__**
+## __The Fight__
 .tag:fight
 ⬥ [Explain the fight, break it down into phases if applicable]
 
 .
-> **__Rotations__**
+## __Rotations__
 .tag:rotations
 ⬥ [Phase 1 rotations]
 ⬥ [Phase 2 rotations]
 ⬥ [etc]
 
 .
-> **__Example Kills__**
+## __Example Kills__
 .tag:example`;
 
      const afkGuide =
-`**__Title__**
+`# Title
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
 *Note: a **Table of Contents** can be found in the pins.*
 
 .
-> **__Disclaimer__**
+## __Disclaimer__
 .tag:disclaimer
 ⬥ **IF YOU CANNOT GET A METHOD TO WORK __DO NOT__ MESSAGE THE CREATOR(S)**
     • It is **more than likely __user error__ or __cutting corners__**, use <#656898197561802760> if you cannot get it to work
 
 .
-> **__Positioning__**
+## __Positioning__
 .tag:positioning
 .img:https://img.pvme.io/images/SmRV0soAtP.png
 ⬥ Notes if needed
 
 .
-> **__Style 1 AFK Method (~X kph)__**
+## __Style 1 AFK Method (~X kph)__
 .tag:method1
-**__Overview__**
+### Overview
 .
 {
   "embed": {
@@ -113,7 +113,7 @@
 ⬥ Extra notes (if needed)
 
 .
-**__Preset and Relics__**
+### Preset and Relics
 .
 {
   "embed": {
@@ -134,46 +134,46 @@
 .embed:json
 
 .
-**__Action Bars__**
+### Action Bars
 .img:https://img.pvme.io/images/uDqiLvEHFf.png
 ⬥ Notes if needed
 
 .
-**__Recommendations__**
+### Recommendations
 [Recommended items and unlocks]
 
-**__KPH__**
+### KPH
 ⬥ Extra notes
 
 .
-**__Example Kills__**
+### Example Kills
 .
 ⬥ [Title](link)`;
 
     const slayerGuide = 
-`**__[Slayer Creature Name]__**
+`# [Slayer Creature Name]
 *Note: a **Table of Contents** can be found in the pins.*
 
 .
-> **__Introduction__**
+## __Introduction__
 .tag:intro
 [Brief overview]
 
 .
-**__Stats__**
+### Stats
 ⬥ <:slayer:797896049548066857> level: X
 ⬥ <:slayer:797896049548066857> XP per kill: X
 ⬥ Optimal kills per hour: ~X <emoji of combat style 1> (AFK)
 ⬥ Optimal <:slayer:797896049548066857> XP per hour: ~X <emoji of combat style 1> (AFK)
 
 .
-> **__Desirable drops__**
+## __Desirable drops__
 .tag:drops
 ⬥ Name <emoji>
     • Required for the Slayer collection log (remove if not required)
 
 .
-**__Useful Items and Unlocks__**
+### Useful Items and Unlocks
 .tag:useful
 {
   "embed": {
@@ -195,13 +195,13 @@
 ⬥ Replace with relevant items
 
 .
-> **__Location and How to Get there__**
+## __Location and How to Get there__
 .tag:location
 .
 [Info]
 
 .
-> **__Method: Combat Style 1__**
+## __Method: Combat Style 1__
 .tag:method1
 [Describe method]
 [Include positioning image with tile markers if necessary]
@@ -211,7 +211,7 @@
 ⬥ Ensure <:elderovl:841419289831800882>, <:weppoison:689525476158472288> and <:aggressionpotion:925794592199147581> are active at all times]
 
 .
-**__Presets__**
+### Presets
 .
 {
   "embed": {
@@ -231,15 +231,15 @@
 .embed:json
 
 .
-**__Strategy__**
+### Strategy
 [If needed]
 
 .
-**__Ability Bar__**
+### Ability Bar
 .img:https://img.pvme.io/images/mVxpNHvdJ5.png
 
 .
-**__Example Kills__**
+### Example Kills
 .
 ⬥ [Name](link_to_video)`;
 
