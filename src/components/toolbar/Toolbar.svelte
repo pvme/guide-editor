@@ -9,6 +9,7 @@
 	import TypeStrikethrough from 'svelte-bootstrap-icons/lib/TypeStrikethrough.svelte';
 	import TypeH1 from 'svelte-bootstrap-icons/lib/TypeH1.svelte';
 	import TypeH2 from 'svelte-bootstrap-icons/lib/TypeH2.svelte';
+	import TypeH3 from 'svelte-bootstrap-icons/lib/TypeH3.svelte';
 	import ListUl from 'svelte-bootstrap-icons/lib/ListUl.svelte';
 	import ListOl from 'svelte-bootstrap-icons/lib/ListOl.svelte';
 
@@ -37,6 +38,7 @@
     <ButtonGroup>
         <Button on:click={() => dispatch('h1')} title='Header 1 - Ctrl+Alt+1' corner='rounded-l'><TypeH1/></Button>
 		<Button on:click={() => dispatch('h2')} title='Header 2  - Ctrl+Alt+2' corner='rounded-r'><TypeH2/></Button>
+		<Button on:click={() => dispatch('h3')} title='Header 3  - Ctrl+Alt+3' corner='rounded-r'><TypeH3/></Button>
     </ButtonGroup>
 
     <ButtonGroup>

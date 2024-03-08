@@ -1099,41 +1099,18 @@
     font-weight: 600
   }
 
-  .discord-view h1 {
-    font-size: revert;
-    font-weight: revert;
-    margin: revert;
-  }
-
-  .discord-view h2 {
-    font-size: revert;
-    font-weight: revert;
-    margin: revert;
-  }
-
-  .discord-view h3 {
-    font-size: revert;
-    font-weight: revert;
-    margin: revert;
-  }
-
-  .discord-view h4 {
-    font-size: revert;
-    font-weight: revert;
-    margin: revert;
-  }
-
-  .discord-view h5 {
-    font-size: revert;
-    font-weight: revert;
-    margin: revert;
-  }
-
+  /* Start: Workaround for reverting tailwind preflight on heading tags */
+  .discord-view h1,
+  .discord-view h2,
+  .discord-view h3,
+  .discord-view h4,
+  .discord-view h5,
   .discord-view h6 {
     font-size: revert;
     font-weight: revert;
     margin: revert;
   }
+  /* End: Workaround for reverting tailwind preflight on heading tags */
   
   .discord-view button {
     border: 0;
