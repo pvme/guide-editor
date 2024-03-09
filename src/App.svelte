@@ -51,6 +51,7 @@
 			'Ctrl-Alt-S': strikethrough,
 			'Ctrl-Alt-1': h1,
 			'Ctrl-Alt-2': h2,
+			'Ctrl-Alt-3': h3,
 			'Enter': 'newlineAndIndentContinueMarkdownList',
 			'Tab': 'autoIndentMarkdownList',
 			'Shift-Tab': 'autoUnindentMarkdownList'
@@ -98,11 +99,15 @@
 	}
 
 	function h1() {
-		updateLineFormat('> __**', '**__\n.tag:[tagname]');	
+		updateLineFormat('#', '\n.tag:[title]');	
 	}
 
 	function h2() {
-		updateLineFormat('__**', '**__');
+		updateLineFormat('## __', '__\n.tag:[tagname]');	
+	}
+
+	function h3() {
+		updateLineFormat('### ');
 	}
 
 	function updater(cm, change) {
@@ -143,6 +148,7 @@
 			on:strikethrough={strikethrough}
 			on:h1={h1} 
 			on:h2={h2}
+			on:h3={h3}
 			on:unorderedList={() => updateLineFormat('⬥ ')} 
 			on:orderedList={() => updateLineFormat('1. ')} 
 			on:inlineCode={() => updateInlineFormat('\`', '\`')} 
