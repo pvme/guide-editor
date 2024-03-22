@@ -3,6 +3,13 @@ import { channels, users, roles, pvmeSpreadsheet } from './pvmeSettings';
 import markdown from 'simple-markdown';
 
 
+/* Disable list formatting (work-around)
+For more info, see: https://github.com/pvme/guide-editor/issues/27
+*/
+rules.list.match = () => {
+    return false;
+}
+
 /* Overide blockquote formatting to use discord format. 
 FROM:
 <blockquote>text<br>more text</blockquote>
