@@ -131,7 +131,7 @@
 	    if(window.confirm(`Click confirm to overwrite your current progress with the ${channel.name} guide`)) {
 		  editor.setValue(await rawGithubTextRequest(guideUrl));
 		  // remove /?id= when loading a guide from ID
-		  window.history.pushState({}, document.title, "/" + "");
+		  window.history.pushState({}, document.title, "/guide-editor");
 		}
 		break;
 	  }
