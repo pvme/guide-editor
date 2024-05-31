@@ -62,6 +62,13 @@
 			loadGuide(urlParams.get('id'));
 		}
 		validateText();		
+		setTimeout(function() {
+			if(!localStorage.getItem('first-visit')) {
+				document.getElementById('TutorialButton').click();
+				localStorage.setItem('first-visit', 'false')
+			}
+		}, 500)
+		
 	});
 	
 	function newInput(cm, change) {
