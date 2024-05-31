@@ -61,13 +61,14 @@
 		if(urlParams.has('id')) {
 			loadGuide(urlParams.get('id'));
 		}
-		validateText();		
-		setTimeout(function() {
+		validateText();
+		document.addEventListener("DOMContentLoaded", (event) => {
 			if(!localStorage.getItem('first-visit')) {
 				document.getElementById('TutorialButton').click();
 				localStorage.setItem('first-visit', 'false')
 			}
-		}, 500)
+		});
+
 		
 	});
 	
