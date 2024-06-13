@@ -22,6 +22,7 @@
 
 .
 ## __Presets and Relics__
+.tag:presets
 .
 {
   "embed": {
@@ -111,7 +112,8 @@
 ⬥ Extra notes (if needed)
 
 .
-### Preset and Relics
+## __Presets and Relics__
+.tag:presets
 .
 {
   "embed": {
@@ -207,7 +209,8 @@
 ⬥ Ensure <:elderovl:841419289831800882>, <:weppoison:689525476158472288> and <:aggressionpotion:925794592199147581> are active at all times]
 
 .
-### Presets
+## __Presets and Relics__
+.tag:presets
 .
 {
   "embed": {
