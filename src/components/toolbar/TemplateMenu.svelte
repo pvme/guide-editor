@@ -243,6 +243,23 @@
 .
 ⬥ [Name](link_to_video)`;
 
+    const presetEmbed = 
+`{
+  "embed": {
+    "color": 39423,
+    "image": {
+            "url": "https://img.pvme.io/images/q0S7OpcPJb.png"
+        },
+    "fields":[
+        {
+            "name":"__Preset suggestions__",
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/t1EyGrUw10j2zgaf54Db) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/FpJAcluNA4k2VAS6rn2z) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/FpJAcluNA4k2VAS6rn2z) <:magic:689504724159823906> <:melee:1096130867279171706> "
+        }
+    ]
+  }
+}
+.embed:json`;
+
     const embedTextFormatting = 
 `{
   "embed": {
@@ -303,6 +320,9 @@
     </button>
     <button title="Slayer Guide" on:click={() => templateText=slayerGuide} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Slayer guide
+    </button>
+    <button title="Preset embed" on:click={() => templateText=presetEmbed} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
+        Preset embed
     </button>
     <button title="Embed formatting" on:click={() => templateText=embedTextFormatting} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Embed formatting
