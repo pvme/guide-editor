@@ -33,7 +33,7 @@
     "fields":[
         {
             "name":"__Preset Suggestions__",
-            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
         }
     ]
   }
@@ -124,7 +124,7 @@
     "fields":[
         {
             "name":"__Preset Suggestions__",
-            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
         }
     ]
   }
@@ -221,7 +221,7 @@
     "fields":[
         {
             "name":"__Preset Suggestions__",
-            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
         }
     ]
   }
@@ -251,7 +251,7 @@
     "fields":[
         {
             "name":"__Preset Suggestions__",
-            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
         }
     ]
   }
