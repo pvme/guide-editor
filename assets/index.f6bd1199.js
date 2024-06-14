@@ -112,14 +112,12 @@ Are you running on a server? Most of storages are not available while running on
     "color": 39423,
     "image": {
             "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-        },
+      },
     "fields":[
         {
             "name":"__Preset Suggestions__",
-            "value":"\u2B25 [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>
-\u2B25 [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>
-\u2B25 [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
-        }
+            "value":"\u2B25 [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n\u2B25 [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n\u2B25 [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+      }
     ]
   }
 }
@@ -188,7 +186,7 @@ Are you running on a server? Most of storages are not available while running on
         "value": "\u2B25 [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 Notes (if needed)\\n\u2B25 [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 Notes (if needed)\\n\u2B25 [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 Notes (if needed)"
       }
     ]
-   }
+  }
 }
 .embed:json
 \u2B25 Extra notes (if needed)
@@ -202,14 +200,12 @@ Are you running on a server? Most of storages are not available while running on
     "color": 39423,
     "image": {
             "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-        },
+      },
     "fields":[
         {
             "name":"__Preset Suggestions__",
-            "value":"\u2B25 [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>
-\u2B25 [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>
-\u2B25 [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
-        }
+            "value":"\u2B25 [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n\u2B25 [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n\u2B25 [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+      }
     ]
   }
 }
@@ -268,7 +264,7 @@ Are you running on a server? Most of storages are not available while running on
         "value": "\u2B25 [Vampyrism aura](https://runescape.wiki/w/Vampyrism_aura) <:vampaura:643505653079343144>\\n\u2B25 [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 Notes (if needed)\\n\u2B25 [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 Notes (if needed)"
       }
     ]
-   }
+  }
 }
 .embed:json
 \u2B25 Replace with relevant items
@@ -298,14 +294,12 @@ Are you running on a server? Most of storages are not available while running on
     "color": 39423,
     "image": {
             "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-        },
+      },
     "fields":[
         {
             "name":"__Preset Suggestions__",
-            "value":"\u2B25 [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>
-\u2B25 [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>
-\u2B25 [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
-        }
+            "value":"\u2B25 [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n\u2B25 [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n\u2B25 [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+      }
     ]
   }
 }
@@ -327,14 +321,12 @@ Are you running on a server? Most of storages are not available while running on
     "color": 39423,
     "image": {
             "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-        },
+      },
     "fields":[
         {
             "name":"__Preset Suggestions__",
-            "value":"\u2B25 [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>
-\u2B25 [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>
-\u2B25 [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
-        }
+            "value":"\u2B25 [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n\u2B25 [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n\u2B25 [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+      }
     ]
   }
 }
