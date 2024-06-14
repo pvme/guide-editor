@@ -22,20 +22,19 @@
 
 .
 ## __Presets and Relics__
+.tag:presets
 .
 {
   "embed": {
-    "title": "",
     "color": 39423,
     "image": {
-            "url": "https://img.pvme.io/images/GKbvPUR5ia.png"
+            "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
         },
-    "fields": [
-      {
-        "name": "__Preset Suggestion & Breakdown__",
-        "value": "⬥ [Link](link)",
-        "inline": true
-      }
+    "fields":[
+        {
+            "name":"__Preset Suggestions__",
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+        }
     ]
   }
 }
@@ -113,21 +112,20 @@
 ⬥ Extra notes (if needed)
 
 .
-### Preset and Relics
+## __Presets and Relics__
+.tag:presets
 .
 {
   "embed": {
-    "title": "",
     "color": 39423,
     "image": {
-            "url": "https://img.pvme.io/images/GKbvPUR5ia.png"
+            "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
         },
-    "fields": [
-      {
-        "name": "__Preset Suggestion & Breakdown__",
-        "value": "⬥ [Link](link)",
-        "inline": true
-      }
+    "fields":[
+        {
+            "name":"__Preset Suggestions__",
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+        }
     ]
   }
 }
@@ -211,20 +209,20 @@
 ⬥ Ensure <:elderovl:841419289831800882>, <:weppoison:689525476158472288> and <:aggressionpotion:925794592199147581> are active at all times]
 
 .
-### Presets
+## __Presets and Relics__
+.tag:presets
 .
 {
   "embed": {
     "color": 39423,
     "image": {
-            "url": "https://img.pvme.io/images/GKbvPUR5ia.png"
+            "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
         },
     "fields":[
-    	{
-    		"name":"__Preset__",
-    		"value":"⬥ [Preset breakdown](link_to_preset)\\n If using rune pouches list spells that are needed",
-    		"inline":true
-    	}
+        {
+            "name":"__Preset Suggestions__",
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+        }
     ]
   }
 }
@@ -242,6 +240,23 @@
 ### Example Kills
 .
 ⬥ [Name](link_to_video)`;
+
+    const presetEmbed = 
+`{
+  "embed": {
+    "color": 39423,
+    "image": {
+            "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
+        },
+    "fields":[
+        {
+            "name":"__Preset Suggestions__",
+            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+        }
+    ]
+  }
+}
+.embed:json`;
 
     const embedTextFormatting = 
 `{
@@ -303,6 +318,9 @@
     </button>
     <button title="Slayer Guide" on:click={() => templateText=slayerGuide} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Slayer guide
+    </button>
+    <button title="Preset embed" on:click={() => templateText=presetEmbed} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
+        Preset embed
     </button>
     <button title="Embed formatting" on:click={() => templateText=embedTextFormatting} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Embed formatting
