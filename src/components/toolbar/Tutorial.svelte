@@ -1,5 +1,14 @@
 <script>
-    import 'flowbite';
+    import { onMount } from 'svelte';
+
+    onMount(async () => {
+      document.addEventListener("DOMContentLoaded", (event) => {
+        if(!localStorage.getItem('first-visit')) {
+          document.getElementById('TutorialButton').click();
+          localStorage.setItem('first-visit', 'false')
+        }
+		  });
+    });
 </script>
 
 
