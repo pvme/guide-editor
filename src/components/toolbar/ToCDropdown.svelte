@@ -86,7 +86,7 @@
         "name": "__Category__",
         "value": "${formatChapters(chapters)}",
         "inline": true
-      }    
+      }
     ]
   }
 }
