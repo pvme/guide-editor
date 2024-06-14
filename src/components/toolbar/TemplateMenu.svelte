@@ -29,7 +29,7 @@
     "color": 39423,
     "image": {
             "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-    },
+      },
     "fields":[
         {
             "name":"__Preset Suggestions__",
@@ -120,7 +120,7 @@
     "color": 39423,
     "image": {
             "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-    },
+      },
     "fields":[
         {
             "name":"__Preset Suggestions__",
@@ -217,7 +217,7 @@
     "color": 39423,
     "image": {
             "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-    },
+      },
     "fields":[
         {
             "name":"__Preset Suggestions__",
@@ -247,7 +247,7 @@
     "color": 39423,
     "image": {
             "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-    },
+      },
     "fields":[
         {
             "name":"__Preset Suggestions__",
