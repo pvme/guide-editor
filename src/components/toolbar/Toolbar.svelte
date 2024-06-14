@@ -23,6 +23,7 @@
     import ToggleView from './ToggleView.svelte';
     import ToggleScrollBottom from './ToggleScrollBottom.svelte';
     import ExportToTxt from './ExportToTxt.svelte';
+    import Tutorial from './Tutorial.svelte';
 
     
     const dispatch = createEventDispatcher();
@@ -62,10 +63,15 @@
     <ButtonGroup>
         <ToCDropdown></ToCDropdown>
     </ButtonGroup>
-
-    <ButtonGroup>
-        <ExportToTxt></ExportToTxt>
-    </ButtonGroup>
+    
+    <div class="inline-flex mx-2 ml-auto" role="group">
+        <ButtonGroup>
+            <Tutorial></Tutorial>
+        </ButtonGroup>
+        <ButtonGroup>
+            <ExportToTxt></ExportToTxt>
+        </ButtonGroup>
+    </div>
     
     <div class="inline-flex mb-2 mx-2 ml-auto" role="group">
         <ToggleScrollBottom {dispatch}/>
