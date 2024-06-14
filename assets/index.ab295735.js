@@ -88,7 +88,7 @@ Are you running on a server? Most of storages are not available while running on
         "name": "__Category__",
         "value": "${formatChapters(D)}",
         "inline": true
-      }    
+      }
     ]
   }
 }
