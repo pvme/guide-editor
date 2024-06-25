@@ -170,7 +170,7 @@ Are you running on a server? Most of storages are not available while running on
 {
   "embed": {
   "title": "",
-    "description":"\u2B25 The following **ARE REQUIRED** for this method to work:\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 **Cutting corners will result in failure**\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 A more extensive list can be found in <#1130180182544744551>",
+    "description":"\u2B25 The following **ARE REQUIRED** for this method to work:\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 **Cutting corners will result in failure**\\n\\u00a0\\u00a0\\u00a0\\u00a0\u2022 A more extensive list can be found in <#1251377307315077151>",
     "color": 39423,
     "fields": [
       {
