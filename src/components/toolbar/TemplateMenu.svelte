@@ -112,7 +112,7 @@
 ⬥ Extra notes (if needed)
 
 .
-## __Presets and Relics__
+### __Presets and Relics__
 .tag:presets
 .
 {
@@ -165,7 +165,7 @@
 ⬥ Optimal <:slayer:797896049548066857> XP per hour: ~X <emoji of combat style 1> (AFK)
 
 .
-## __Desirable drops__
+### __Desirable drops__
 .tag:drops
 ⬥ Name <emoji>
     • Required for the Slayer collection log (remove if not required)
@@ -193,7 +193,7 @@
 ⬥ Replace with relevant items
 
 .
-## __Location and How to Get there__
+### __Location and How to Get there__
 .tag:location
 .
 [Info]
@@ -209,7 +209,7 @@
 ⬥ Ensure <:elderovl:841419289831800882>, <:weppoison:689525476158472288> and <:aggressionpotion:925794592199147581> are active at all times]
 
 .
-## __Presets and Relics__
+### __Presets and Relics__
 .tag:presets
 .
 {
