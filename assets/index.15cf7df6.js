@@ -192,7 +192,7 @@ Are you running on a server? Most of storages are not available while running on
 \u2B25 Extra notes (if needed)
 
 .
-## __Presets and Relics__
+### __Presets and Relics__
 .tag:presets
 .
 {
@@ -242,7 +242,7 @@ Are you running on a server? Most of storages are not available while running on
 \u2B25 Optimal <:slayer:797896049548066857> XP per hour: ~X <emoji of combat style 1> (AFK)
 
 .
-## __Desirable drops__
+### __Desirable drops__
 .tag:drops
 \u2B25 Name <emoji>
     \u2022 Required for the Slayer collection log (remove if not required)
@@ -270,7 +270,7 @@ Are you running on a server? Most of storages are not available while running on
 \u2B25 Replace with relevant items
 
 .
-## __Location and How to Get there__
+### __Location and How to Get there__
 .tag:location
 .
 [Info]
@@ -286,7 +286,7 @@ Are you running on a server? Most of storages are not available while running on
 \u2B25 Ensure <:elderovl:841419289831800882>, <:weppoison:689525476158472288> and <:aggressionpotion:925794592199147581> are active at all times]
 
 .
-## __Presets and Relics__
+### __Presets and Relics__
 .tag:presets
 .
 {
