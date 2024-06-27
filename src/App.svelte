@@ -124,14 +124,14 @@
     editor.focus();
   }
   async function loadGuide(paramID) {
-	//paramID could either be the channelID in discord, or the url of the website
-	//if paramID is a website url path, we can determine that if the param includes a /, but only if the / isnt the last character as that could just be a normal url
-	//not pretty, but it works
-	let isPath = paramID.indexOf('/') < paramID.length-1;
+    //paramID could either be the channelID in discord, or the url of the website
+    //if paramID is a website url path, we can determine that if the param includes a /, but only if the / isnt the last character as that could just be a normal url
+    //not pretty, but it works
+    let isPath = paramID.indexOf('/') < paramID.length-1;
     const channelsJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json');
 	for(const channel of channelsJSON) {
 	  if(channel.id === paramID || (isPath && channel.path.includes(paramID.substring(0,paramID.length-2)))) { 
-		// the website url has a trailing slash hence the length-2 and no .txt
+	    // the website url has a trailing slash hence the length-2 and no .txt
 	    let guideUrl = `https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`;
 	    if(window.confirm(`Click confirm to overwrite your current progress with the ${channel.name} guide`)) {
 		  editor.setValue(await rawGithubTextRequest(guideUrl));
