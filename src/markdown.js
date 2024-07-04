@@ -57,13 +57,24 @@ String.prototype.replaceAt = function(startIndex, replacement, endIndex) {
 function formatPVMESpreadsheet(originalContent) {
     // known bug: currently formats prices in code blocks
     let content = originalContent;
-    const regexp = /\$data_pvme:([^!]+)!([a-zA-Z]{1})([^$]+)\$/g;
+
+    const regexp = /\$data_pvme:([^$]+)\$/g;
+    const cellRegexp = /^([^!]+)!([A-Za-z]+)(\d+)$/;
     const results = [...content.matchAll(regexp)];
     for (const result of results.reverse()) {
-        const [pvmeFormat, worksheet, col, row] = result;
+        const [pvmeFormat, cellId] = result;
         const startIndex = result.index;
         const endIndex = startIndex + pvmeFormat.length;
-        const cellValue = pvmeSpreadsheet?.[worksheet]?.[col]?.[row];
+        
+        const cellMatch = cellId.match(cellRegexp);
+        let cellValue;
+        if (cellMatch) {
+            const [_, worksheet, col, row] = cellMatch;
+            cellValue = pvmeSpreadsheet?.cells?.[worksheet]?.[col]?.[row];
+        } else {
+            cellValue = pvmeSpreadsheet?.cell_aliases?.[cellId];
+        }
+
         if (cellValue)
             content = content.replaceAt(startIndex, cellValue, endIndex);
     }
