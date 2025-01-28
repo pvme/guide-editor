@@ -130,7 +130,7 @@
     let isPath = paramID.indexOf('/') < paramID.length-1;
     const channelsJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json');
 	for(const channel of channelsJSON) {
-	  if(channel.id === paramID || (isPath && channel.path.includes(paramID.substring(0,paramID.length-2)))) { 
+	  if(channel.id === paramID || (isPath && channel.path?.includes(paramID.substring(0,paramID.length-2)))) { 
 	    // the website url has a trailing slash hence the length-2 and no .txt
 	    let guideUrl = `https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`;
 	    if(window.confirm(`Click confirm to overwrite your current progress with the ${channel.name} guide`)) {
