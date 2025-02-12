@@ -11,6 +11,13 @@
     const eof = '<eofEmoji> with <weaponName> <weaponEmoji>';
     const runePouch = '<pouchEmoji> <rune1> <rune2> ...';
     const link = '[Link Text](<https://...>)';
+
+    const disclaimer = 
+`.
+> ## ⚠️ Disclaimer: this guide may not work after [insert name of change]
+> **Know of a newer method/rotation? Share it in <#1020853673317908500> to help keep this guide up-to-date!**
+`;
+
     const guide = 
 `# Title
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
@@ -301,6 +308,9 @@
 <div id="TemplateInformation" class="z-10 hidden rounded shadow bg-slate-700 border border-slate-800">
     <div class="flex-grow flex flex-row ">
   <div class="ml-4 my-4 mr-2 inline-flex flex-col text-white text-left text-sm">
+    <button title="Disclaimer" on:click={() => templateText=disclaimer} class='rounded mb-2 flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
+        Disclaimer
+    </button>
     <button title="Link" on:click={() => templateText=link} class='rounded-t flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Link
     </button>
