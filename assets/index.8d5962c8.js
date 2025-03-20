@@ -68,7 +68,7 @@ Are you running on a server? Most of storages are not available while running on
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide, visit <id:customize> and select Entry Editor*\\n${formatChapters(D)}",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel.id}}>), or visit <id:customize> and select Entry Editor*\\n${formatChapters(D)}",
     "color": 39423
   }
 }
@@ -81,7 +81,7 @@ Are you running on a server? Most of storages are not available while running on
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide, visit <id:customize> and select Entry Editor*",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel.id}}>), or visit <id:customize> and select Entry Editor*",
     "color": 39423,
     "fields": [
       {
