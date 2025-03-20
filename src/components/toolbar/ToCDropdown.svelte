@@ -51,7 +51,7 @@
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide, visit <id:customize> and select Entry Editor*\\n${formatChapters(chapters)}",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel.id}}>), or visit <id:customize> and select Entry Editor*\\n${formatChapters(chapters)}",
     "color": 39423
   }
 }
@@ -79,7 +79,7 @@
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide, visit <id:customize> and select Entry Editor*",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel.id}}>), or visit <id:customize> and select Entry Editor*",
     "color": 39423,
     "fields": [
       {
