@@ -39,7 +39,7 @@
     </ButtonGroup>
 
     <ButtonGroup>
-        <Button on:click={() => dispatch('link')} title='Link' corner='rounded-l rounded-r'><TypeLink/></Button>
+        <Button on:click={() => dispatch('link')} title='Link' corner='rounded-l rounded-r'><Link/></Button>
     </ButtonGroup>
 
     <ButtonGroup>
