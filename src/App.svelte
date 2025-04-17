@@ -98,8 +98,12 @@
 		updateInlineFormat('~~', '~~');
 	}
 
+	function link() {
+		updateInlineFormat('[', '](<#>)');
+	}
+
 	function h1() {
-		updateLineFormat('#', '\n.tag:[title]');	
+		updateLineFormat('# ', '\n.tag:[title]');	
 	}
 
 	function h2() {
@@ -147,16 +151,17 @@
 <main>
 	<div class='flex flex-col h-screen bg-indigo-400'>
 		<Toolbar
-			on:bold={bold} 
-			on:italic={italic} 
-			on:underline={underline} 
+			on:bold={bold}
+			on:italic={italic}
+			on:underline={underline}
 			on:strikethrough={strikethrough}
 			on:h1={h1} 
 			on:h2={h2}
 			on:h3={h3}
-			on:unorderedList={() => updateLineFormat('⬥ ')} 
-			on:orderedList={() => updateLineFormat('1. ')} 
-			on:inlineCode={() => updateInlineFormat('\`', '\`')} 
+			on:link={link}
+			on:unorderedList={() => updateLineFormat('⬥ ')}
+			on:orderedList={() => updateLineFormat('1. ')}
+			on:inlineCode={() => updateInlineFormat('\`', '\`')}
 			on:codeBlock={() => updateInlineFormat('\`\`\`', '\`\`\`')}
 			on:command={command}
 			on:toggleView={() => showView = !showView}
