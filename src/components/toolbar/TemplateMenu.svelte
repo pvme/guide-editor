@@ -12,8 +12,9 @@
 
     const disclaimer = 
 `.
-> ## ⚠️ Disclaimer: this guide may not work after [insert name of change]
-> **Know of a newer method/rotation? Share it in <#1020853673317908500> to help keep this guide up-to-date!**
+> ## ⚠️ Disclaimer
+> **This guide may not work after changes to [INSERT DESCRIPTION HERE]**
+> Know of a newer method/rotation? Share it in <#1020853673317908500> to help keep this guide up-to-date!
 `;
 
     const guide = 
