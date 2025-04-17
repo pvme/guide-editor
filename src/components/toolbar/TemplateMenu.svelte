@@ -7,10 +7,8 @@
     import { styleGuide } from './../../pvmeSettings';
 
     let copy = copyToClipboard;
-    
-    const eof = '<eofEmoji> with <weaponName> <weaponEmoji>';
-    const runePouch = '<pouchEmoji> <rune1> <rune2> ...';
-    const link = '[Link Text](<https://...>)';
+
+    const link = '';
 
     const disclaimer = 
 `.
@@ -19,28 +17,32 @@
 `;
 
     const guide = 
-`# Title
+`# __Boss Name__
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
+*Note: a **Table of Contents** can be found in the pins.*
 
 .
-## __Intro__
+## __Introduction__
 .tag:intro
-[Describe the boss here]
+[Intro to the boss, key reasons for hunting it and any overall guide commentary.]
+
+This is an **advanced guide** which assumes a strong underlying knowledge of all mechanics and information presented in <\\#linkbasicguide>.
 
 .
-## __Presets and Relics__
+## <:melee:1096130867279171706> __Melee Strategy__ [copy section below for each combat style]
+.tag:melee
+### __Preset Suggestions__
 .tag:presets
-.
 {
   "embed": {
     "color": 39423,
     "image": {
-            "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-      },
-    "fields":[
-        {
-            "name":"__Preset Suggestions__",
-            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+      "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
+    },
+    "fields": [
+      {
+        "name": "__Presets, Relics and Familiars__",
+        "value": "⬥ [Melee - Basic](https://pvme.github.io/preset-maker/#/#linktopreset) <:melee:1096130867279171706>\\n⬥ [Melee - Advanced](https://pvme.github.io/preset-maker/#/linktopreset) <:melee:1096130867279171706>"
       }
     ]
   }
@@ -48,32 +50,43 @@
 .embed:json
 
 .
-## __Mechanics__
-.tag:mechanics
-⬥ first mechanic
-    • describe the mechanic
-        ⬩ [describe how to handle mechanic]
-.img:https://img.pvme.io/images/Ig3eyaJ8gN.png
-⬥ [Repeat for the rest of the mechanics]
-
-.
-## __The Fight__
-.tag:fight
-⬥ [Explain the fight, break it down into phases if applicable]
-
-.
-## __Rotations__
+### __Rotations__
 .tag:rotations
-⬥ [Phase 1 rotations]
-⬥ [Phase 2 rotations]
-⬥ [etc]
+This rotation aims for [use one of these patterns: 4:00–4:30 / sub-3m / 15–17s] kill times.
+
+.
+**Outside instance**
+[At wars / outside gate]
+
+**Inside instance**
+[Before boss spawns]
+
+**Main fight**
+[When boss spawns]
 
 .
 ## __Example Kills__
-.tag:example`;
+.tag:examples
+<:melee:1096130867279171706> Melee example kills - [Youtube Link](<#>)
+.
 
-     const afkGuide =
-`# Title
+.
+Content managed by: [<@123>]
+Content maintained by: [<@123>]
+
+.
+{
+  "embed": {
+    "title": "__Table of Contents__",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*\\n⬥ [Introduction]($linkmsg_intro$)\\n⬥ [Melee Strategy]($linkmsg_melee$)\\n\\u00a0\\u00a0\\u00a0\\u00a0• [Preset Suggestions]($linkmsg_presets$)\\n\\u00a0\\u00a0\\u00a0\\u00a0• [Rotations]($linkmsg_rotations$)\\n⬥ [Example Kills]($linkmsg_examples$)",
+    "color": 39423
+  }
+}
+.embed:json
+.pin:delete`;
+
+    const afkGuide =
+`# __AFK Boss Name__
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
 *Note: a **Table of Contents** can be found in the pins.*
 
@@ -84,54 +97,53 @@
     • It is **more than likely __user error__ or __cutting corners__**, use <#656898197561802760> if you cannot get it to work
 
 .
-## __Positioning__
-.tag:positioning
-.img:https://img.pvme.io/images/SmRV0soAtP.png
-⬥ Notes if needed
+## <:melee:1096130867279171706> __Method 1: Melee AFK__ [copy section below for each method]
+.tag:method1
 
 .
-## __Style 1 AFK Method (~X kph)__
-.tag:method1
-### Overview
+### __Requirements__
+You only need to include things which differ from the lists in <#1251377307315077151>, e.g., situational perks <:demonslayerperk:689502842653900818>, niche items <:iritsticks:690987265371144202> or specific ability unlocks for the action bar]
 .
 {
   "embed": {
-  "title": "",
-    "description":"⬥ The following **ARE REQUIRED** for this method to work:\\n\\u00a0\\u00a0\\u00a0\\u00a0• **Cutting corners will result in failure**\\n\\u00a0\\u00a0\\u00a0\\u00a0• A more extensive list can be found in <#1251377307315077151>",
+    "description": "⬥ The following **ARE REQUIRED** for this method to work:\\n\\u00a0\\u00a0\\u00a0\\u00a0• **Cutting corners will result in failure**\\n\\u00a0\\u00a0\\u00a0\\u00a0• A more extensive list can be found in <#1251377307315077151>",
     "color": 39423,
     "fields": [
       {
         "name": "__Items__",
-        "value": "⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
+        "value": "⬥ [Item](#wiki-link) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Item](#wiki-link) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
       },
       {
         "name": "__Abilities__",
-        "value": "⬥ [Greater ability](link_to_ability) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Greater ability](link_to_ability) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Greater ability](link_to_ability) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
+        "value": "⬥ [Codex-unlocked abilities](#wiki-link) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Talent Tree abilities](#wiki-link) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
       },
       {
         "name": "__Other__",
-        "value": "⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
+        "value": "⬥ [Other](#wiki-link) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
       }
     ]
   }
 }
 .embed:json
-⬥ Extra notes (if needed)
 
 .
-### __Presets and Relics__
-.tag:presets
+### __Positioning__
+.img:https://img.pvme.io/images/SmRV0soAtP.png
+⬥ Notes if needed
+
+.
+### __Preset Suggestions__
 .
 {
   "embed": {
     "color": 39423,
     "image": {
-            "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-      },
-    "fields":[
-        {
-            "name":"__Preset Suggestions__",
-            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+      "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
+    },
+    "fields": [
+      {
+        "name": "__Presets, Relics and Familiars__",
+        "value": "⬥ [Melee - Advanced](https://pvme.github.io/preset-maker/#/#linktopreset) <:melee:1096130867279171706>\\n⬥ [Magic - Advanced](https://pvme.github.io/preset-maker/#/linktopreset) <:magic:689504724159823906>"
       }
     ]
   }
@@ -139,24 +151,33 @@
 .embed:json
 
 .
-### Action Bars
+### __Action Bars__
 .img:https://img.pvme.io/images/uDqiLvEHFf.png
 ⬥ Notes if needed
 
 .
-### Recommendations
-[Recommended items and unlocks]
-
-### KPH
-⬥ Extra notes
+## __Example Kills__
+.tag:examples
+<:melee:1096130867279171706> Method 1: Melee example kills - [Youtube Link](<#>)
+.
 
 .
-### Example Kills
+Content managed by: [<@123>]
+Content maintained by: [<@123>]
+
 .
-⬥ [Title](link)`;
+{
+  "embed": {
+    "title": "__Table of Contents__",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*\\n⬥ [Disclaimer]($linkmsg_disclaimer$)\\n⬥ [ Method 1: Melee AFK]($linkmsg_method1$)\\n⬥ [Example Kills]($linkmsg_examples$)",
+    "color": 39423
+  }
+}
+.embed:json
+.pin:delete`;
 
     const slayerGuide = 
-`# [Slayer Creature Name]
+`# __[Slayer Creature Name]__
 *Note: a **Table of Contents** can be found in the pins.*
 
 .
@@ -165,10 +186,11 @@
 [Brief overview]
 
 .
-### Stats
-⬥ <:slayer:797896049548066857> level: X
-⬥ <:slayer:797896049548066857> XP per kill: X
-⬥ Optimal kills per hour: ~X <emoji of combat style 1> (AFK)
+### __Stats__
+.tag:stats
+⬥ <:slayer:797896049548066857> level: X  
+⬥ <:slayer:797896049548066857> XP per kill: X  
+⬥ Optimal kills per hour: ~X <emoji of combat style 1> (AFK)  
 ⬥ Optimal <:slayer:797896049548066857> XP per hour: ~X <emoji of combat style 1> (AFK)
 
 .
@@ -178,57 +200,34 @@
     • Required for the Slayer collection log (remove if not required)
 
 .
-### Useful Items and Unlocks
-.tag:useful
-{
-  "embed": {
-    "description":"Owning the following increases the efficiency of your sessions, but is by no means mandatory",
-    "color": 39423,
-    "fields": [
-      {
-        "name": "__Items__",
-        "value": "⬥ [Slayer Codex](https://runescape.wiki/w/Slayer_Codex) <:slayercodex:1097517249499254875>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Once 50 souls are added, it can be used to teleport to the Sunken Pyramid\\n⬥ [Demon horn necklace](https://runescape.wiki/w/Demon_horn_necklace) <:demonhornnecklace:975765831248130079> and [Attuned ectoplasmator](https://runescape.wiki/w/Attuned_ectoplasmator) <:ectoplasmator:1023152065431744542>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Helps sustain your prayer\\n⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Item](link_to_item) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
-      },
-      {
-        "name": "__Other__",
-        "value": "⬥ [Vampyrism aura](https://runescape.wiki/w/Vampyrism_aura) <:vampaura:643505653079343144>\\n⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)\\n⬥ [Other](link_to_other) <emoji>\\n\\u00a0\\u00a0\\u00a0\\u00a0• Notes (if needed)"
-      }
-    ]
-  }
-}
-.embed:json
-⬥ Replace with relevant items
+## __Location and How to Get there__
+[If there are multiple locations, move this section into each Method (after __Requirements__ section)]
+
+[⬥ Notes if needed]
+.img:https://img.pvme.io/images/SmRV0soAtP.png
 
 .
-### __Location and How to Get there__
-.tag:location
-.
-[Info]
-
-.
-## __Method: Combat Style 1__
+## <:melee:1096130867279171706> __Method 1: Melee AFK__ [copy section below for each method]
 .tag:method1
 [Describe method]
-[Include positioning image with tile markers if necessary]
-[Other Essentials such as:
+[List other essentials, e.g.:
 ⬥ Pray <:soulsplit:615613924506599497> and <:sorrow:1137941003895046284>
-⬥ Sustain <:prayer:1005450651347730533> with <:demonhornnecklace:975765831248130079> + <:ectoplasmator:1023152065431744542> and <:powderofpenance:928221126360969226>
+⬥ Sustain prayer with <:demonhornnecklace:975765831248130079> + <:ectoplasmator:1023152065431744542> and <:powderofpenance:928221126360969226>
 ⬥ Ensure <:elderovl:841419289831800882>, <:weppoison:689525476158472288> and <:aggressionpotion:925794592199147581> are active at all times]
 
 .
-### __Presets and Relics__
-.tag:presets
+### __Preset Suggestions__
 .
 {
   "embed": {
     "color": 39423,
     "image": {
-            "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-      },
-    "fields":[
-        {
-            "name":"__Preset Suggestions__",
-            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+      "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
+    },
+    "fields": [
+      {
+        "name": "__Presets, Relics and Familiars__",
+        "value": "⬥ [Melee - Advanced](https://pvme.github.io/preset-maker/#/#linktopreset) <:melee:1096130867279171706>\\n⬥ [Magic - Advanced](https://pvme.github.io/preset-maker/#/linktopreset) <:magic:689504724159823906>"
       }
     ]
   }
@@ -236,29 +235,39 @@
 .embed:json
 
 .
-### Strategy
-[If needed]
+### __Strategy [Optional section]__
+[Use this section if extra guidance is needed, or users find common issues]
 
 .
-### Ability Bar
-.img:https://img.pvme.io/images/mVxpNHvdJ5.png
+### __Action Bars__
+.img:https://img.pvme.io/images/uDqiLvEHFf.png
+⬥ Notes if needed
 
 .
-### Example Kills
+## __Example Kills__
+.tag:examples
+<:melee:1096130867279171706> Method 1: Melee example kills - [Youtube Link](<#>)
 .
-⬥ [Name](link_to_video)`;
 
-    const presetEmbed = 
-`{
+.
+Content managed by: [<@123>]
+Content maintained by: [<@123>]
+
+.
+{
   "embed": {
-    "color": 39423,
-    "image": {
-            "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
+    "title": "__Table of Contents__",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*",
+    "fields": [
+      {
+        "name": "__Information__",
+        "value": "⬥ [Intro]($linkmsg_intro$)\\n⬥ [Stats]($linkmsg_stats$)\\n⬥ [Drops]($linkmsg_drops$)",
+        "inline": true
       },
-    "fields":[
-        {
-            "name":"__Preset Suggestions__",
-            "value":"⬥ [Necromancy preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:necromancy:1148995625896120460>\\n⬥ [Magic preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:magic:689504724159823906>\\n⬥ [Hybrid preset](https://pvme.github.io/preset-maker/#/LINKHERE) <:range:580168050121113623> <:melee:1096130867279171706> "
+      {
+        "name": "__Methods__",
+        "value": "⬥ [Method 1: Melee AFK]($linkmsg_method1$)",
+        "inline": true
       }
     ]
   }
@@ -288,18 +297,16 @@
   }
 }
 .embed:json`;
-    
+
     let templateText = link;
-    
+
     async function copyToClipboard() {
         await new Promise(r => setTimeout(r, 400));
         const dropdown = new Dropdown(document.getElementById('TemplateInformation'), document.getElementById('TemplateButton'));
         dropdown.hide();
         navigator.clipboard.writeText(templateText);
     }
-
 </script>
-
 
 <button id="TemplateButton" data-dropdown-toggle="TemplateInformation" type="button" class='inline-flex items-center rounded bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-2 active:bg-indigo-800 text-sm border border-indigo-700' title="Templates">
     Template&nbsp;<CaretDownFill class="mt-1"></CaretDownFill>
@@ -311,15 +318,6 @@
     <button title="Disclaimer" on:click={() => templateText=disclaimer} class='rounded mb-2 flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Disclaimer
     </button>
-    <button title="Link" on:click={() => templateText=link} class='rounded-t flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
-        Link
-    </button>
-    <button title="Rune pouch" on:click={() => templateText=runePouch} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
-        Rune pouch
-    </button>
-    <button title="EoF" on:click={() => templateText=eof} class='rounded-b mb-2 flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
-        EoF
-    </button>
     <button title="Guide" on:click={() => templateText=guide} class='rounded-t flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Guide
     </button>
@@ -328,9 +326,6 @@
     </button>
     <button title="Slayer Guide" on:click={() => templateText=slayerGuide} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Slayer guide
-    </button>
-    <button title="Preset embed" on:click={() => templateText=presetEmbed} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
-        Preset embed
     </button>
     <button title="Embed formatting" on:click={() => templateText=embedTextFormatting} class='flex-wrap text-left bg-indigo-600 hover:bg-indigo-700 p-2 active:bg-indigo-800 border border-indigo-700' type="button">
         Embed formatting
