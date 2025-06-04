@@ -162,6 +162,22 @@ function findStyleErrors(text) {
 					text: "Content should not include trailing whitespace"
 				});
 			}
+
+			if (match = mlines[i].match(/#{4,}/)) {
+				results.push({
+					line: message.firstline + i,
+					type: "error",
+					text: "Heading format with 4 or more # are not supported in Discord. ### is the max."
+				});
+			}
+
+			if (match = mlines[i].match(/^#{1,6}\s+.*\*\*.*\*\*.*/)) {
+				results.push({
+					line: message.firstline + i,
+					type: "error",
+					text: "Bold formatting **text** is redundant in headers (#, ##, ###). Remove the ** on this line"
+				});
+			}
 		}
 	}
 
