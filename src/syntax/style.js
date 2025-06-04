@@ -178,6 +178,22 @@ function findStyleErrors(text) {
 					text: "Bold formatting **text** is redundant in headers (#, ##, ###). Remove the ** on this line"
 				});
 			}
+
+			if (match = mlines[i].match(/^(?!.*(?:url|value)).*https:\/\/img\.pvme\.io\/images\/.*$/i)) {
+				results.push({
+					line: message.firstline + i,
+					type: "warn",
+					text: "Image links are normally preceeded by a .img: tag"
+				});
+			}
+
+			if (match = mlines[i].match(/<:[^:>]+:\d+><:[^:>]+:\d+>/)) {
+				results.push({
+					line: message.firstline + i,
+					type: "warn",
+					text: "Emojis should have a space between them"
+				});
+			}
 		}
 	}
 
