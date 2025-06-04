@@ -179,11 +179,11 @@ function findStyleErrors(text) {
 				});
 			}
 
-			if (match = mlines[i].match(/^(?!.*(?:url|value)).*https:\/\/img\.pvme\.io\/images\/.*$/i)) {
+			if (match = mlines[i].match(/^(?!.*(?:url|value|title|description|name))(?=.*https:\/\/img\.pvme\.io\/images\/)(?!.*<.*https:\/\/img\.pvme\.io\/images\/.*>).*/i)) {
 				results.push({
 					line: message.firstline + i,
 					type: "warn",
-					text: "Image links are normally preceeded by a .img: tag"
+					text: "Image links are normally preceeded by an .img: tag. If this is a masked link not meant to display the image, surround the link with <> like <linkgoeshere>"
 				});
 			}
 
