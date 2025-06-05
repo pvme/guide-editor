@@ -167,7 +167,7 @@ function findStyleErrors(text) {
 				results.push({
 					line: message.firstline + i,
 					type: "error",
-					text: "Heading format with 4 or more # are not supported in Discord. ### is the max."
+					text: "Heading format with 4 or more # are not supported in Discord. ### is the max"
 				});
 			}
 
@@ -183,7 +183,7 @@ function findStyleErrors(text) {
 				results.push({
 					line: message.firstline + i,
 					type: "warn",
-					text: "Image links are normally preceeded by an .img: tag. If this is a masked link not meant to display the image, surround the link with <> like <linkgoeshere>"
+					text: "Image links are normally preceeded by an .img: tag or wrapped in < > to not display"
 				});
 			}
 
