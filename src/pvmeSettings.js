@@ -90,4 +90,5 @@ async function setEmojis() {
             }
         }
     }
+    emojisFormat["wenspore"] = `<:wenarrow:971025697046925362> <:grico:787904334812807238> <:deathsporearrows:900758234527301642>`
 }
