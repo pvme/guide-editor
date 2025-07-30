@@ -98,8 +98,12 @@
 		updateInlineFormat('~~', '~~');
 	}
 
+	function link() {
+		updateInlineFormat('[', '](<#>)');
+	}
+
 	function h1() {
-		updateLineFormat('#', '\n.tag:[title]');	
+		updateLineFormat('# ', '\n.tag:[title]');	
 	}
 
 	function h2() {
@@ -124,9 +128,14 @@
     editor.focus();
   }
   async function loadGuide(paramID) {
+    //paramID could either be the channelID in discord, or the url of the website
+    //if paramID is a website url path, we can determine that if the param includes a /, but only if the / isnt the last character as that could just be a normal url
+    //not pretty, but it works
+    let isPath = paramID.indexOf('/') < paramID.length-1;
     const channelsJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json');
 	for(const channel of channelsJSON) {
-	  if(channel.id === paramID) {
+	  if(channel.id === paramID || (isPath && channel.path?.includes(paramID.substring(0,paramID.length-2)))) { 
+	    // the website url has a trailing slash hence the length-2 and no .txt
 	    let guideUrl = `https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`;
 	    if(window.confirm(`Click confirm to overwrite your current progress with the ${channel.name} guide`)) {
 		  editor.setValue(await rawGithubTextRequest(guideUrl));
@@ -142,16 +151,17 @@
 <main>
 	<div class='flex flex-col h-screen bg-indigo-400'>
 		<Toolbar
-			on:bold={bold} 
-			on:italic={italic} 
-			on:underline={underline} 
+			on:bold={bold}
+			on:italic={italic}
+			on:underline={underline}
 			on:strikethrough={strikethrough}
 			on:h1={h1} 
 			on:h2={h2}
 			on:h3={h3}
-			on:unorderedList={() => updateLineFormat('⬥ ')} 
-			on:orderedList={() => updateLineFormat('1. ')} 
-			on:inlineCode={() => updateInlineFormat('\`', '\`')} 
+			on:link={link}
+			on:unorderedList={() => updateLineFormat('⬥ ')}
+			on:orderedList={() => updateLineFormat('1. ')}
+			on:inlineCode={() => updateInlineFormat('\`', '\`')}
 			on:codeBlock={() => updateInlineFormat('\`\`\`', '\`\`\`')}
 			on:command={command}
 			on:toggleView={() => showView = !showView}

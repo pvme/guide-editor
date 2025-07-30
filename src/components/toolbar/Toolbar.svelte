@@ -12,6 +12,7 @@
 	import TypeH3 from 'svelte-bootstrap-icons/lib/TypeH3.svelte';
 	import ListUl from 'svelte-bootstrap-icons/lib/ListUl.svelte';
 	import ListOl from 'svelte-bootstrap-icons/lib/ListOl.svelte';
+	import Link from 'svelte-bootstrap-icons/lib/Link.svelte';
 
     import Button from './Button.svelte';
     import ButtonGroup from './ButtonGroup.svelte';
@@ -31,11 +32,16 @@
 
 <div class="flex flex-wrap mt-4 mb-2 mx-2">
     <ButtonGroup>
-        <Button on:click={() => dispatch('bold')} title='Bold - Ctrl+B' corner='rounded-l' ><TypeBold/></Button>
+        <Button on:click={() => dispatch('bold')} title='Bold - Ctrl+B' corner='rounded-l'><TypeBold/></Button>
         <Button on:click={() => dispatch('italic')} title='Italic - Ctrl+I'><TypeItalic/></Button>
         <Button on:click={() => dispatch('underline')} title='Italic - Ctrl+U'><TypeUnderline/></Button>
         <Button on:click={() => dispatch('strikethrough')} title='Strikethrough - Ctrl+Alt+S' corner='rounded-r'><TypeStrikethrough/></Button>
     </ButtonGroup>
+
+    <ButtonGroup>
+        <Button on:click={() => dispatch('link')} title='Link' corner='rounded-l rounded-r'><Link/></Button>
+    </ButtonGroup>
+
     <ButtonGroup>
         <Button on:click={() => dispatch('h1')} title='Header 1 - Ctrl+Alt+1' corner='rounded-l'><TypeH1/></Button>
 		<Button on:click={() => dispatch('h2')} title='Header 2  - Ctrl+Alt+2'><TypeH2/></Button>
@@ -63,7 +69,7 @@
     <ButtonGroup>
         <ToCDropdown></ToCDropdown>
     </ButtonGroup>
-    
+
     <div class="inline-flex mx-2 ml-auto" role="group">
         <ButtonGroup>
             <Tutorial></Tutorial>
