@@ -17,12 +17,13 @@
     export let thumbnail = null;
     export let image = null;
     export let footer = null;
+    export let selected = false;
 </script>
 
 <div class='accessory'>
     <div class='embed-wrapper'>
         <EmbedColorPill {color} />
-        <div class='embed embed-rich'>
+        <div class='embed embed-rich' class:selected={selected}>
             <div class='embed-content'>
                 <div class='embed-content-inner'>
                     {#if author}
@@ -51,3 +52,10 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Style currently empty but visual indicator is planned for future */
+    .embed.selected {
+        /* background-color: red; */
+    }
+</style>
