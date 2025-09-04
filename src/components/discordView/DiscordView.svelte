@@ -12,7 +12,7 @@
     let scrollViewElement;
 
     //likely not exhaustive, but it's a start
-    let autoscrollIgnoredLines = [
+    const autoscrollIgnoredLines = [
         "",
         ".",
         "{",

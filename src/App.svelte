@@ -54,8 +54,8 @@
 			const lineText = editor.getLine(pos.line).trim();
 			selectedLineText = lineText;
 			requestAnimationFrame(() => {
-				let discordView = document.getElementsByClassName('discord-view')[0];
-				let selectedEl = discordView?.querySelector('.selected');
+				const discordView = document.getElementsByClassName('discord-view')[0];
+				const selectedEl = discordView?.querySelector('.selected');
 				selectedEl?.scrollIntoView({behavior: 'smooth', block: 'center'});
 			});
 		}, true); // capture = true helps if CM swallows the event
