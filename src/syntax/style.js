@@ -162,6 +162,38 @@ function findStyleErrors(text) {
 					text: "Content should not include trailing whitespace"
 				});
 			}
+
+			if (match = mlines[i].match(/#{4,}/)) {
+				results.push({
+					line: message.firstline + i,
+					type: "error",
+					text: "Heading format with 4 or more # are not supported in Discord. ### is the max"
+				});
+			}
+
+			if (match = mlines[i].match(/^#{1,6}\s+.*\*\*.*\*\*.*/)) {
+				results.push({
+					line: message.firstline + i,
+					type: "error",
+					text: "Bold formatting **text** is redundant in headers (#, ##, ###). Remove the ** on this line"
+				});
+			}
+
+			if (match = mlines[i].match(/^(?!.*(?:url|value|title|description|name))(?=.*https:\/\/img\.pvme\.io\/images\/)(?!.*<.*https:\/\/img\.pvme\.io\/images\/.*>).*/i)) {
+				results.push({
+					line: message.firstline + i,
+					type: "warn",
+					text: "Image links are normally preceeded by an .img: tag or wrapped in < > to not display"
+				});
+			}
+
+			if (match = mlines[i].match(/<:[^:>]+:\d+><:[^:>]+:\d+>/)) {
+				results.push({
+					line: message.firstline + i,
+					type: "warn",
+					text: "Emojis should have a space between them"
+				});
+			}
 		}
 	}
 
