@@ -57,6 +57,10 @@
 				const discordView = document.getElementsByClassName('discord-view')[0];
 				const selectedEl = discordView?.querySelector('.selected');
 				selectedEl?.scrollIntoView({behavior: 'smooth', block: 'center'});
+				selectedEl?.classList.add("flash-message");
+				selectedEl?.addEventListener("animationend", () => {
+					selectedEl?.classList?.remove("flash-message")
+				}, { once: true });
 			});
 		}, true); // capture = true helps if CM swallows the event
 
@@ -205,4 +209,17 @@
 		</div>
     </div>
 </main>
+<style>
+	/* Glow outline animation */
+	@keyframes flash-outline {
+		0%   { box-shadow: 0 0 0px rgba(255, 215, 0, 0); }
+  		30%  { box-shadow: 0 0 12px 4px rgba(255, 215, 0, 0.9); }
+  		70%  { box-shadow: 0 0 12px 4px rgba(255, 215, 0, 0.9); }
+  		100% { box-shadow: 0 0 0px rgba(255, 215, 0, 0); }
+	}
 
+	/* Helper class */
+	:global(.flash-message) {
+		animation: flash-outline 2s ease-out;
+	}
+</style>

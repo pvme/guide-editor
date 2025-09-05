@@ -31,7 +31,7 @@
 
 
 <!-- todo: don't use nested object -->
-<div class='message-text hover:message-selected' class:selected={selected}>
+<div class='message-text hover:message-selected' class:selected={!messageFormatted.embed && selected}>
     <div class='markup'>
         {@html messageFormatted.content}
     </div>
@@ -54,8 +54,5 @@
         /* background-color: #36393f; */
         background-color: #2f3136;
     }
-    /* Style currently empty but visual indicator is planned for future */
-    .selected {
-        /* background-color: red; */
-    }
+    
 </style>

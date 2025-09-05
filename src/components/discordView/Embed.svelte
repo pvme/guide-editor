@@ -52,10 +52,3 @@
         </div>
     </div>
 </div>
-
-<style>
-    /* Style currently empty but visual indicator is planned for future */
-    .embed.selected {
-        /* background-color: red; */
-    }
-</style>
