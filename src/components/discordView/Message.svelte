@@ -5,6 +5,7 @@
 
     export let content;
     export let command;
+    export let selected;
     
     let oldContent;
     let oldCommand;
@@ -30,7 +31,7 @@
 
 
 <!-- todo: don't use nested object -->
-<div class='message-text hover:message-selected'>
+<div class='message-text hover:message-selected' class:selected={!messageFormatted.embed && selected}>
     <div class='markup'>
         {@html messageFormatted.content}
     </div>
@@ -45,7 +46,7 @@
 </div>
 
 {#if messageFormatted.embed}
-    <Embed {...messageFormatted.embed}/>
+    <Embed {...messageFormatted.embed} selected={selected}/>
 {/if}
 
 <style>
@@ -53,4 +54,5 @@
         /* background-color: #36393f; */
         background-color: #2f3136;
     }
+    
 </style>

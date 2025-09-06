@@ -245,7 +245,7 @@ function findSyntaxErrors(text) {
 
 	for (let i = 0; i < messages.length; i ++) {
 		const message = messages[i];
-		let msgLinks = message.text.match(/\_[a-zA-Z0-9]*\$/gm);
+		let msgLinks = message.text.match(/\$(?!data_pvme:)[^_]*(_[a-zA-Z0-9]+)\$/gm);
 		if(msgLinks) {
 			for(let j = 0 ; j < msgLinks.length ; j++) {
 				let keyword = msgLinks[j].slice(1,-1);

@@ -22,6 +22,7 @@
 
 	let editor;
 	let validText = $text;	//  bug: exiting last session with invalid text
+	let selectedLineText = '';
 	let showView = true;
   let scrollBottom = false;
 
@@ -43,6 +44,28 @@
 		editor.setSize('100%', '100%');
 		editor.on('change', updater);
 		editor.on('inputRead', newInput);
+
+		// Attach to the CodeMirror wrapper element
+		const wrapper = editor.getWrapperElement();
+
+		wrapper.addEventListener('dblclick', (e) => {
+			// Wait until CodeMirror has updated the cursor/selection
+			const pos = editor.coordsChar({ left: e.clientX, top: e.clientY });
+			const lineText = editor.getLine(pos.line).trim();
+			selectedLineText = lineText;
+			requestAnimationFrame(() => {
+				const discordView = document.getElementsByClassName('discord-view')[0];
+				const selectedEl = discordView?.querySelector('.selected');
+				selectedEl?.scrollIntoView({behavior: 'smooth', block: 'center'});
+				selectedEl?.classList.add("flash-message");
+				selectedEl?.addEventListener("animationend", () => {
+					selectedEl?.classList?.remove("flash-message")
+				}, { once: true });
+			});
+		}, true); // capture = true helps if CM swallows the event
+
+		
+
 
 		editor.setOption("extraKeys", {
 			'Ctrl-B': bold,
@@ -177,7 +200,7 @@
 			{:then}
 				{#if showView}
 					<div class='w-1/2 mr-4 ml-2 mb-4 overflow-auto' id='scroll-view'>
-						<DiscordView text={validText} scrollBottom={scrollBottom}/>	
+						<DiscordView text={validText} scrollBottom={scrollBottom} selectedLineText={selectedLineText}/>	
 					</div>
 				{/if}
 			{:catch error}
@@ -186,4 +209,3 @@
 		</div>
     </div>
 </main>
-

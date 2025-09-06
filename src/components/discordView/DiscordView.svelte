@@ -8,7 +8,24 @@
 
     export let text;
     export let scrollBottom = false;
+    export let selectedLineText;
     let scrollViewElement;
+
+    //likely not exhaustive, but it's a start
+    const autoscrollIgnoredLines = [
+        "",
+        ".",
+        "{",
+        "[",
+        "\"embed\": {",
+        "\"fields\": [",
+        "\"footer\": {",
+        "\"inline\": true",
+        "}",
+        "]",
+        ".embed:json",
+        "},"
+    ];
 
     onMount(()=>{
         scrollViewElement = document.getElementById('scroll-view');
@@ -18,12 +35,13 @@
         if (scrollBottom) scrollViewElement.scrollTop = scrollViewElement.scrollHeight;
     });
 
-    function splitMessages(text) {
+    function splitMessages(text, selectedLineText) {
         // todo: ignore commands inside code block
         let messages = [];
         let message = {
             content: '',
-            command: ''
+            command: '',
+            selected: false
         };
         const lines = text.split('\n');
         for (const line of lines) {
@@ -37,11 +55,17 @@
                 messages.push(message);
                 message = {
                     content: '',
-                    command: ''
+                    command: '',
+                    selected: false
                 };
             }
             else {
                 message.content += line;
+            }
+            if(!autoscrollIgnoredLines.includes(selectedLineText)) {
+                if(line.trim().includes(selectedLineText)) {
+                    message.selected = true;
+                }
             }
         }
 
@@ -63,7 +87,7 @@
                                 <div class='comment'>
                                     <div class='message first'>
                                         <Bot/>
-                                        {#each splitMessages(text) as message}
+                                        {#each splitMessages(text, selectedLineText) as message}
                                             <Message {...message}/>
                                         {/each}
                                     </div>
@@ -76,3 +100,18 @@
         </div>
     </div>
 </div>
+
+<style>
+	/* Glow outline animation */
+	@keyframes flash-outline {
+		0%   { box-shadow: 0 0 0px rgba(255, 215, 0, 0); }
+  		30%  { box-shadow: 0 0 12px 4px rgba(255, 215, 0, 0.9); }
+  		70%  { box-shadow: 0 0 12px 4px rgba(255, 215, 0, 0.9); }
+  		100% { box-shadow: 0 0 0px rgba(255, 215, 0, 0); }
+	}
+
+	/* Helper class */
+	:global(.flash-message) {
+		animation: flash-outline 2s ease-out;
+	}
+</style>
