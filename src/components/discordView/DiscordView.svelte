@@ -20,6 +20,7 @@
         "\"embed\": {",
         "\"fields\": [",
         "\"footer\": {",
+        "\"inline\": true",
         "}",
         "]",
         ".embed:json",
@@ -99,3 +100,18 @@
         </div>
     </div>
 </div>
+
+<style>
+	/* Glow outline animation */
+	@keyframes flash-outline {
+		0%   { box-shadow: 0 0 0px rgba(255, 215, 0, 0); }
+  		30%  { box-shadow: 0 0 12px 4px rgba(255, 215, 0, 0.9); }
+  		70%  { box-shadow: 0 0 12px 4px rgba(255, 215, 0, 0.9); }
+  		100% { box-shadow: 0 0 0px rgba(255, 215, 0, 0); }
+	}
+
+	/* Helper class */
+	:global(.flash-message) {
+		animation: flash-outline 2s ease-out;
+	}
+</style>

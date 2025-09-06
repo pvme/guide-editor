@@ -93,6 +93,9 @@
       <h2 class="text-lg">Inline formatting</h2>
       <p>Use a shortcut (see tooltip) or click the formatting options to (un-)format text:</p>
       <p><a href="https://gyazo.com/541d606b59339ccb21fa85c3f54bffe1"><img src="https://i.gyazo.com/541d606b59339ccb21fa85c3f54bffe1.gif" alt="Image from Gyazo" class="media"/></a></p>
+      <h2 class="text-lg">Autoscroll to Discord Message</h2>
+      <p>Double-click on a line in the raw text panel to automatically scroll to the<br>corresponding Discord View message.<br>Note: The line must be unique so things like <code>.embed:json</code>, any line with<br>only special characters, or any empty line will not work.</p>
+      <p><a href="https://i.imgur.com/pUBQFsT.gif"><img src="https://i.imgur.com/pUBQFsT.gif" alt="Image from Imgur" class="media"/></a></p>
     </div>
 </div>
 
