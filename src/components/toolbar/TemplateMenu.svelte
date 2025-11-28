@@ -34,21 +34,8 @@ This is an **advanced guide** which assumes a strong underlying knowledge of all
 .tag:melee
 ### __Preset Suggestions__
 .tag:presets
-{
-  "embed": {
-    "color": 39423,
-    "image": {
-      "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-    },
-    "fields": [
-      {
-        "name": "__Presets, Relics and Familiars__",
-        "value": "⬥ [Melee - Basic](https://pvme.github.io/preset-maker/#/#linktopreset) <:melee:1096130867279171706>\\n⬥ [Melee - Advanced](https://pvme.github.io/preset-maker/#/linktopreset) <:melee:1096130867279171706>"
-      }
-    ]
-  }
-}
-.embed:json
+⬥ [Melee - Basic](https://presets.pvme.io/?id=<presetID>) <:melee:1096130867279171706>
+⬥ [Melee - Advanced](https://presets.pvme.io/?id=<presetID>) <:melee:1096130867279171706>
 
 .
 ### __Rotations__
@@ -135,21 +122,8 @@ You only need to include things which differ from the lists in <#125137730731507
 .
 ### __Preset Suggestions__
 .
-{
-  "embed": {
-    "color": 39423,
-    "image": {
-      "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-    },
-    "fields": [
-      {
-        "name": "__Presets, Relics and Familiars__",
-        "value": "⬥ [Melee - Advanced](https://pvme.github.io/preset-maker/#/#linktopreset) <:melee:1096130867279171706>\\n⬥ [Magic - Advanced](https://pvme.github.io/preset-maker/#/linktopreset) <:magic:689504724159823906>"
-      }
-    ]
-  }
-}
-.embed:json
+⬥ [Melee - Basic](https://presets.pvme.io/?id=<presetID>) <:melee:1096130867279171706>
+⬥ [Melee - Advanced](https://presets.pvme.io/?id=<presetID>) <:melee:1096130867279171706>
 
 .
 ### __Action Bars__
@@ -218,22 +192,8 @@ Content maintained by: [<@123>]
 
 .
 ### __Preset Suggestions__
-.
-{
-  "embed": {
-    "color": 39423,
-    "image": {
-      "url": "https://img.pvme.io/images/ULpvc5dTZC.png"
-    },
-    "fields": [
-      {
-        "name": "__Presets, Relics and Familiars__",
-        "value": "⬥ [Melee - Advanced](https://pvme.github.io/preset-maker/#/#linktopreset) <:melee:1096130867279171706>\\n⬥ [Magic - Advanced](https://pvme.github.io/preset-maker/#/linktopreset) <:magic:689504724159823906>"
-      }
-    ]
-  }
-}
-.embed:json
+⬥ [Melee - Basic](https://presets.pvme.io/?id=<presetID>) <:melee:1096130867279171706>
+⬥ [Melee - Advanced](https://presets.pvme.io/?id=<presetID>) <:melee:1096130867279171706>
 
 .
 ### __Strategy [Optional section]__

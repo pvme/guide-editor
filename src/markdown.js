@@ -49,6 +49,35 @@ rules.url.parse = capture => {
     };
 }
 
+// Adding function to handle masked links with embeddable preset links
+rules.link.parse = capture => {
+    const full   = capture[0];  // "[text](<url>)"
+    const label  = capture[1];
+    const url    = capture[2];  // "https://..."
+
+    // Detect angle brackets ONLY for masked links
+    // Non-masked links run through rules.url instead and work fine
+    const hasAngleBrackets =
+        full.includes('(<') && full.includes('>)');
+
+    const isPvme =
+        url.includes('presets.pvme.io') ||
+        url.includes('img.pvme.io');
+
+    if (isPvme && !hasAngleBrackets) {
+        messageAttachments.push(url);
+    }
+
+    // ALWAYS return a valid AST node
+    return {
+        content: [{
+            type: 'text',
+            content: label
+        }],
+        target: url
+    };
+}
+
 
 String.prototype.replaceAt = function(startIndex, replacement, endIndex) {
     return this.substring(0, startIndex) + replacement + this.substring(endIndex);
