@@ -26,27 +26,7 @@
 
     const dispatch = createEventDispatcher();
 
-    // ------------------------------
-    // Insert text into CodeMirror
-    // ------------------------------
-    function insertAtCursor(text, cursorOffset = 0) {
-        if (!editor) return;
-
-        const view = editor;
-        const sel = view.state.selection.main;
-
-        const insertText = text.replace("|", "");
-
-        const pos = sel.from + insertText.indexOf("|");
-        const finalCursorPos = pos === -1 ? sel.from + insertText.length : pos;
-
-        view.dispatch({
-            changes: { from: sel.from, to: sel.to, insert: insertText },
-            selection: { anchor: finalCursorPos }
-        });
-
-        view.focus();
-    }
+    export let insertAtCursor;
 
     const groups = [
         {

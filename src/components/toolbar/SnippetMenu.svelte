@@ -1,6 +1,7 @@
 <script>
     import DropdownPanel from "./DropdownPanel.svelte";
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
+    import { disclaimer } from "./templateData.js";
 
     export let insertAtCursor;
 
@@ -10,13 +11,15 @@
     // Each snippet now contains "|"
     // Cursor will land at that spot.
     const snippets = [
-        ".|",
-        ".img:|",
-        ".tag:|",
-        ".embed:json|",
-        "$linkmsg_tagword$|",
-        "$data_pvme:sheet!A1$|"
+        { label: "Disclaimer", snippet: disclaimer },
+        { label: ".", snippet: ".|" },
+        { label: ".img:", snippet: ".img:|" },
+        { label: ".tag:", snippet: ".tag:|" },
+        { label: ".embed:json", snippet: ".embed:json|" },
+        { label: "linkmsg", snippet: "$linkmsg_tagword$|" },
+        { label: "PvME Spreadsheet Reference", snippet: "$data_pvme:sheet!A1$|" },
     ];
+
 
     function pick(snippet) {
         insertAtCursor("\n" + snippet);
@@ -42,13 +45,13 @@
         bind:registerTrigger={trigger}
     >
         <div class="flex flex-col p-3 text-sm w-full">
-            {#each snippets as s}
+            {#each snippets as item}
                 <button
                     class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
                            border border-indigo-700 p-2 text-left rounded mb-1"
-                    on:click={() => pick(s)}
+                    on:click={() => pick(item.snippet)}
                 >
-                    {s.replace("|","")}
+                    {item.label}
                 </button>
             {/each}
         </div>

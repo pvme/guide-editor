@@ -106,14 +106,37 @@
     if (fn) fn(editor);
     editor.focus();
   }
+
+  function insertAtCursor(text) {
+      if (!editor) return;
+
+      const view = editor;
+      const sel = view.state.selection.main;
+
+      const raw = text;
+      const clean = raw.replace("|", "");
+
+      // find cursor position
+      const pipeIndex = raw.indexOf("|");
+      const cursor = pipeIndex === -1 ? sel.from + clean.length : sel.from + pipeIndex;
+
+      view.dispatch({
+          changes: { from: sel.from, to: sel.to, insert: clean },
+          selection: { anchor: cursor }
+      });
+
+      view.focus();
+  }
+
 </script>
 
 <main>
   <div class="flex flex-col h-screen bg-indigo-400">
 
     <Toolbar
-      on:command={(e) => runCommand(e.detail)}
-      on:toggleView={() => (showView = !showView)}
+        {insertAtCursor}
+        on:command={(e) => runCommand(e.detail)}
+        on:toggleView={() => (showView = !showView)}
     />
 
     <div class="flex-grow flex flex-row overflow-auto">

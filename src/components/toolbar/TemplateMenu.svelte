@@ -9,7 +9,6 @@
     import { text } from "../../stores";
 
     import {
-        disclaimer,
         guide,
         afkGuide,
         slayerGuide,
@@ -45,8 +44,7 @@
             .join("\\n");
 
         if (mode === "compact") {
-            return `
-{
+            return `{
   "embed": {
     "title": "__Table of Contents__",
     "description": "*To edit this guide…*\\n${formatted}",
@@ -57,8 +55,7 @@
 .pin:delete`;
         }
 
-        return `
-{
+        return `{
   "embed": {
     "title": "__Table of Contents__",
     "description": "*To edit this guide…*",
@@ -103,22 +100,6 @@
             <!-- LEFT SIDEBAR -->
             <div class="flex flex-col text-sm p-3 w-full">
 
-                <div class="font-semibold mb-1">Snippets</div>
-
-                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 rounded w-full"
-                    on:click={() => setTemplate(disclaimer)}>
-                    Disclaimer
-                </button>
-
-                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 rounded"
-                    on:click={() => setTemplate(embedTextFormatting)}>
-                    Embed
-                </button>
-
-                <div class="border-t border-indigo-800 my-2"></div>
-
                 <div class="font-semibold mb-1">Guides</div>
 
                 <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
@@ -141,7 +122,14 @@
 
                 <div class="border-t border-indigo-800 my-2"></div>
 
-                <div class="font-semibold mb-1">Table of Contents</div>
+                <div class="font-semibold mb-1">Embeds</div>
+
+
+                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
+                               border border-indigo-700 p-2 rounded"
+                    on:click={() => setTemplate(embedTextFormatting)}>
+                    Embed
+                </button>
 
                 <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
                                border border-indigo-700 p-2 rounded"
