@@ -91,6 +91,38 @@ function findSyntaxErrors(text) {
 				const base = parse[1];
 				const param = parse[2];
 
+				if (base === "blank") {
+				    // .blank: must have no parameters
+				    if (param.trim() !== "") {
+				        results.push({
+				            line: i + 1,
+				            type: "error",
+				            text: ".blank: command must not have parameters"
+				        });
+				    }
+
+				    // mark the message as a forced blank
+				    // (DiscordView will turn this into a blank message)
+				    if (!message.lastline) {
+				        message.lastline = i;
+				    }
+				    messages.push({
+				        text: "",
+				        firstline: i + 1,
+				        lastline: i + 1,
+				        isBlankCommand: true  // ← NEW FLAG
+				    });
+
+				    // begin a new message afterward
+				    message = {
+				        text: "",
+				        firstline: i + 2
+				    };
+
+				    state = 0;
+				    continue;
+				}
+
 				if (base === "img" || base === "file") {
 					if (!param.match(/https?:\/\/.*?/)) {
 						results.push({

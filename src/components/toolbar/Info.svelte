@@ -1,5 +1,4 @@
 <script>
-    import 'flowbite';
     import InfoCircle from 'svelte-bootstrap-icons/lib/InfoCircle.svelte';
     
 </script>

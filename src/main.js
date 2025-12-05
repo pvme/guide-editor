@@ -1,10 +1,6 @@
-import App from './App.svelte'
-import "flowbite/dist/flowbite.css"
-import "./index.css"
+import App from './App.svelte';
+import './index.css';
 
-
-const app = new App({
+new App({
   target: document.getElementById('app')
-})
-
-export default app
+});

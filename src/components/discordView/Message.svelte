@@ -1,58 +1,25 @@
 <script>
-    import markdownToHTML from './../../markdown';
-    import Embed from './Embed.svelte';
-    import Attachment from './Attachment.svelte'
+  import Embed from "./Embed.svelte";
+  import Attachment from "./Attachment.svelte";
 
-    export let content;
-    export let command;
-    export let selected;
-    
-    let oldContent;
-    let oldCommand;
-    let messageFormatted;
-
-    $: if (content !== oldContent || command !== oldCommand) {
-        oldContent = content;
-        oldCommand = command;
-        
-        if (command === '.embed:json') {
-            messageFormatted = {
-                content: '',
-                embed: JSON.parse(content).embed
-            };
-        }
-        else {
-            messageFormatted = markdownToHTML(content);
-            if (command.startsWith('.img'))
-                messageFormatted.commandAttachment = command.substring('.img:'.length);
-        }
-    }
+  export let lineMap = [];
+  export let globalOffset = 0;
 </script>
 
-
-<!-- todo: don't use nested object -->
-<div class='message-text hover:message-selected' class:selected={!messageFormatted.embed && selected}>
-    <div class='markup'>
-        {@html messageFormatted.content}
+{#each lineMap as item}
+  {#if item.type === "text"}
+    <div class="pvme-line" data-src-line={item.line + globalOffset}>
+      {@html item.html}
     </div>
-    {#if messageFormatted.messageAttachments}
-        {#each messageFormatted.messageAttachments as attachment}
-            <Attachment url={attachment}/>
-        {/each}
-    {/if}
-    {#if messageFormatted.commandAttachment}
-        <Attachment url={messageFormatted.commandAttachment}/>
-    {/if}
-</div>
 
-{#if messageFormatted.embed}
-    <Embed {...messageFormatted.embed} selected={selected}/>
-{/if}
+  {:else if item.type === "attachment"}
+    <div class="pvme-line attachment" data-src-line={item.line + globalOffset}>
+      <Attachment url={item.url} />
+    </div>
 
-<style>
-    .hover\:message-selected:hover {
-        /* background-color: #36393f; */
-        background-color: #2f3136;
-    }
-    
-</style>
+  {:else if item.type === "embed"}
+    <div class="pvme-line embed" data-src-line={item.line + globalOffset}>
+      <Embed {...item.embed} />
+    </div>
+  {/if}
+{/each}

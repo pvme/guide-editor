@@ -1,5 +1,4 @@
 <script>
-    import 'flowbite';
     import CaretDownFill from 'svelte-bootstrap-icons/lib/CaretDownFill.svelte';
 
     export let dispatch;
