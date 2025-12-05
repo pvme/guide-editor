@@ -9,6 +9,7 @@
 
   import { text } from "./stores";
   import { populateConstants } from "./pvmeSettings";
+  import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
   import {
     pvmeExtensions,
     commandDispatch,
@@ -35,8 +36,11 @@
 
   let syncEngine = null;
 
+  let showGuideModal = false;
+  let pendingGuide = null;
+
   // -----------------------------
-  // Wrappers that pass currentMessages into sync helpers
+  // Wrappers for sync helpers
   // -----------------------------
   function _getMessageAtEditorLine(line) {
     return getMessageAtEditorLine(currentMessages, line);
@@ -46,9 +50,9 @@
     scrollEditorToMessage(currentMessages, msgIndex, view);
   }
 
-  // ------------------------------------------------
-  // Handle preview message click
-  // ------------------------------------------------
+  // -----------------------------
+  // Preview click handler
+  // -----------------------------
   function handleMessageClick(e) {
     currentMessages = e.detail.messages;
     currentOffsets = e.detail.offsets;
@@ -56,6 +60,47 @@
     const msgIndex = e.detail.index;
     syncEngine.syncEditorToMessage(editor, msgIndex);
   }
+
+
+  // ------------------------------------------------
+  // Load guide from ?id=xxxx
+  // ------------------------------------------------
+  async function loadGuide(paramID) {
+    pendingGuide = await findGuideFromParam(paramID);
+    showGuideModal = !!pendingGuide;
+  }
+
+  // -----------------------------
+  // Modal button actions
+  // -----------------------------
+  async function confirmLoadGuide() {
+    if (!pendingGuide) return;
+
+    const guideText = await loadGuideText(pendingGuide.url);
+
+    // Replace editor text
+    editor.dispatch({
+      changes: {
+        from: 0,
+        to: editor.state.doc.length,
+        insert: guideText
+      }
+    });
+
+    text.set(guideText);
+
+    // Remove ?id from URL
+    window.history.replaceState({}, document.title, "/guide-editor/");
+    
+    pendingGuide = null;
+    showGuideModal = false;
+  }
+
+  function cancelLoadGuide() {
+    pendingGuide = null;
+    showGuideModal = false;
+  }
+
 
   // ------------------------------------------------
   // Setup editor
@@ -78,8 +123,13 @@
     });
 
     editor = new EditorView({ state, parent: inputEl });
-
     syncEngine = editor.state.facet(SyncEngineFacet)[0];
+
+    // --- Load guide from URL ---
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("id")) {
+      loadGuide(params.get("id"));
+    }
 
     editor.focus();
 
@@ -108,33 +158,34 @@
   }
 
   function insertAtCursor(text) {
-      if (!editor) return;
+    if (!editor) return;
 
-      const view = editor;
-      const sel = view.state.selection.main;
+    const view = editor;
+    const sel = view.state.selection.main;
 
-      const raw = text;
-      const clean = raw.replace("|", "");
+    const raw = text;
+    const clean = raw.replace("|", "");
 
-      // find cursor position
-      const pipeIndex = raw.indexOf("|");
-      const cursor = pipeIndex === -1 ? sel.from + clean.length : sel.from + pipeIndex;
+    const pipeIndex = raw.indexOf("|");
+    const cursor =
+      pipeIndex === -1 ? sel.from + clean.length : sel.from + pipeIndex;
 
-      view.dispatch({
-          changes: { from: sel.from, to: sel.to, insert: clean },
-          selection: { anchor: cursor }
-      });
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: clean },
+      selection: { anchor: cursor }
+    });
 
-      view.focus();
+    view.focus();
   }
 </script>
+
 <main>
   <div class="flex flex-col h-screen bg-indigo-400">
 
     <Toolbar
-        {insertAtCursor}
-        on:command={(e) => runCommand(e.detail)}
-        on:toggleView={() => (showView = !showView)}
+      {insertAtCursor}
+      on:command={(e) => runCommand(e.detail)}
+      on:toggleView={() => (showView = !showView)}
     />
 
     <div class="flex-grow flex flex-row overflow-auto">
@@ -149,6 +200,7 @@
           bind:this={inputEl}
           class="editor cm6-container h-full flex flex-col"
         ></div>
+
         <ErrorView text={validText} />
       </div>
 
@@ -168,7 +220,37 @@
           </div>
         {/if}
       {/await}
-
     </div>
   </div>
+
+  {#if showGuideModal}
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-xl p-6 w-[380px]">
+
+        <h2 class="text-xl font-semibold text-white mb-4">
+          Load Guide
+        </h2>
+
+        <p class="text-slate-300 mb-6 leading-relaxed">
+          Load the <span class="text-indigo-400 font-medium">{pendingGuide?.name}</span> guide?<br/>
+          This will overwrite your current editor content.
+        </p>
+
+        <div class="flex justify-end gap-3">
+          <button
+            on:click={cancelLoadGuide}
+            class="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 transition">
+            Cancel
+          </button>
+
+          <button
+            on:click={confirmLoadGuide}
+            class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition">
+            Load Guide
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
 </main>
