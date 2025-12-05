@@ -164,7 +164,7 @@
    ======================================================= */
 
 .theme-dark .messages-wrapper {
-    background-color: #1a191e;
+    background-color: #1a191e !important;
     min-height: 100vh;
 }
 
@@ -288,6 +288,10 @@ code.inline {
    EMBEDS
    ======================================================= */
 
+.pvme-line.embed {
+    padding: 0;
+}
+
 .embed-content-inner,
 .embed-field {
     display: flex;
@@ -295,7 +299,7 @@ code.inline {
 }
 
 .theme-dark .message-group .embed {
-    background-color: transparent;
+    background-color: transparent !important;
     border: none;
 }
 
