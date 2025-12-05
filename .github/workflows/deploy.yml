@@ -1,4 +1,4 @@
-# This workflow will rebuild the website whenever the main branch is updated.
+# This workflow deploys your fork to GitHub Pages
 name: Deploy site
 
 on:
@@ -7,15 +7,17 @@ on:
       - nick-overhaul
 
 jobs:
-  publish:  
+  publish:
     permissions:
       contents: write
-    
+      pages: write
+      id-token: write
+
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -28,4 +30,5 @@ jobs:
       - name: Publish
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist
+          folder: dist        # directory to publish
+          branch: gh-pages    # REQUIRED → publish to gh-pages
