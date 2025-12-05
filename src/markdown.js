@@ -1,11 +1,12 @@
 // src/markdown.js
 //
-// PVME Markdown Renderer (Token-Based Headings)
+// PVME Markdown Renderer
 // -----------------------------------------------------------
 // Features:
 // - Reliable H1/H2/H3 support using protected tokens
 // - PVME spreadsheet refs + channel aliases
 // - Naked URL → attachment capture
+// - Markdown link preset URLs → attachment capture
 // - Clean <br>-based split for Discord-like layout
 // -----------------------------------------------------------
 
@@ -84,7 +85,7 @@ function applySpecialChannels(text) {
 }
 
 // -----------------------------------------------------------
-// TOKEN-BASED HEADING SYSTEM (cleanest approach)
+// TOKEN-BASED HEADING SYSTEM
 // -----------------------------------------------------------
 
 // Before markdown → replace headings with special tokens
@@ -137,6 +138,16 @@ export default function markdownToHTML(input) {
     // 2) Heading protection
     working = protectHeadings(working);
 
+    // -----------------------------------------------------------
+    // PREPASS: detect markdown links to preset URLs
+    // -----------------------------------------------------------
+    const presetLinks = [];
+    working.replace(/\[([^\]]+)\]\((https:\/\/presets\.pvme\.io\/\?id=[^)]+)\)/g,
+        (m, label, url) => {
+            presetLinks.push(url);
+        }
+    );
+
     // 3) Parse markdown
     let rendered = toHTML(working, {
         discordCallback: {
@@ -153,7 +164,14 @@ export default function markdownToHTML(input) {
     // 4) Restore heading HTML
     rendered = restoreHeadings(rendered);
 
-    // 5) Build lineMap
+    // 5) Add preset links from markdown-link prepass
+    // (Do NOT scan <a href>; avoids double-embeds)
+    for (const url of presetLinks) {
+        if (input.includes(`<${url}>`)) continue; // escaped with angle brackets → no embed
+        messageAttachments.push(url);
+    }
+
+    // 6) Build lineMap
     const lines = safeSplitLines(rendered);
 
     const lineMap = lines.map((html, i) => ({
