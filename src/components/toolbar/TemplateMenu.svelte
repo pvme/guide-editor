@@ -77,6 +77,10 @@
         await navigator.clipboard.writeText(preview);
         showCopied = true;
     }
+
+    // Initialise
+    setTemplate(guide)
+
 </script>
 <div class="relative inline-block">
     <button
