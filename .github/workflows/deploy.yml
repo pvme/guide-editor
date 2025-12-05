@@ -4,7 +4,7 @@ name: Deploy site
 on:
   push:
     branches:
-      - main
+      - nick-overhaul
 
 jobs:
   publish:  
