@@ -6,5 +6,5 @@ export default defineConfig({
   plugins: [
     svelte(svelteConfig)
   ],
-  base: '/'
+  base: '/guide-editor/'
 });
