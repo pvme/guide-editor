@@ -127,9 +127,8 @@
 
       view.focus();
   }
-
+  console.log("deploy test");
 </script>
-<!-- test deploy -->
 <main>
   <div class="flex flex-col h-screen bg-indigo-400">
 
