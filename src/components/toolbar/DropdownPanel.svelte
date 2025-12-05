@@ -7,19 +7,26 @@
     export let centered = false;
 
     let panelEl;
+
+    // IMPORTANT: bindable prop, not a function
+    export let registerTrigger = null;
+
     let triggerEl;
 
-    export function registerTrigger(el) {
-        triggerEl = el;
-    }
+    // reactively update triggerEl when parent binds it
+    $: triggerEl = registerTrigger;
 
     function handleClickOutside(e) {
         if (!open) return;
 
-        const inPanel = panelEl && panelEl.contains(e.target);
-        const inTrigger = triggerEl && triggerEl.contains(e.target);
+        const path = e.composedPath();
 
-        if (!inPanel && !inTrigger) close();
+        const inPanel = panelEl && path.includes(panelEl);
+        const inTrigger = triggerEl && path.includes(triggerEl);
+
+        if (inTrigger) return;   // allow toggle
+
+        if (!inPanel) close();
     }
 
     function handleEscape(e) {
@@ -40,7 +47,6 @@
 {#if open}
     <div class="relative">
 
-        <!-- Pointer arrow -->
         <div
             class="absolute z-30 w-0 h-0
                    border-l-8 border-l-transparent
@@ -52,7 +58,6 @@
             }
         />
 
-        <!-- Dropdown panel -->
         <div
             bind:this={panelEl}
             class="absolute z-20 rounded border border-slate-800 text-white flex
@@ -61,9 +66,8 @@
                 ? `width:${width}; left:50%; transform:translateX(-50%); top: calc(100% + 10px);`
                 : `width:${width}; left:0; top: calc(100% + 10px);`
             }
-            role="presentation"
         >
-            <slot />
+            <slot/>
         </div>
     </div>
 {/if}

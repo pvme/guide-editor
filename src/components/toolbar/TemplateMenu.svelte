@@ -30,8 +30,8 @@
         showCopied = false;
     }
 
-    function generateCategorized() {
-        preview = buildToC("categorized");
+    function generateCategorised() {
+        preview = buildToC("categorised");
         showCopied = false;
     }
 
@@ -78,7 +78,7 @@
         showCopied = true;
     }
 </script>
-<div class="relative w-full">
+<div class="relative inline-block">
     <button
         bind:this={trigger}
         class="inline-flex items-center rounded bg-indigo-600 hover:bg-indigo-700
@@ -134,13 +134,13 @@
                 <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
                                border border-indigo-700 p-2 rounded"
                     on:click={generateCompact}>
-                    Compact
+                    Compact ToC
                 </button>
 
                 <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
                                border border-indigo-700 p-2 rounded"
-                    on:click={generateCategorized}>
-                    Categorized
+                    on:click={generateCategorised}>
+                    Categorised ToC
                 </button>
 
             </div>

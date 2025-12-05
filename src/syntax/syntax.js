@@ -8,7 +8,7 @@ const validator = ajv.compile(embedSchema);
 
 function formatError(error) {
     if (error.keyword === 'additionalProperties')
-        return `Unrecognized property '${error.params.additionalProperty}'`;
+        return `Unrecognised property '${error.params.additionalProperty}'`;
     else
         return `'${error.instancePath.slice(1)}' ${error.message}`;
 }
