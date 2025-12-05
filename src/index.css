@@ -186,6 +186,8 @@
 
 .username-wrapper .user-name {
     font-weight: 600;
+
+    /* STATIC: original vibrant gradient */
     background: linear-gradient(90deg, #00cafe 0%, #b44dff 50%, #ff49e1 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -197,6 +199,34 @@
         0 0 20px rgba(255, 73, 225, 0.40),
         0 0 30px rgba(0, 202, 254, 0.35);
 }
+
+.message.first:hover .user-name {
+    background: linear-gradient(
+        90deg,
+        #00cafe,
+        #b44dff,
+        #ff49e1,
+        #00cafe,   /* repeat start → enables seamless loop */
+        #b44dff,
+        #ff49e1,
+        #00cafe
+    );
+
+    background-size: 400% 100%; /* enough room for 2 full cycles */
+    animation: usernameGradientScroll 3s linear infinite;
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Moves exactly ONE cycle width, so it wraps smoothly */
+@keyframes usernameGradientScroll {
+    0%   { background-position:   0% 0%; }
+    100% { background-position: -200% 0%; }
+}
+
+
 
 .app-tag {
     @apply text-[10px] font-bold uppercase rounded px-1.5 py-0.5 leading-none inline-flex items-center;
