@@ -114,7 +114,6 @@
     <Toolbar
       on:command={(e) => runCommand(e.detail)}
       on:toggleView={() => (showView = !showView)}
-      on:toggleScrollBottom={() => (scrollBottom = !scrollBottom)}
     />
 
     <div class="flex-grow flex flex-row overflow-auto">
