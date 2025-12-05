@@ -389,3 +389,26 @@ code.inline {
         background: transparent;
     }
 }
+
+/* -------------------------------
+   MODAL
+-------------------------------- */
+.modal-content p,
+.modal-content li {
+    margin-bottom: 0.25rem;
+}
+
+/* Inline code blocks */
+.modal-content code {
+    background-color: rgb(30 41 59);
+    padding: 1px 3px;
+    border-radius: 2px;
+}
+
+.modal-content td,
+.modal-content th {
+    padding: 5px;
+    border-width: 2px;
+    border-color: rgb(51 65 85 / var(--tw-bg-opacity, 1));
+    border-style: solid;
+}
