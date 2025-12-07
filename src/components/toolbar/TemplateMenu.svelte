@@ -1,7 +1,5 @@
 <script>
 
-    export let insertAtCursor;
-
     import DropdownPanel from "./DropdownPanel.svelte";
     import Button from "./Button.svelte";
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";

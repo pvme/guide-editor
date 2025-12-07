@@ -110,7 +110,15 @@
 <div
   bind:this={container}
   class="discord-view relative"
+  role="button"
+  tabindex="0"
   on:click|capture={handleRootClick}
+  on:keydown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleRootClick(e);
+    }
+  }}
 >
 
   <!-- ============================
