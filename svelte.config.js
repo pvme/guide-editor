@@ -4,7 +4,6 @@ export default {
   preprocess: vitePreprocess(),
   compilerOptions: {
     runes: false,
-    generate: "dom",
     compatibility: { componentApi: 4 }
   }
 };
