@@ -1,4 +1,7 @@
-import { persist, localStorage } from '@macfja/svelte-persistent-store';
+import { persistBrowserLocal } from '@macfja/svelte-persistent-store';
 import { writable } from 'svelte/store';
 
-export let text = persist(writable(''), localStorage(), 'text');
+const base = writable('');
+export let text = typeof window === 'undefined'
+    ? base
+    : persistBrowserLocal(base, 'text');

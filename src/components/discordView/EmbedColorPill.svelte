@@ -18,4 +18,4 @@
     }
 </script>
 
-<div class='embed-color-pill' style='background-color: {computed}'/>
+<div class='embed-color-pill' style='background-color: {computed}'></div>

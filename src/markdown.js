@@ -1,158 +1,187 @@
-import { toHTML, rules, htmlTag } from '@riskymh/discord-markdown';
-import { channels, users, roles, pvmeSpreadsheet } from './pvmeSettings';
-import markdown from 'simple-markdown';
+// src/markdown.js
+//
+// PVME Markdown Renderer
+// -----------------------------------------------------------
+// Features:
+// - Reliable H1/H2/H3 support using protected tokens
+// - PVME spreadsheet refs + channel aliases
+// - Naked URL → attachment capture
+// - Markdown link preset URLs → attachment capture
+// - Clean <br>-based split for Discord-like layout
+// -----------------------------------------------------------
 
+import { toHTML, rules, htmlTag } from "@riskymh/discord-markdown";
+import markdown from "simple-markdown";
+import { channels, users, roles, pvmeSpreadsheet } from "./pvmeSettings";
 
-/* Disable list formatting (work-around)
-For more info, see: https://github.com/pvme/guide-editor/issues/27
-*/
-rules.list.match = () => {
-    return false;
-}
-
-/* Overide blockquote formatting to use discord format. 
-FROM:
-<blockquote>text<br>more text</blockquote>
-
-TO:
-<div class="blockquoteContainer">
-    <div class="blockquoteDivider"></div><blockquote>text<br>more text</blockquote>
-</div> */
-rules.blockQuote.html = (node, output, state) => {
-    // todo: make sure output(node.content, state) is correct
-    const blockQuote = htmlTag('blockquote', output(node.content, state), null, state);
-    const divider = '<div class="blockquoteDivider"></div>' + blockQuote;
-    return htmlTag('div', divider, {class: 'blockquoteContainer'}, state);
-}
-
-/* Overide inline code formatting to use discord format.
-FROM:
-<code>text</code>
-
-TO:
-<code class="inline">text</code> */
-rules.inlineCode.html  = (node, output, state) => {
-    return htmlTag('code', markdown.sanitizeText(node.content.trim()), { class: 'inline' }, state);
-}
-
-// add attachmentUrls for links not contained in <url>
 let messageAttachments = [];
 
+// -----------------------------------------------------------
+// DISCORD-MARKDOWN PATCHES
+// -----------------------------------------------------------
+
+// Disable lists (PVME formats their own lists)
+rules.list.html = () => "";
+
+// PVME blockquote
+rules.blockQuote.html = (node, output, state) => {
+    const inner = output(node.content, state);
+    const block = htmlTag("blockquote", inner, null, state);
+    const divider = `<div class="blockquoteDivider"></div>${block}`;
+    return htmlTag("div", divider, { class: "blockquoteContainer" }, state);
+};
+
+// Inline code
+rules.inlineCode.html = (node, output, state) => {
+    return htmlTag(
+        "code",
+        markdown.sanitizeText(node.content.trim()),
+        { class: "inline" },
+        state
+    );
+};
+
+// Capture naked URLs as attachments
 rules.url.parse = capture => {
-    messageAttachments.push(capture[1]);
+    const url = capture[1];
+    messageAttachments.push(url);
     return {
-        content: [{
-            type: 'text',
-            content: capture[1]
-        }],
-        target: capture[1]
+        content: [{ type: "text", content: url }],
+        target: url
     };
+};
+
+// -----------------------------------------------------------
+// PVME CUSTOM TRANSFORMS
+// -----------------------------------------------------------
+
+// Spreadsheet lookup
+function resolveSpreadsheetRefs(text) {
+    const re = /\$data_pvme:([^$]+)\$/g;
+    const cellRe = /^([^!]+)!([A-Za-z]+)(\d+)$/;
+
+    return text.replace(re, (full, ref) => {
+        const parsed = ref.match(cellRe);
+        let value;
+        if (parsed) {
+            const [, sheet, col, row] = parsed;
+            value = pvmeSpreadsheet?.cells?.[sheet]?.[col]?.[row];
+        } else {
+            value = pvmeSpreadsheet?.cell_aliases?.[ref];
+        }
+        return value ?? full;
+    });
 }
 
-// Adding function to handle masked links with embeddable preset links
-rules.link.parse = capture => {
-    const full   = capture[0];  // "[text](<url>)"
-    const label  = capture[1];
-    const url    = capture[2];  // "https://..."
+// Channel aliases
+function applySpecialChannels(text) {
+    return text
+        .replaceAll("&lt;id:customize&gt;",
+            `<span class="d-mention d-channel">#Channels & Roles</span>`
+        )
+        .replaceAll("&lt;id:guide&gt;",
+            `<span class="d-mention d-channel">#Server Guide</span>`
+        );
+}
 
-    // Detect angle brackets ONLY for masked links
-    // Non-masked links run through rules.url instead and work fine
-    const hasAngleBrackets =
-        full.includes('(<') && full.includes('>)');
+// -----------------------------------------------------------
+// TOKEN-BASED HEADING SYSTEM
+// -----------------------------------------------------------
 
-    const isPvme =
-        url.includes('presets.pvme.io') ||
-        url.includes('img.pvme.io');
+// Before markdown → replace headings with special tokens
+function protectHeadings(text) {
+    return text
+        .replace(/^###\s+(.*)$/gm, (_, t) => `%%PVME_H3%%${t}`)
+        .replace(/^##\s+(.*)$/gm, (_, t) => `%%PVME_H2%%${t}`)
+        .replace(/^#\s+(.*)$/gm, (_, t) => `%%PVME_H1%%${t}`);
+}
 
-    if (isPvme && !hasAngleBrackets) {
+// After markdown → convert tokens to HTML
+function restoreHeadings(html) {
+    return html
+        .replace(/%%PVME_H1%%(.*?)(<br>|$)/g, `<h1 class="pvme-h1">$1</h1>$2`)
+        .replace(/%%PVME_H2%%(.*?)(<br>|$)/g, `<h2 class="pvme-h2">$1</h2>$2`)
+        .replace(/%%PVME_H3%%(.*?)(<br>|$)/g, `<h3 class="pvme-h3">$1</h3>$2`);
+}
+
+// -----------------------------------------------------------
+// LINE SPLITTING
+// -----------------------------------------------------------
+function safeSplitLines(html) {
+    const raw = html.split("<br>");
+
+    // remove trailing blanks
+    while (raw.length > 1 && raw[raw.length - 1].trim() === "") {
+        raw.pop();
+    }
+
+    // convert leading spaces → &nbsp;
+    return raw.map(l =>
+        l.replace(/^(\s+)/, m => m.replace(/ /g, "&nbsp;"))
+    );
+}
+
+// -----------------------------------------------------------
+// MAIN RENDERER
+// -----------------------------------------------------------
+export default function markdownToHTML(input) {
+    messageAttachments = [];
+
+    if (!input.trim()) {
+        return { content: "", lineMap: [], messageAttachments: [] };
+    }
+
+    // 1) PVME transforms
+    let working = resolveSpreadsheetRefs(input);
+    working = applySpecialChannels(working);
+
+    // 2) Heading protection
+    working = protectHeadings(working);
+
+    // -----------------------------------------------------------
+    // PREPASS: detect markdown links to preset URLs
+    // -----------------------------------------------------------
+    const presetLinks = [];
+    working.replace(/\[([^\]]+)\]\((https:\/\/presets\.pvme\.io\/\?id=[^)]+)\)/g,
+        (m, label, url) => {
+            presetLinks.push(url);
+        }
+    );
+
+    // 3) Parse markdown
+    let rendered = toHTML(working, {
+        discordCallback: {
+            channel: n => "#" + channels[n.id],
+            user: n => "@" + users[n.id],
+            role: n => "@" + roles[n.id]
+        },
+        embed: true
+    });
+
+    // Remove trailing <br>
+    rendered = rendered.replace(/(<br>)+$/g, "");
+
+    // 4) Restore heading HTML
+    rendered = restoreHeadings(rendered);
+
+    // 5) Add preset links from markdown-link prepass
+    // (Do NOT scan <a href>; avoids double-embeds)
+    for (const url of presetLinks) {
+        if (input.includes(`<${url}>`)) continue; // escaped with angle brackets → no embed
         messageAttachments.push(url);
     }
 
-    // ALWAYS return a valid AST node
+    // 6) Build lineMap
+    const lines = safeSplitLines(rendered);
+
+    const lineMap = lines.map((html, i) => ({
+        line: i + 1,
+        html
+    }));
+
     return {
-        content: [{
-            type: 'text',
-            content: label
-        }],
-        target: url
+        content: rendered,
+        lineMap,
+        messageAttachments
     };
-}
-
-
-String.prototype.replaceAt = function(startIndex, replacement, endIndex) {
-    return this.substring(0, startIndex) + replacement + this.substring(endIndex);
-}
-
-function formatPVMESpreadsheet(originalContent) {
-    // known bug: currently formats prices in code blocks
-    let content = originalContent;
-
-    const regexp = /\$data_pvme:([^$]+)\$/g;
-    const cellRegexp = /^([^!]+)!([A-Za-z]+)(\d+)$/;
-    const results = [...content.matchAll(regexp)];
-    for (const result of results.reverse()) {
-        const [pvmeFormat, cellId] = result;
-        const startIndex = result.index;
-        const endIndex = startIndex + pvmeFormat.length;
-        
-        const cellMatch = cellId.match(cellRegexp);
-        let cellValue;
-        if (cellMatch) {
-            const [_, worksheet, col, row] = cellMatch;
-            cellValue = pvmeSpreadsheet?.cells?.[worksheet]?.[col]?.[row];
-        } else {
-            cellValue = pvmeSpreadsheet?.cell_aliases?.[cellId];
-        }
-
-        if (cellValue)
-            content = content.replaceAt(startIndex, cellValue, endIndex);
-    }
-    return content;
-}
-
-function formatSpecialChannels(originalContent) {
-    /* Overide inline code formatting to use discord format.
-    FROM:
-    <id:customize>
-    <id:guide>
-
-    TO:
-    <span class="d-mention d-channel">#Channels & Roles</span>
-    <span class="d-mention d-channel">#Server Guide</span>
-    */
-    
-    // known bug: currently formats links in code blocks
-    let content = originalContent;
-    
-    content = content.replaceAll('&lt;id:customize&gt;', `<span class="d-mention d-channel">#Channels & Roles</span>`);
-    // content.replaceAll('&lt;id:customize&gt;', "hi");
-    content = content.replaceAll('&lt;id:guide&gt;', `<span class="d-mention d-channel">#Server Guide</span>`);
-    // content.replaceAll('cool', 'not');
-
-    return content;
-}
-
-export default function markdownToHTML(messageContent) {
-    // todo: linkmsg formatting
-    messageAttachments = [];
-
-    // convert discord markdown to HTML
-    let content = toHTML(messageContent, {
-        discordCallback: {
-            channel: node => '#' + channels[node.id],
-            user: node => '@' + users[node.id],
-            role: node => '@' + roles[node.id]
-        },
-        // allow for named links: [name](url)
-        // may need to be disabled for embed titles? but should never happen
-        embed: true    
-    });
-
-    // format PVME spreadsheet
-    content = formatPVMESpreadsheet(content);
-
-    // format <id:guide> and <id:customize>
-    content = formatSpecialChannels(content);
-
-    return { content, messageAttachments };
 }
