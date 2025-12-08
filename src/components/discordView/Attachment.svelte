@@ -14,9 +14,6 @@
         if (url.match(/https?:\/\/img\.?pvme\.io\/images\/([a-zA-Z0-9]+)\.(png|jpg|jpeg|gif|mp4|webp)/))
             return `<img class='media' src='${url}'>`;
 
-        if (url.match(/https?:\/\/placehold\.co\/([a-zA-Z0-9]+)\.(png|jpg|jpeg|gif|mp4|webp)/))
-            return `<img class='media' src='${url}'>`;
-
         if (url.match(/https?:\/\/presets\.pvme\.io\/?\?id=/)) {
             const id = new URL(url).searchParams.get("id");
             return `<img class='media'
