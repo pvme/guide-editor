@@ -94,7 +94,6 @@
         {open}
         close={() => open = false}
         width="55vw"
-        centered={true}
         bind:registerTrigger={trigger}
     >
         <div class="grid grid-cols-[12rem_1fr] w-full">

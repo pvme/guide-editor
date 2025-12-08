@@ -21,7 +21,6 @@
         {open}
         close={() => open = false}
         width="55vw"
-        centered={true}
         bind:registerTrigger={trigger}
     >
         <div class="p-4 w-full">
