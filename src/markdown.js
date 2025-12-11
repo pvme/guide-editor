@@ -20,6 +20,23 @@ let messageAttachments = [];
 // DISCORD-MARKDOWN PATCHES
 // -----------------------------------------------------------
 
+// Disable default markdown "+" formatting (e.g. <emoji> + <emoji>)
+for (const key of Object.keys(rules)) {
+    const rule = rules[key];
+    if (!rule || typeof rule.match !== "function") continue;
+
+    const originalMatch = rule.match;
+
+    rule.match = function(...args) {
+        const out = originalMatch.apply(this, args);
+        if (!out) return null;
+
+        const text = args[0][0];
+        if (text && text.startsWith("+")) return null;
+        return out;
+    };
+}
+
 // Disable lists (PVME formats their own lists)
 rules.list.html = () => "";
 
