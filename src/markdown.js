@@ -34,6 +34,12 @@ for (const key of Object.keys(rules)) {
 
 // Disable lists (PVME formats their own lists)
 rules.list.html = () => "";
+if (rules.list && typeof rules.list.match === "function") {
+    rules.list.match = () => null;
+}
+if (rules.unorderedList && typeof rules.unorderedList.match === "function") {
+    rules.unorderedList.match = () => null;
+}
 
 // PVME blockquote
 rules.blockQuote.html = (node, output, state) => {
