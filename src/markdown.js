@@ -20,21 +20,16 @@ let messageAttachments = [];
 // DISCORD-MARKDOWN PATCHES
 // -----------------------------------------------------------
 
-// Disable default markdown "+" formatting (e.g. <emoji> + <emoji>)
+// Disable underline rules (++, +text+, +... parsing)
 for (const key of Object.keys(rules)) {
     const rule = rules[key];
     if (!rule || typeof rule.match !== "function") continue;
 
-    const originalMatch = rule.match;
-
-    rule.match = function(...args) {
-        const out = originalMatch.apply(this, args);
-        if (!out) return null;
-
-        const text = args[0][0];
-        if (text && text.startsWith("+")) return null;
-        return out;
-    };
+    // Look for rules that trigger on "+"
+    const src = rule.match.toString();
+    if (src.includes("++") || src.includes("\\+")) {
+        rule.match = () => null;   // disable underline match
+    }
 }
 
 // Disable lists (PVME formats their own lists)
