@@ -79,16 +79,33 @@ async function setUsers() {
 }
 
 async function setEmojis() {
-    const emojisJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis/emojis.json');
+    const emojisJSON = await rawGithubJSONRequest(
+        'https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis/emojis_v2.json'
+    );
+
     emojisFormat = {};
-    for (const category of emojisJSON.categories) {
-        for (const emoji of category.emojis) {
-            const emojiFormat = `<:${emoji.emoji_name}:${emoji.emoji_id}>`;
-            emojisFormat[emoji.emoji_name] = emojiFormat;
-            for (const alias of emoji.aliases) {
+
+    const allEmojis = (emojisJSON.categories || [])
+        .flatMap(category => category.emojis || []);
+
+    for (const emoji of allEmojis) {
+        // Only Discord emojis can be autocompleted
+        if (!emoji.emoji_id) continue;
+
+        const emojiFormat = `<:${emoji.id}:${emoji.emoji_id}>`;
+        emojisFormat[emoji.id] = emojiFormat;
+
+        // Aliases
+        if (Array.isArray(emoji.id_aliases)) {
+            for (const alias of emoji.id_aliases) {
                 emojisFormat[alias] = emojiFormat;
             }
         }
     }
-    emojisFormat["wenspore"] = `<:wenarrow:971025697046925362> <:grico:787904334812807238> <:deathsporearrows:900758234527301642>`
+
+    // hardcode wenspore
+    emojisFormat["wenspore"] =
+        `<:wenarrow:971025697046925362> ` +
+        `<:grico:787904334812807238> ` +
+        `<:deathsporearrows:900758234527301642>`;
 }
