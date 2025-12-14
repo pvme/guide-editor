@@ -28,7 +28,7 @@ export function autocompletionSource(context) {
   const prefix     = m[2];    // "@", "#", or ":"
   const query      = m[3].toLowerCase();
 
-  if (query.length === 0) return null;   // prevent autocomplete until 1+ chars typed
+  if (query.length < 2) return null;  // prevent autocomplete until 2+ chars typed
 
   let raw = [];
 
