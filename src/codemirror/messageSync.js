@@ -5,6 +5,8 @@
 // • Cursor movement in the editor
 // • Message click in preview
 
+import { EditorView } from "@codemirror/view";
+
 export function messageSyncExtension({
   getMessageAtEditorLine,   // (line) → msgIndex
   scrollPreviewToMessage,   // (msgIndex)
@@ -82,8 +84,12 @@ export function scrollEditorToMessage(currentMessages, msgIndex, view) {
   if (!start) return;
 
   const line = view.state.doc.line(start);
+
   view.dispatch({
     selection: { anchor: line.from },
-    scrollIntoView: true
+    effects: EditorView.scrollIntoView(line.from, {
+      y: "center",
+      yMargin: 80
+    })
   });
 }
