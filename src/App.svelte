@@ -10,6 +10,7 @@
   import { text } from "./stores";
   import { populateConstants } from "./pvmeSettings";
   import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
+  import GuideLoadModal from "./components/GuideLoadModal.svelte";
   import {
     pvmeExtensions,
     commandDispatch,
@@ -177,16 +178,23 @@
 
     view.focus();
   }
+
+  function handleGuideSearchSelect(guide) {
+    pendingGuide = guide;
+    showGuideModal = true;
+  }
 </script>
 
 <main>
-  <div class="flex flex-col h-screen bg-indigo-400">
+  <div class="flex flex-col h-screen bg-slate-900">
 
     <Toolbar
       {insertAtCursor}
       on:command={(e) => runCommand(e.detail)}
       on:toggleView={() => (showView = !showView)}
+      on:loadGuide={(e) => handleGuideSearchSelect(e.detail)}
     />
+
 
     <div class="flex-grow flex flex-row overflow-auto">
 
@@ -223,34 +231,11 @@
     </div>
   </div>
 
-  {#if showGuideModal}
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-xl p-6 w-[380px]">
-
-        <h2 class="text-xl font-semibold text-white mb-4">
-          Load Guide
-        </h2>
-
-        <p class="text-slate-300 mb-6 leading-relaxed">
-          Load the <span class="text-indigo-400 font-medium">{pendingGuide?.name}</span> guide?<br/>
-          This will overwrite your current editor content.
-        </p>
-
-        <div class="flex justify-end gap-3">
-          <button
-            on:click={cancelLoadGuide}
-            class="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 transition">
-            Cancel
-          </button>
-
-          <button
-            on:click={confirmLoadGuide}
-            class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition">
-            Load Guide
-          </button>
-        </div>
-      </div>
-    </div>
-  {/if}
+  <GuideLoadModal
+    open={showGuideModal}
+    guide={pendingGuide}
+    on:confirm={confirmLoadGuide}
+    on:cancel={cancelLoadGuide}
+  />
 
 </main>
