@@ -174,7 +174,7 @@
                       data-msg-index={i}
                       role="button"
                       tabindex="0"
-                      on:click={(e) => handleMessageClick(i, e)}
+                      on:dblclick={(e) => handleMessageClick(i, e)}
                       on:keydown={(e) => {
                         if (e.target.closest("a[href]")) return;
                         if (e.key === "Enter" || e.key === " ") {
