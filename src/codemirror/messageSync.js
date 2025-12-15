@@ -38,8 +38,6 @@ export function messageSyncExtension({
 
 // ---------------------------------------------------------------------------
 // DEFAULT HANDLER IMPLEMENTATIONS
-// These were previously inside App.svelte.
-// Cleanly export them so App.svelte can import and plug them into the extension.
 // ---------------------------------------------------------------------------
 
 export function getMessageAtEditorLine(currentMessages, line) {
