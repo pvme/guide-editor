@@ -136,7 +136,7 @@ Content maintained by: [<@123>]
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide…*\\n⬥ [Disclaimer]($linkmsg_disclaimer$)\\n⬥ [Method 1]($linkmsg_method1$)\\n⬥ [Example Kills]($linkmsg_examples$)",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*\\n⬥ [Disclaimer]($linkmsg_disclaimer$)\\n⬥ [Method 1]($linkmsg_method1$)\\n⬥ [Example Kills]($linkmsg_examples$)",
     "color": 39423
   }
 }
@@ -193,7 +193,7 @@ Example kill - [Youtube Link](<#>)
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide…*",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*",
     "fields": [
       {
         "name": "__Information__",
