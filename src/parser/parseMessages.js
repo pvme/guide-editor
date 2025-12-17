@@ -74,32 +74,66 @@ export function parseMessages(rawText) {
         const lineMap = [];
         let ln = 1;
 
-        for (const part of current.rawParts) {
+        let textBuffer = [];
+        let bufferStartLine = null;
 
-            // ---------------- TEXT ----------------
-            if (part.type === "text") {
-                const rendered = markdownToHTML(part.raw);
+        function flushTextBuffer() {
+            if (!textBuffer.length) return;
 
-                for (const entry of rendered.lineMap) {
-                    lineMap.push({
-                        type: "text",
-                        html: entry.html,
-                        line: ln++
-                    });
-                }
+            const joined = textBuffer.join("\n");
+            const rendered = markdownToHTML(joined);
 
-                // naked URL attachments
-                for (const url of rendered.messageAttachments) {
-                    lineMap.push({
-                        type: "attachment",
-                        url,
-                        line: ln++
-                    });
-                }
+            for (const entry of rendered.lineMap) {
+                lineMap.push({
+                    type: "text",
+                    html: entry.html,
+                    line: ln++
+                });
             }
 
-            // ---------------- CODE BLOCK (NEW) ----------------
-            else if (part.type === "codeblock") {
+            // attachments from markdown (OG / preset embeds)
+            for (const url of rendered.messageAttachments) {
+                lineMap.push({
+                    type: "attachment",
+                    kind: "embed",
+                    url,
+                    line: ln++
+                });
+            }
+
+            textBuffer = [];
+            bufferStartLine = null;
+        }
+
+        for (const part of current.rawParts) {
+
+            if (part.type === "text") {
+                if (bufferStartLine === null) {
+                    bufferStartLine = part.editorLine;
+                }
+                textBuffer.push(part.raw);
+                continue;
+            }
+
+            // Non-text part → flush text first
+            flushTextBuffer();
+
+            if (part.type === "blockquote") {
+                const rendered = markdownToHTML(part.raw);
+
+                lineMap.push({
+                    type: "text",
+                    html: `<div class="blockquoteContainer">
+                        <div class="blockquoteDivider"></div>
+                        <blockquote>${rendered.content}</blockquote>
+                      </div>`,
+                    line: ln++
+                });
+
+                continue;
+            }
+
+            if (part.type === "codeblock") {
                 lineMap.push({
                     type: "text",
                     html: `<pre class="pvme-codeblock"><code>${escapeHTML(
@@ -109,24 +143,33 @@ export function parseMessages(rawText) {
                 });
             }
 
-            // ---------------- INLINE ATTACHMENT ----------------
             else if (part.type === "attachment") {
                 lineMap.push({
                     type: "attachment",
+                    kind: part.kind || "direct",
                     url: part.url,
                     line: ln++
                 });
             }
 
-            // ---------------- EMBED ----------------
             else if (part.type === "embed") {
                 lineMap.push({
                     type: "embed",
                     embed: part.embed,
                     line: ln++
                 });
+
+                lineMap.push({
+                    type: "text",
+                    html: "",
+                    line: ln++
+                });
             }
+
         }
+
+        // Flush any remaining text
+        flushTextBuffer();
 
         // Embed that belongs to whole message
         if (current.embed && !current.rawParts.some(p => p.type === "embed")) {
@@ -269,6 +312,7 @@ export function parseMessages(rawText) {
                         if (param) {
                             current.rawParts.push({
                                 type: "attachment",
+                                kind: "direct",
                                 url: param,
                                 editorLine: lineNum
                             });
@@ -304,6 +348,23 @@ export function parseMessages(rawText) {
                 raw: "",
                 editorLine: lineNum
             });
+            continue;
+        }
+
+        // BLOCKQUOTE
+        if (trimmed.startsWith(">")) {
+            const content = raw.replace(/^>\s?/, "");
+
+            const last = current.rawParts[current.rawParts.length - 1];
+            if (last && last.type === "blockquote") {
+                last.raw += "\n" + content;
+            } else {
+                current.rawParts.push({
+                    type: "blockquote",
+                    raw: content,
+                    editorLine: lineNum
+                });
+            }
             continue;
         }
 

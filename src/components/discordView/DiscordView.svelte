@@ -1,7 +1,6 @@
 <script>
   import { createEventDispatcher, afterUpdate, onMount } from "svelte";
   import Message from "./Message.svelte";
-  import Avatar from "./Avatar.svelte";
   import Bot from "./Bot.svelte";
   import { parseMessages } from "../../parser/parseMessages.js";
 
@@ -163,10 +162,10 @@
             <div class="scroller messages">
               <div class="message-group">
 
-                <Avatar />
-
                 <div class="comment">
-                  <div class="message first"><Bot /></div>
+                  <div class="message first">
+                    <Bot />
+                  </div>
 
                   {#each messages as msg, i}
                     <div

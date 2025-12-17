@@ -13,12 +13,16 @@
     </div>
 
   {:else if item.type === "attachment"}
-    <div class="pvme-line attachment" data-src-line={item.line + globalOffset}>
+    <div
+      class="pvme-line attachment attachment--{item.kind}"
+      data-src-line={item.line + globalOffset}
+    >
       <Attachment url={item.url} />
     </div>
 
   {:else if item.type === "embed"}
-    <div class="pvme-line embed" data-src-line={item.line + globalOffset}>
+    <div class="pvme-line embed"
+      data-src-line={item.line + globalOffset}>
       <Embed {...item.embed} />
     </div>
   {/if}

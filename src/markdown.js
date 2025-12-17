@@ -41,14 +41,6 @@ if (rules.unorderedList && typeof rules.unorderedList.match === "function") {
     rules.unorderedList.match = () => null;
 }
 
-// PVME blockquote
-rules.blockQuote.html = (node, output, state) => {
-    const inner = output(node.content, state);
-    const block = htmlTag("blockquote", inner, null, state);
-    const divider = `<div class="blockquoteDivider"></div>${block}`;
-    return htmlTag("div", divider, { class: "blockquoteContainer" }, state);
-};
-
 // Inline code
 rules.inlineCode.html = (node, output, state) => {
     return htmlTag(
@@ -114,27 +106,73 @@ function protectHeadings(text) {
         .replace(/^#\s+(.*)$/gm, (_, t) => `%%PVME_H1%%${t}`);
 }
 
-// After markdown → convert tokens to HTML
 function restoreHeadings(html) {
     return html
-        .replace(/%%PVME_H1%%(.*?)(<br>|$)/g, `<h1 class="pvme-h1">$1</h1>$2`)
-        .replace(/%%PVME_H2%%(.*?)(<br>|$)/g, `<h2 class="pvme-h2">$1</h2>$2`)
-        .replace(/%%PVME_H3%%(.*?)(<br>|$)/g, `<h3 class="pvme-h3">$1</h3>$2`);
+        .replace(/%%PVME_H1%%([\s\S]*?)(?=<br>|$)/g, `<h1 class="pvme-h1">$1</h1>`)
+        .replace(/%%PVME_H2%%([\s\S]*?)(?=<br>|$)/g, `<h2 class="pvme-h2">$1</h2>`)
+        .replace(/%%PVME_H3%%([\s\S]*?)(?=<br>|$)/g, `<h3 class="pvme-h3">$1</h3>`)
 }
+
 
 // -----------------------------------------------------------
 // LINE SPLITTING
 // -----------------------------------------------------------
 function safeSplitLines(html) {
-    const raw = html.split("<br>");
+    const lines = [];
+    let buffer = "";
+    let depth = 0;
 
-    // remove trailing blanks
-    while (raw.length > 1 && raw[raw.length - 1].trim() === "") {
-        raw.pop();
+    for (let i = 0; i < html.length; i++) {
+        const char = html[i];
+
+        // Track tag depth
+        if (html.startsWith("<br>", i) && depth === 0) {
+            lines.push(buffer);
+            buffer = "";
+            i += 3;
+            continue;
+        }
+
+        if (char === "<") {
+            const tagEnd = html.indexOf(">", i);
+            const tag = html.slice(i, tagEnd + 1);
+
+            if (tag.startsWith("<div class=\"blockquoteContainer\"")) {
+                depth++;
+            } else if (tag === "</div>" && depth > 0) {
+                depth--;
+            }
+
+            buffer += tag;
+            i = tagEnd;
+            continue;
+        }
+
+        // Only split on <br> at top level
+        if (
+            depth === 0 &&
+            html.startsWith("<br>", i)
+        ) {
+            lines.push(buffer);
+            buffer = "";
+            i += 3;
+            continue;
+        }
+
+        buffer += char;
     }
 
-    // convert leading spaces → &nbsp;
-    return raw.map(l =>
+    if (buffer) {
+        lines.push(buffer);
+    }
+
+    // Trim trailing empty lines
+    while (lines.length > 1 && lines[lines.length - 1].trim() === "") {
+        lines.pop();
+    }
+
+    // Preserve leading spaces
+    return lines.map(l =>
         l.replace(/^(\s+)/, m => m.replace(/ /g, "&nbsp;"))
     );
 }

@@ -20,35 +20,33 @@
     export let selected = false;
 </script>
 
-<div class='accessory'>
-    <div class='embed-wrapper'>
-        <EmbedColorPill {color} />
-        <div class='embed embed-rich' class:selected={selected}>
-            <div class='embed-content'>
-                <div class='embed-content-inner'>
-                    {#if author}
-                        <EmbedAuthor {...author} />
-                    {/if}
-                    {#if title}
-                        <EmbedTitle title={title} url={url} />
-                    {/if}
-                    {#if description}
-                        <EmbedDescription content={description} />
-                    {/if}
-                    {#if fields}
-                        <EmbedFields {fields} />
-                    {/if}
-                </div>
-                {#if thumbnail}
-                    <EmbedThumbnail {thumbnail} />
+<div class='embed-wrapper'>
+    <EmbedColorPill {color} />
+    <div class='embed embed-rich' class:selected={selected}>
+        <div class='embed-content'>
+            <div class='embed-content-inner'>
+                {#if author}
+                    <EmbedAuthor {...author} />
+                {/if}
+                {#if title}
+                    <EmbedTitle title={title} url={url} />
+                {/if}
+                {#if description}
+                    <EmbedDescription content={description} />
+                {/if}
+                {#if fields}
+                    <EmbedFields {fields} />
                 {/if}
             </div>
-            {#if image}
-                <EmbedImage {image} />
-            {/if}
-            {#if footer}
-                <EmbedFooter {...footer} />
+            {#if thumbnail}
+                <EmbedThumbnail {thumbnail} />
             {/if}
         </div>
+        {#if image}
+            <EmbedImage {image} />
+        {/if}
+        {#if footer}
+            <EmbedFooter {...footer} />
+        {/if}
     </div>
 </div>
