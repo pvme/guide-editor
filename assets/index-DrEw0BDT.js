@@ -204,7 +204,7 @@ Content maintained by: [<@123>]
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide…*\\n⬥ [Disclaimer]($linkmsg_disclaimer$)\\n⬥ [Method 1]($linkmsg_method1$)\\n⬥ [Example Kills]($linkmsg_examples$)",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*\\n⬥ [Disclaimer]($linkmsg_disclaimer$)\\n⬥ [Method 1]($linkmsg_method1$)\\n⬥ [Example Kills]($linkmsg_examples$)",
     "color": 39423
   }
 }
@@ -258,7 +258,7 @@ Example kill - [Youtube Link](<#>)
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide…*",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*",
     "fields": [
       {
         "name": "__Information__",
@@ -308,7 +308,7 @@ Are you running on a server? Most of storages are not available while running on
                text-white px-4 py-2 text-sm border border-indigo-700">Template&nbsp;<!></button> <!></div>`);function aA(n,e){if(new.target)return we({component:aA,...n});Ne(e,!1);const[t,r]=mC(),i=()=>_C(ha,"$text",t);let a=Ve(!1),s=Ve(),o=Ve(""),l=Ve(!1);function c(E){de(o,E),de(l,!1)}function d(){de(o,p("compact")),de(l,!1)}function u(){de(o,p("categorised")),de(l,!1)}function p(E){const T=[...i().matchAll(/\n.tag:([^\n]+)/g)],v=x=>x.charAt(0).toUpperCase()+x.slice(1),R=T.map(x=>`⬥ [${v(x[1])}]($linkmsg_${x[1]}$)`).join("\\n");return E==="compact"?`{
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide…*\\n${R}",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*\\n${R}",
     "color": 39423
   }
 }
@@ -316,7 +316,7 @@ Are you running on a server? Most of storages are not available while running on
 .pin:delete`:`{
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide…*",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*",
     "color": 39423,
     "fields": [
       {
