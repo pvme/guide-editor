@@ -73,8 +73,14 @@ export function scrollPreviewToMessage(index) {
   const container = document.querySelector(".discord-view");
   if (!target || !container) return;
 
+  const targetCentre =
+    target.offsetTop + target.offsetHeight / 2;
+
+  const containerCentre =
+    container.clientHeight / 2;
+
   container.scrollTo({
-    top: target.offsetTop - 50,
+    top: targetCentre - containerCentre,
     behavior: "smooth"
   });
 }
