@@ -307,6 +307,16 @@ function findSyntaxErrors(text) {
 			message.text = "\u200b";
 		}
 
+		const linkWithDiscordEmoji = /\[[^\]]*<a?:\w+:\d+>[^\]]*\]\([^)]+\)/g;
+
+		if (linkWithDiscordEmoji.test(message.text)) {
+			results.push({
+				line: [message.firstline, message.lastline],
+				type: "error",
+				text: "Discord emoji must not appear inside markdown link text"
+			});
+		}
+
 		if (message.text.length > 2000) {
 			results.push({
 				line: [ message.firstline, message.lastline ],
