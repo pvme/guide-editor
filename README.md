@@ -4,8 +4,6 @@ Editor for [PVME Discord](https://discord.gg/6djqFVN) guides:
 
 ## Development
 
-Check out https://github.com/pvme/guide-editor/issues/2
-
 **install packages**
 
 ```
