@@ -110,7 +110,7 @@
 
     <ul class="list-disc ml-6 mt-1">
         <li><strong>Click the preview</strong> → jumps to the matching line in the editor</li>
-        <li><strong>Click the editor</strong> → highlights & scrolls the matching message in the preview</li>
+        <li><strong>Double-click the editor</strong> → highlights & scrolls the matching message in the preview</li>
     </ul>
 
     <p class="mt-2">

@@ -196,7 +196,7 @@
     />
 
 
-    <div class="flex-grow flex flex-row overflow-auto">
+    <div class="flex-1 flex flex-row overflow-hidden">
 
       <!-- EDITOR -->
       <div
@@ -206,7 +206,7 @@
       >
         <div
           bind:this={inputEl}
-          class="editor cm6-container h-full flex flex-col"
+          class="editor cm6-container flex-1 flex flex-col overflow-hidden"
         ></div>
 
         <ErrorView text={validText} />
