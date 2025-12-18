@@ -154,6 +154,10 @@
    MODAL
    ======================================================= */
 
+.modal-backdrop {
+    height: 100vh;
+}
+
 .modal-content p,
 .modal-content li {
     margin-bottom: 0.25rem;
