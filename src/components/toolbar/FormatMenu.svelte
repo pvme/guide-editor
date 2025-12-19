@@ -3,6 +3,7 @@
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
 
     // Formatting icons
+    import BlockquoteLeft from "svelte-bootstrap-icons/lib/BlockquoteLeft.svelte";
     import CodeSquare from "svelte-bootstrap-icons/lib/CodeSquare.svelte";
     import Code from "svelte-bootstrap-icons/lib/Code.svelte";
     import TypeBold from "svelte-bootstrap-icons/lib/TypeBold.svelte";
@@ -47,7 +48,8 @@
         },
         {
             buttons: [
-                { cmd: "inlineCode", icon: Code,      title: "Inline Code" },
+                { cmd: "blockquote", icon: BlockquoteLeft, title: "Blockquote" },
+                { cmd: "inlineCode", icon: Code, title: "Inline Code" },
                 { cmd: "codeBlock",  icon: CodeSquare, title: "Code Block" }
             ]
         }
@@ -120,8 +122,3 @@
         </div>
     </DropdownPanel>
 </div>
-
-
-<style>
-    /* optional tight spacing on small screens */
-</style>
