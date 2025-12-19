@@ -12,7 +12,8 @@ import {
   toggleBold, toggleItalic, toggleUnderline, toggleStrikethrough,
   toggleH1, toggleH2, toggleH3,
   insertUnorderedList, insertOrderedList,
-  formatInlineCode, formatCodeBlock
+  formatInlineCode, formatCodeBlock,
+  formatBlockquote
 } from "./commands.js";
 
 import { autocompletionSource } from "./autocomplete.js";
@@ -90,6 +91,7 @@ export function pvmeExtensions(textStore, syncApi) {
       h3: toggleH3,
       unorderedList: insertUnorderedList,
       orderedList: insertOrderedList,
+      blockquote: formatBlockquote,
       inlineCode: formatInlineCode,
       codeBlock: formatCodeBlock
     }),

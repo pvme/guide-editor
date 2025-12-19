@@ -136,6 +136,54 @@ export const toggleH3 = ({ state, dispatch }) => {
 };
 
 /* ------------------------------------------------------------------
+   BLOCKQUOTE
+------------------------------------------------------------------- */
+
+export const formatBlockquote = ({ state, dispatch }) => {
+  const sel = state.selection.main;
+
+  const fromLine = state.doc.lineAt(sel.from);
+  const toLine = state.doc.lineAt(sel.to);
+
+  const changes = [];
+
+  for (let i = fromLine.number; i <= toLine.number; i++) {
+    const line = state.doc.line(i);
+
+    // toggle behaviour: remove if already quoted
+    if (line.text.startsWith("> ")) {
+      changes.push({
+        from: line.from,
+        to: line.from + 2,
+        insert: ""
+      });
+    } else if (line.text.startsWith(">")) {
+      changes.push({
+        from: line.from,
+        to: line.from + 1,
+        insert: ""
+      });
+    } else {
+      changes.push({
+        from: line.from,
+        insert: "> "
+      });
+    }
+  }
+
+  if (!changes.length) return true;
+
+  dispatch(
+    state.update({
+      changes,
+      selection: sel
+    })
+  );
+
+  return true;
+};
+
+/* ------------------------------------------------------------------
    INLINE CODE
 ------------------------------------------------------------------- */
 
