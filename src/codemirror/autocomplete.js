@@ -12,6 +12,36 @@ export function autocompletionSource(context) {
 
   const text = line.text.slice(0, pos - line.from);
 
+  // CLOSED EMOJI PREVIEW (:emoji:)
+  const closedEmoji = text.match(/:([a-zA-Z0-9_-]{2,}):$/);
+  if (closedEmoji) {
+    const name = closedEmoji[1].toLowerCase();
+    const matches = Object.keys(emojisFormat)
+      .filter(e => e.toLowerCase() === name);
+    if (matches.length === 1) {
+      const emojiName = matches[0];
+      const insertText = emojisFormat[emojiName];
+      const from = pos - (name.length + 2); // ":res:"
+      const to   = pos;
+      return {
+        from,
+        to,
+        options: [{
+          label: emojiName,
+          type: "emoji",
+          text: insertText,
+          detail: "Press Enter to insert",
+          apply(view) {
+            view.dispatch({
+              changes: { from, to, insert: insertText }
+            });
+          }
+        }],
+        filter: false
+      };
+    }
+  }
+
   // MATCHES:
   // @user, ;@user
   // #chan, ;#chan
@@ -75,6 +105,7 @@ export function autocompletionSource(context) {
     options: raw.map(item => ({
       label: item.label,
       type: item.type || undefined,
+      text: item.insertText,
       detail: "",
       info: "",
       applyText: item.insertText,
