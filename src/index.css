@@ -7,60 +7,60 @@
    ======================================================= */
 
 @font-face {
-    font-family: "gg sans";
-    src: url("/ggsans/ggsans.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
+  font-family: "gg sans";
+  src: url("/ggsans/ggsans.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 @font-face {
-    font-family: "gg sans";
-    src: url("/ggsans/ggsansitalic.woff2") format("woff2");
-    font-weight: 400;
-    font-style: italic;
-    font-display: swap;
+  font-family: "gg sans";
+  src: url("/ggsans/ggsansitalic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
 }
 @font-face {
-    font-family: "gg sans";
-    src: url("/ggsans/ggsansmedium.woff2") format("woff2");
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
+  font-family: "gg sans";
+  src: url("/ggsans/ggsansmedium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
 }
 @font-face {
-    font-family: "gg sans";
-    src: url("/ggsans/ggsansmediumitalic.woff2") format("woff2");
-    font-weight: 500;
-    font-style: italic;
-    font-display: swap;
+  font-family: "gg sans";
+  src: url("/ggsans/ggsansmediumitalic.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
 }
 @font-face {
-    font-family: "gg sans";
-    src: url("/ggsans/ggsanssemibold.woff2") format("woff2");
-    font-weight: 600;
-    font-style: normal;
-    font-display: swap;
+  font-family: "gg sans";
+  src: url("/ggsans/ggsanssemibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
 }
 @font-face {
-    font-family: "gg sans";
-    src: url("/ggsans/ggsanssemibolditalic.woff2") format("woff2");
-    font-weight: 600;
-    font-style: italic;
-    font-display: swap;
+  font-family: "gg sans";
+  src: url("/ggsans/ggsanssemibolditalic.woff2") format("woff2");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
 }
 @font-face {
-    font-family: "gg sans";
-    src: url("/ggsans/ggsansbold.woff2") format("woff2");
-    font-weight: 800;
-    font-style: normal;
-    font-display: swap;
+  font-family: "gg sans";
+  src: url("/ggsans/ggsansbold.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
 }
 @font-face {
-    font-family: "gg sans";
-    src: url("/ggsans/ggsansbolditalic.woff2") format("woff2");
-    font-weight: 800;
-    font-style: italic;
-    font-display: swap;
+  font-family: "gg sans";
+  src: url("/ggsans/ggsansbolditalic.woff2") format("woff2");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
 }
 
 /* =======================================================
@@ -68,29 +68,29 @@
    ======================================================= */
 
 .cm-editor {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    padding-top: 8px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
 }
 
 .cm-scroller {
-    flex: 1;
-    overflow: auto;
+  flex: 1;
+  overflow: auto;
 }
 
 .cm-content {
-    font-size: 14px;
-    line-height: 1.2;
+  font-size: 14px;
+  line-height: 1.2;
 }
 
 .cm-gutter {
-    font-size: 14px;
-    margin-left: 10px;
+  font-size: 14px;
+  margin-left: 10px;
 }
 
 .cm-activeLine {
-    background-color: rgb(160 195 255 / 14%) !important;
+  background-color: rgb(160 195 255 / 14%) !important;
 }
 
 /* =======================================================
@@ -98,42 +98,42 @@
    ======================================================= */
 
 .cm-tooltip.cm-tooltip-autocomplete {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 .cm-tooltip.cm-tooltip-autocomplete > ul {
-    background: #1f2937;
-    border: 1px solid #374151;
-    border-radius: 0.5rem;
-    padding: 0.25rem;
-    max-height: 300px;
-    overflow-y: auto;
-    box-shadow:
-        0 8px 20px rgba(0, 0, 0, 0.45),
-        0 0 10px rgba(0, 0, 0, 0.25);
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.45),
+    0 0 10px rgba(0, 0, 0, 0.25);
 }
 
 .cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .cm-completionItem {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    color: #e5e7eb;
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #e5e7eb;
+  cursor: pointer;
 }
 
 .cm-completionItem[aria-selected] {
-    background: #2563eb !important;
-    color: white !important;
+  background: #2563eb !important;
+  color: white !important;
 }
 
 /* =======================================================
@@ -141,13 +141,22 @@
    ======================================================= */
 
 @keyframes pop {
-    0% { opacity: 0; transform: scale(0.85) translate(-50%, -100%); }
-    60% { opacity: 1; transform: scale(1.05) translate(-50%, -100%); }
-    100% { opacity: 1; transform: scale(1.0) translate(-50%, -100%); }
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translate(-50%, -100%);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) translate(-50%, -100%);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translate(-50%, -100%);
+  }
 }
 
 .animate-pop {
-    animation: pop 0.18s ease-out;
+  animation: pop 0.18s ease-out;
 }
 
 /* =======================================================
@@ -155,24 +164,45 @@
    ======================================================= */
 
 .modal-backdrop {
-    height: 100vh;
+  height: 100vh;
 }
 
 .modal-content p,
 .modal-content li {
-    margin-bottom: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 
 .modal-content code {
-    background-color: rgb(30 41 59);
-    padding: 1px 3px;
-    border-radius: 2px;
+  background-color: rgb(30 41 59);
+  padding: 1px 3px;
+  border-radius: 2px;
 }
 
 .modal-content td,
 .modal-content th {
-    padding: 5px;
-    border-width: 2px;
-    border-style: solid;
-    border-color: rgb(51 65 85 / var(--tw-bg-opacity, 1));
+  padding: 5px;
+  border-width: 2px;
+  border-style: solid;
+  border-color: rgb(51 65 85 / var(--tw-bg-opacity, 1));
+}
+
+/* =======================================================
+   BUTTON GROUPS
+   ======================================================= */
+
+@layer components {
+  .group-btn {
+    @apply bg-indigo-600
+           hover:bg-indigo-700
+           active:bg-indigo-800
+           border border-indigo-700
+           px-3 py-2
+           text-left
+           text-sm
+           transition-colors
+           duration-150;
+  }
+  .group-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
 }
