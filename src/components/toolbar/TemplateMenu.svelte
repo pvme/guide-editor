@@ -7,7 +7,7 @@
     import { text } from "../../stores";
 
     import {
-        guide,
+        bossGuide,
         afkGuide,
         slayerGuide,
         embedTextFormatting
@@ -77,7 +77,7 @@
     }
 
     // Initialise
-    setTemplate(guide)
+    setTemplate(bossGuide)
 
 </script>
 <div class="relative inline-block">
@@ -99,50 +99,57 @@
         <div class="grid grid-cols-[12rem_1fr] w-full">
 
             <!-- LEFT SIDEBAR -->
-            <div class="flex flex-col text-sm p-3 w-full">
+            <div class="flex flex-col text-sm p-3 w-full gap-4">
 
-                <div class="font-semibold mb-1">Guides</div>
+                <!-- Guides -->
+                <div>
+                    <div class="font-semibold mb-2 text-indigo-200">Guides</div>
 
-                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 rounded"
-                    on:click={() => setTemplate(guide)}>
-                    Full Guide
-                </button>
+                    <div class="flex flex-col">
+                        <button
+                            class="group-btn rounded-t-md"
+                            on:click={() => setTemplate(bossGuide)}>
+                            Boss Guide
+                        </button>
 
-                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 rounded"
-                    on:click={() => setTemplate(afkGuide)}>
-                    AFK Guide
-                </button>
+                        <button
+                            class="group-btn border-t-0"
+                            on:click={() => setTemplate(afkGuide)}>
+                            AFK Guide
+                        </button>
 
-                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 rounded"
-                    on:click={() => setTemplate(slayerGuide)}>
-                    Slayer Guide
-                </button>
+                        <button
+                            class="group-btn border-t-0 rounded-b-md"
+                            on:click={() => setTemplate(slayerGuide)}>
+                            Slayer Guide
+                        </button>
+                    </div>
+                </div>
 
-                <div class="border-t border-indigo-800 my-2"></div>
+                <!-- Embeds -->
+                <div>
+                    <div class="font-semibold mb-2 text-indigo-200">Embeds</div>
 
-                <div class="font-semibold mb-1">Embeds</div>
+                    <div class="flex flex-col">
+                        <button
+                            class="group-btn rounded-t-md"
+                            on:click={() => setTemplate(embedTextFormatting)}>
+                            Embed
+                        </button>
 
+                        <button
+                            class="group-btn border-t-0"
+                            on:click={generateCompact}>
+                            Compact ToC
+                        </button>
 
-                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 rounded"
-                    on:click={() => setTemplate(embedTextFormatting)}>
-                    Embed
-                </button>
-
-                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 rounded"
-                    on:click={generateCompact}>
-                    Compact ToC
-                </button>
-
-                <button class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 rounded"
-                    on:click={generateCategorised}>
-                    Categorised ToC
-                </button>
+                        <button
+                            class="group-btn border-t-0 rounded-b-md"
+                            on:click={generateCategorised}>
+                            Categorised ToC
+                        </button>
+                    </div>
+                </div>
 
             </div>
 

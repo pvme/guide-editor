@@ -2,71 +2,71 @@
 // Template Data for TemplateMenu
 // --------------------------------------------------------------
 
-export const disclaimer = 
-`. 
+export const disclaimer = `.
 > ## ⚠️ Disclaimer
 > **This guide may not work after changes to [INSERT DESCRIPTION HERE]**
 > Know of a newer method/rotation? Share it in <#1020853673317908500> to help keep this guide up-to-date!
 `;
 
-export const guide = 
-`# __Boss Name__
-.img:https://img.pvme.io/images/ssAwdSFcqC.png
-*Note: a **Table of Contents** can be found in the pins.*
+export const bossGuide = `# <Boss Name> — Boss Guide
+.img:https://img.pvme.io/images/dx3gXBIgpJ.png
 
 .
-## __Introduction__
-.tag:intro
-[Intro to the boss, key reasons for hunting it and any overall guide commentary.]
+## __General Information__
+.tag:generalInfo
+⬥ <Boss overview: LP, phases, immunities, enrage, etc. - see previous examples created in this thread>
+⬥ <Boss Name> has <Life points> LP, across <a single fight phase / X fight phases>.
+⬥ <Boss Name> is immune to <list immunities>.
 
-This is an **advanced guide** which assumes a strong underlying knowledge of all mechanics and information presented in <\\#linkbasicguide>.
-
-.
-## <:melee:1096130867279171706> __Melee Strategy__ [copy section below for each combat style]
-.tag:melee
-### __Preset Suggestions__
-.tag:presets
-⬥ [Melee - Basic](https://presets.pvme.io/?id=<presetID>) <:melee:1096130867279171706>
-⬥ [Melee - Advanced](https://presets.pvme.io/?id=<presetID>) <:melee:1096130867279171706>
+Other guides: link to forum of rotation guides, mechanics if they exist, afk if that exists etc.
 
 .
-### __Rotations__
-.tag:rotations
-This rotation aims for [use one of these patterns: 4:00–4:30 / sub-3m / 15–17s] kill times.
+## __Gear, Relics and Familiars__
+.tag:GearRelicsFamiliars
+:Combat style icon: [Combat style name](<preset_link>)
 
 .
-**Outside instance**
-[At wars / outside gate]
-
-**Inside instance**
-[Before boss spawns]
-
-**Main fight**
-[When boss spawns]
+## __Fight Mechanics__
+.tag:fightMechanics
+⬥ <Key requirements or notable restrictions that cover the entire fight>
 
 .
-## __Example Kills__
-.tag:examples
-<:melee:1096130867279171706> Melee example kills - [Youtube Link](<#>)
-.
+### Attack Rotation
+<High-level boss attack order>
+*Repeat*
 
 .
-Content managed by: [<@123>]
-Content maintained by: [<@123>]
+### <Name of Mechanic 1> [(Example gif link)](<example_link>)
+**Mechanic:**
+<What the boss does>
+**Solution:**
+⬥ <Responses>
+
+.
+### <Name of Mechanic 2> [(Example gif link)](<example_link>)
+**Mechanic:**
+<What the boss does>
+**Solution:**
+⬥ <Responses>
+
+
+.
+## __Videos__
+.tag:videos
+⬥ [Example kill](<video_link>)
 
 .
 {
   "embed": {
     "title": "__Table of Contents__",
-    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*\\n⬥ [Introduction]($linkmsg_intro$)\\n⬥ [Melee Strategy]($linkmsg_melee$)\\n\\u00a0\\u00a0\\u00a0\\u00a0• [Preset Suggestions]($linkmsg_presets$)\\n\\u00a0\\u00a0\\u00a0\\u00a0• [Rotations]($linkmsg_rotations$)\\n⬥ [Example Kills]($linkmsg_examples$)",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*\\n⬥ [General Info]($linkmsg_generalInfo$)\\n⬥ [Gear, Relics and Familiars]($linkmsg_GearRelicsFamiliars$)\\n⬥ [Fight Mechanics]($linkmsg_fightMechanics$)\\n⬥ [Videos]($linkmsg_videos$)",
     "color": 39423
   }
 }
 .embed:json
 .pin:delete`;
 
-export const afkGuide =
-`# __AFK Boss Name__
+export const afkGuide = `# __AFK Boss Name__
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
 *Note: a **Table of Contents** can be found in the pins.*
 
@@ -143,8 +143,7 @@ Content maintained by: [<@123>]
 .embed:json
 .pin:delete`;
 
-export const slayerGuide =
-`# __[Slayer Creature Name]__
+export const slayerGuide = `# __[Slayer Creature Name]__
 *Note: a **Table of Contents** can be found in the pins.*
 
 .
@@ -155,10 +154,10 @@ export const slayerGuide =
 .
 ### __Stats__
 .tag:stats
-⬥ <:slayer:797896049548066857> level: X  
-⬥ XP per kill: X  
-⬥ Optimal kills/hr: X  
-⬥ Optimal XP/hr: X  
+⬥ <:slayer:797896049548066857> level: X
+⬥ XP per kill: X
+⬥ Optimal kills/hr: X
+⬥ Optimal XP/hr: X
 
 .
 ### __Desirable drops__
@@ -210,8 +209,7 @@ Example kill - [Youtube Link](<#>)
 }
 .embed:json`;
 
-export const embedTextFormatting =
-`{
+export const embedTextFormatting = `{
   "embed": {
     "title": "__Embed Template Example__",
     "description": "Ask questions if you get stumped",
