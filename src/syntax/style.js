@@ -227,7 +227,7 @@ function findStyleErrors(text) {
 				}
 
 				// 6) Skip if prefixed by zero-width space
-				if (before === "\u200B") {
+				if (before === "\u200B" || mlines[i].startsWith("\\u200B" + emoji, start - 6)) {
 					continue;
 				}
 
