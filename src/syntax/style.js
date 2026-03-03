@@ -187,12 +187,61 @@ function findStyleErrors(text) {
 				});
 			}
 
-			if (match = mlines[i].match(/<:[^:>]+:\d+><:[^:>]+:\d+>/)) {
-				results.push({
-					line: message.firstline + i,
-					type: "warn",
-					text: "Emojis should have a space between them"
-				});
+			const emojiRegex = /<:[^:>]+:\d+>/g;
+			const ALLOWED_CHARS = /[\\`"'[\](){}.,!?;:_*\-]/;
+
+			emojiRegex.lastIndex = 0;
+
+			while ((match = emojiRegex.exec(mlines[i])) !== null) {
+				const emoji = match[0];
+				const start = match.index;
+				const end = start + emoji.length;
+
+				const before = mlines[i][start - 1] || "";
+				const after = mlines[i][end] || "";
+				const fullLine = mlines[i];
+
+				// 1) Skip if inside markdown link [text <:e:123>](url)
+				if (/\[[^\]]*<:[^:>]+:\d+>[^\]]*\]\([^)]*\)/.test(fullLine)) {
+					continue;
+				}
+
+				// 2) Skip if inside backticks
+				if (new RegExp("`[^`]*" + emoji.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "[^`]*`").test(fullLine)) {
+					continue;
+				}
+
+				// 3) Skip if prefixed by r, s, or _
+				if (before && /[rs_]/.test(before)) {
+					continue;
+				}
+
+				// 4) Skip if prefixed by allowed punctuation
+				if (before && ALLOWED_CHARS.test(before)) {
+					continue;
+				}
+
+				// 5) Skip if followed by allowed punctuation
+				if (after && ALLOWED_CHARS.test(after)) {
+					continue;
+				}
+
+				// 6) Skip if prefixed by zero-width space
+				if (before === "\u200B") {
+					continue;
+				}
+
+				// Failed checks, check for start/end of line
+				const atStart = start === 0;
+				const atEnd = end === mlines[i].length;
+
+				if ((!atStart && before !== " ") || (!atEnd && after !== " ")) {
+					results.push({
+						line: message.firstline + i,
+						type: "warn",
+						text: "Emojis must have valid characters around them"
+					});
+				}
 			}
 		}
 	}
