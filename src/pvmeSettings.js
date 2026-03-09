@@ -8,6 +8,7 @@ export let channelsFormat = {};
 export let usersFormat = {};
 export let rolesFormat = {};
 export let emojisFormat = {};
+export let emojiSearch = [];
 
 export let styleGuide = ''; // doesn't fit here but it is what it is
 
@@ -19,14 +20,14 @@ export async function populateConstants() {
     await setUsers();
     await setPvmeSpreadsheet();
     await setEmojis();
-    await setStyleGuide();  
+    await setStyleGuide();
 }
 
 async function rawGithubGetRequest(url) {
     const res = await fetch(url, {
         method: 'GET'
     });
-    
+
     if (!res.ok)
         throw new Error(await res.text());
 
@@ -84,28 +85,57 @@ async function setEmojis() {
     );
 
     emojisFormat = {};
+    emojiSearch = [];
 
-    const allEmojis = (emojisJSON.categories || [])
-        .flatMap(category => category.emojis || []);
+    const categories = Array.isArray(emojisJSON.categories)
+        ? emojisJSON.categories
+        : [];
+
+    const allEmojis = categories.flatMap(c =>
+        Array.isArray(c.emojis) ? c.emojis : []
+    );
 
     for (const emoji of allEmojis) {
-        // Only Discord emojis can be autocompleted
+
+        if (!emoji || typeof emoji.id !== "string") continue;
         if (!emoji.emoji_id) continue;
 
         const emojiFormat = `<:${emoji.id}:${emoji.emoji_id}>`;
-        emojisFormat[emoji.id] = emojiFormat;
 
-        // Aliases
+        const idKey = emoji.id.toLowerCase();
+
+        emojisFormat[idKey] = emojiFormat;
+
+        const searchTerms = new Set();
+
+        searchTerms.add(idKey);
+
+        if (typeof emoji.name === "string") {
+            searchTerms.add(emoji.name.toLowerCase());
+            searchTerms.add(emoji.name.toLowerCase().replace(/\s+/g, ""));
+        }
+
         if (Array.isArray(emoji.id_aliases)) {
             for (const alias of emoji.id_aliases) {
-                emojisFormat[alias] = emojiFormat;
+                if (typeof alias === "string") {
+                    const a = alias.toLowerCase();
+                    searchTerms.add(a);
+                    emojisFormat[a] = emojiFormat;
+                }
             }
         }
+
+        emojiSearch.push({
+            id: idKey,
+            format: emojiFormat,
+            search: [...searchTerms]
+        });
     }
 
-    // hardcode wenspore
     emojisFormat["wenspore"] =
-        `<:wenarrow:971025697046925362> ` +
-        `<:grico:787904334812807238> ` +
-        `<:deathsporearrows:900758234527301642>`;
+        `<:wenarrow:971025697046925362>` +
+        ` <:grico:787904334812807238>` +
+        ` <:deathsporearrows:900758234527301642>`;
+
+    console.log(emojiSearch.find(e => e.id.includes("nightmare")));
 }

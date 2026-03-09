@@ -1,6 +1,6 @@
 // src/codemirror/pvmeAutocomplete.js
 
-import { usersFormat, channelsFormat, emojisFormat, channels } from "../pvmeSettings";
+import { usersFormat, channelsFormat, emojisFormat, emojiSearch, channels } from "../pvmeSettings";
 
 const DEBUG = false;
 const log = (...args) => DEBUG && console.log("[AUTOFORMAT]", ...args);
@@ -84,11 +84,20 @@ export function autocompletionSource(context) {
 
   // EMOJIS ------------------------------------------------------
   else if (prefix === ":") {
-    raw = Object.keys(emojisFormat)
-      .filter(name => name.toLowerCase().includes(query))
-      .map(name => ({
-        label: name,
-        insertText: emojisFormat[name],
+    raw = emojiSearch
+      .filter(e =>
+        e.id.includes(query) ||
+        e.search.some(term => term.includes(query))
+      )
+      .sort((a, b) => {
+        const aExact = a.id.startsWith(query);
+        const bExact = b.id.startsWith(query);
+        return bExact - aExact;
+      })
+      .slice(0, 25)
+      .map(e => ({
+        label: e.id,
+        insertText: e.format,
         type: "emoji"
       }));
   }
