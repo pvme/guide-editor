@@ -137,5 +137,4 @@ async function setEmojis() {
         ` <:grico:787904334812807238>` +
         ` <:deathsporearrows:900758234527301642>`;
 
-    console.log(emojiSearch.find(e => e.id.includes("nightmare")));
 }
