@@ -51,6 +51,23 @@ rules.inlineCode.html = (node, output, state) => {
     );
 };
 
+// Add title tooltip to rendered emojis
+if (rules.discordEmoji) {
+    rules.discordEmoji.html = (node, output, state) => {
+        return htmlTag(
+            "img",
+            "",
+            {
+                class: "d-emoji" + (node.animated ? " d-emoji-animated" : ""),
+                src: `https://cdn.discordapp.com/emojis/${node.id}.${node.animated ? "gif" : "png"}`,
+                alt: `:${node.name}:`,
+                title: `${node.name}`
+            },
+            state
+        );
+    };
+}
+
 // Capture naked URLs as attachments
 rules.url.parse = capture => {
     const url = capture[1];
