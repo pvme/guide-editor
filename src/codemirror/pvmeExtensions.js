@@ -18,7 +18,6 @@ import {
   history,
   defaultKeymap,
   historyKeymap,
-  indentWithTab,
   redo,
 } from "@codemirror/commands";
 import { closeBrackets, autocompletion } from "@codemirror/autocomplete";
@@ -62,12 +61,19 @@ export function pvmeExtensions(textStore, syncApi) {
 
   return [
     SyncEngineFacet.of(sync),
+
     EditorState.allowMultipleSelections.of(true),
     drawSelection(),
+
+    listKeymap,
 
     keymap.of([
       ...defaultKeymap,
       ...historyKeymap,
+
+      { key: "Ctrl-d", run: selectNextOccurrenceSafe },
+      { key: "Ctrl-Shift-d", run: selectSelectionMatches },
+      { key: "Ctrl-y", run: redo },
 
       { key: "Ctrl-b", run: toggleBold },
       { key: "Ctrl-i", run: toggleItalic },
@@ -76,13 +82,8 @@ export function pvmeExtensions(textStore, syncApi) {
       { key: "Ctrl-Alt-1", run: toggleH1 },
       { key: "Ctrl-Alt-2", run: toggleH2 },
       { key: "Ctrl-Alt-3", run: toggleH3 },
-
-      { key: "Ctrl-d", run: selectNextOccurrenceSafe },
-      { key: "Ctrl-Shift-d", run: selectSelectionMatches },
-      { key: "Ctrl-y", run: redo },
     ]),
 
-    listKeymap,
     history(),
     lineNumbers(),
     markdown(),
