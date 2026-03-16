@@ -21,8 +21,8 @@ export const draculaTheme = EditorView.theme(
     },
 
     /* Selected text */
-    ".cm-selectionBackground": {
-      backgroundColor: "#44475a",
+    ".cm-selectionLayer .cm-selectionBackground": {
+      backgroundColor: "#325470 !important",
     },
 
     /* Highlighted matches when selecting text */
