@@ -6,8 +6,13 @@ import {
   keymap,
   lineNumbers,
   highlightActiveLine,
+  drawSelection,
 } from "@codemirror/view";
-import { highlightSelectionMatches } from "@codemirror/search";
+import {
+  highlightSelectionMatches,
+  selectSelectionMatches,
+  selectNextOccurrence,
+} from "@codemirror/search";
 import { markdown } from "@codemirror/lang-markdown";
 import {
   history,
@@ -42,6 +47,11 @@ import { autoformatOnUpdate } from "./autoformat.js";
 
 import { messageSyncExtension } from "./messageSync.js";
 
+function selectNextOccurrenceSafe(view) {
+  const handled = selectNextOccurrence(view);
+  return true; // always swallow ctrl+D
+}
+
 // Create a facet that stores the sync engine instance
 export const SyncEngineFacet = Facet.define();
 
@@ -52,8 +62,13 @@ export function pvmeExtensions(textStore, syncApi) {
 
   return [
     SyncEngineFacet.of(sync),
+    EditorState.allowMultipleSelections.of(true),
+    drawSelection(),
 
     keymap.of([
+      ...defaultKeymap,
+      ...historyKeymap,
+
       { key: "Ctrl-b", run: toggleBold },
       { key: "Ctrl-i", run: toggleItalic },
       { key: "Ctrl-u", run: toggleUnderline },
@@ -62,9 +77,8 @@ export function pvmeExtensions(textStore, syncApi) {
       { key: "Ctrl-Alt-2", run: toggleH2 },
       { key: "Ctrl-Alt-3", run: toggleH3 },
 
-      ...defaultKeymap,
-      ...historyKeymap,
-
+      { key: "Ctrl-d", run: selectNextOccurrenceSafe },
+      { key: "Ctrl-Shift-d", run: selectSelectionMatches },
       { key: "Ctrl-y", run: redo },
     ]),
 

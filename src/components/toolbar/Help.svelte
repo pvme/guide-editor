@@ -92,8 +92,8 @@
         </li>
 
         <li>
-            <strong>Hide embeds</strong> — wrap a link in angle brackets:  
-            <code>&lt;https://example.com&gt;</code>  
+            <strong>Hide embeds</strong> — wrap a link in angle brackets:
+            <code>&lt;https://example.com&gt;</code>
             (prevents Discord from creating an embed)
         </li>
 
@@ -101,6 +101,84 @@
             <strong>Images / embeds</strong> — paste a link or use the toolbar
         </li>
     </ul>
+
+    <!-- KEYBINDS -->
+    <h3 class="text-xl font-semibold mt-8 mb-2">Keyboard Shortcuts</h3>
+
+    <p>
+        The editor supports several keyboard shortcuts to speed up formatting and editing.
+    </p>
+
+    <table class="table-auto my-4">
+        <thead class="bg-slate-700">
+            <tr>
+                <th class="px-2 py-1">Shortcut</th>
+                <th class="px-2 py-1">Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <!-- Formatting -->
+            <tr>
+                <td><code>Ctrl + B</code></td>
+                <td>Toggle bold formatting</td>
+            </tr>
+
+            <tr>
+                <td><code>Ctrl + I</code></td>
+                <td>Toggle italic formatting</td>
+            </tr>
+
+            <tr>
+                <td><code>Ctrl + U</code></td>
+                <td>Toggle underline formatting</td>
+            </tr>
+
+            <tr>
+                <td><code>Ctrl + Alt + S</code></td>
+                <td>Toggle strikethrough formatting</td>
+            </tr>
+
+            <!-- Headings -->
+            <tr>
+                <td><code>Ctrl + Alt + 1</code></td>
+                <td>Toggle H1 heading</td>
+            </tr>
+
+            <tr>
+                <td><code>Ctrl + Alt + 2</code></td>
+                <td>Toggle H2 heading</td>
+            </tr>
+
+            <tr>
+                <td><code>Ctrl + Alt + 3</code></td>
+                <td>Toggle H3 heading</td>
+            </tr>
+
+            <!-- Editing -->
+            <tr>
+                <td><code>Ctrl + D</code></td>
+                <td>Add the next occurrence of the selected word (multi-cursor)</td>
+            </tr>
+
+            <tr>
+                <td><code>Ctrl + Shift + D</code></td>
+                <td>Select all occurrences of the selected word</td>
+            </tr>
+
+            <tr>
+                <td><code>Ctrl + Z</code></td>
+                <td>Undo</td>
+            </tr>
+
+            <tr>
+                <td><code>Ctrl + Y</code></td>
+                <td>Redo</td>
+            </tr>
+
+        </tbody>
+    </table>
 
     <!-- CLICK-TO-SYNC -->
     <h3 class="text-xl font-semibold mt-8 mb-2">Click-to-Sync (Editor ↔ Preview)</h3>

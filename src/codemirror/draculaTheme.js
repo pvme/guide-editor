@@ -1,42 +1,62 @@
 import { EditorView } from "@codemirror/view";
 
-export const draculaTheme = EditorView.theme({
-  "&": {
-    color: "#f8f8f2",
-    backgroundColor: "#282a36"
-  },
+export const draculaTheme = EditorView.theme(
+  {
+    "&": {
+      color: "#f8f8f2",
+      backgroundColor: "#282a36",
+    },
 
-  ".cm-content": {
-    caretColor: "#f8f8f2"
-  },
+    ".cm-content": {
+      caretColor: "#f8f8f2",
+    },
 
-  ".cm-cursor, .cm-dropCursor": {
-    borderLeftColor: "#f8f8f2"
-  },
+    ".cm-cursor, .cm-dropCursor": {
+      borderLeftColor: "#f8f8f2",
+    },
 
-  ".cm-content .cm-line .cm-selectionBackground": {
-    background: "linear-gradient(90deg, #00cafe 0%, #b44dff 40%, #ff49e1 100%)",
-    opacity: "0.45"
-  },
+    /* Selection overlay */
+    ".cm-selectionLayer": {
+      zIndex: 2,
+    },
 
-  ".cm-content .cm-line ::selection": {
-    background: "linear-gradient(90deg, #00cafe 0%, #b44dff 40%, #ff49e1 100%)",
-    color: "#ffffff"
-  },
+    /* Selected text */
+    ".cm-selectionBackground": {
+      backgroundColor: "#44475a",
+    },
 
-  ".cm-content .cm-line .cm-selectionMatch": {
-    background: "rgba(99, 102, 241, 0.1)",
-    borderRadius: "4px",
-    boxShadow: "0 0 0 1px rgba(99, 102, 241, 0.35)"
-  },
+    /* Highlighted matches when selecting text */
+    ".cm-selectionMatch": {
+      backgroundColor: "rgba(189,147,249,0.18)",
+      borderRadius: "3px",
+    },
 
-  ".cm-content .cm-activeLine": {
-    backgroundColor: "rgba(255,255,255,0.05)"
-  },
+    /* Primary cursor */
+    ".cm-cursor": {
+      borderLeftColor: "#f8f8f2",
+    },
 
-  ".cm-gutters": {
-    backgroundColor: "#282a36",
-    color: "#6272a4",
-    border: "none"
-  }
-}, { dark: true });
+    /* Secondary cursors (multi-select) */
+    ".cm-cursor-secondary": {
+      borderLeftColor: "#bd93f9",
+    },
+
+    /* Native selection fallback */
+    ".cm-content ::selection": {
+      backgroundColor: "#44475a",
+      color: "#f8f8f2",
+    },
+
+    /* Active line */
+    ".cm-activeLine": {
+      backgroundColor: "rgba(255,255,255,0.04)",
+    },
+
+    ".cm-gutters": {
+      backgroundColor: "#282a36",
+      color: "#6272a4",
+      border: "none",
+    },
+  },
+  { dark: true },
+);
