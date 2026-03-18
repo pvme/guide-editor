@@ -4,8 +4,8 @@
 
 export const disclaimer = `.
 > ## ⚠️ Disclaimer
-> **This guide may not work after changes to [INSERT DESCRIPTION HERE]**
-> Know of a newer method/rotation? Share it in <#1020853673317908500> to help keep this guide up-to-date!
+> **Some methods in this guide may not work after [INSERT CHANGE HERE]**
+> Know of a newer method/rotation? Got a video? Share it in <#1020853673317908500>!
 `;
 
 export const bossGuide = `# <Boss Name> — Boss Guide
@@ -203,6 +203,25 @@ Example kill - [Youtube Link](<#>)
         "name": "__Methods__",
         "value": "⬥ [Method 1]($linkmsg_method1$)",
         "inline": true
+      }
+    ]
+  }
+}
+.embed:json`;
+
+export const commandTemplate = `{
+  "embed": {
+  	"title": "__Insert command title or question here__",
+    "description": "(Optional) short purpose of the command",
+    "color": 39423,
+    "fields": [
+      {
+        "name": "__Insert sub-heading 1 here__",
+        "value": "⬥ Ideally keep bullets to a single line with no wrap\\n⬥ Dont have too many bullets - less is more"
+      },
+      {
+        "name": "__Insert sub-heading 2 here__",
+        "value": "⬥ Used for counter-arguments or additional information"
       }
     ]
   }

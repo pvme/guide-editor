@@ -10,7 +10,8 @@
         bossGuide,
         afkGuide,
         slayerGuide,
-        embedTextFormatting
+        embedTextFormatting,
+        commandTemplate
     } from "./templateData";
 
     let open = false;
@@ -131,6 +132,12 @@
                     <div class="font-semibold mb-2 text-indigo-200">Embeds</div>
 
                     <div class="flex flex-col">
+                        <button
+                            class="group-btn rounded-t-md"
+                            on:click={() => setTemplate(commandTemplate)}>
+                            Command
+                        </button>
+
                         <button
                             class="group-btn rounded-t-md"
                             on:click={() => setTemplate(embedTextFormatting)}>
