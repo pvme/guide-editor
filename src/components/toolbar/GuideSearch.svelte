@@ -9,11 +9,15 @@
   let guides = [];
   let filtered = [];
   let activeIndex = 0;
+  let loaded = false;
 
   async function loadGuideIndex() {
-	const res = await fetch(
-	  "https://api.github.com/repos/pvme/pvme-guides/git/trees/master?recursive=1"
-	);
+    if (loaded) return;
+    loaded = true;
+
+    const res = await fetch(
+      "https://api.github.com/repos/pvme/pvme-guides/git/trees/master?recursive=1"
+    );
 
     const data = await res.json();
 
@@ -37,10 +41,22 @@
           )
           .slice(0, 10);
 
+  // reset index when query changes
+  $: if (query.length > 0) {
+    activeIndex = 0;
+  }
+
+  // ensure index is always valid
+  $: if (filtered.length > 0 && activeIndex >= filtered.length) {
+    activeIndex = 0;
+  }
+
   function selectGuide(guide) {
-    dispatch("select", guide);
+    if (!guide) return;
+    dispatch("select", { ...guide });
     query = "";
     open = false;
+    activeIndex = 0;
   }
 
   function onKeydown(e) {
@@ -92,7 +108,7 @@
           class="w-full text-left px-3 py-1.5 text-sm
                  hover:bg-slate-800
                  {i === activeIndex ? 'bg-slate-800' : ''}"
-          on:click={() => selectGuide(guide)}
+          on:mousedown={() => selectGuide(guide)}
         >
           <div class="text-slate-200">{guide.name}</div>
           <div class="text-xs text-slate-400 truncate">
