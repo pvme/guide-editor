@@ -5,6 +5,7 @@
     import SnippetMenu from "./SnippetMenu.svelte";
     import TemplateMenu from "./TemplateMenu.svelte";
     import StyleGuideMenu from "./StyleGuideMenu.svelte";
+    import EmbedGuide from "./EmbedGuide.svelte";
     import FormatMenu from "./FormatMenu.svelte";
 
     import Help from "./Help.svelte";
@@ -33,6 +34,7 @@
                 <ButtonGroup><SnippetMenu {insertAtCursor} /></ButtonGroup>
                 <ButtonGroup><TemplateMenu {insertAtCursor} /></ButtonGroup>
                 <ButtonGroup><StyleGuideMenu /></ButtonGroup>
+                <ButtonGroup><EmbedGuide {insertAtCursor} /></ButtonGroup>
             </div>
 
 
