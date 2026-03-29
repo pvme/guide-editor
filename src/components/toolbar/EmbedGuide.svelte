@@ -75,8 +75,7 @@
         { name: "PVME",    decimal: "39423",    hex: "#0099ff" },
     ];
 
-    const fullExample = `.embed:json
-{
+    const fullExample = `{
   "embed": {
     "title": "__Section Title__",
     "description": "Section description with **markdown** support",
@@ -100,7 +99,8 @@
       "text": "Footer text here"
     }
   }
-}`;
+}
+.embed:json`;
 
     const layoutDiagram = `\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
 \u2502 \u2503  [author icon] Author Name             \u2502
@@ -224,10 +224,10 @@
     <DropdownPanel
         {open}
         close={() => open = false}
-        width="55vw"
+        width="45vw"
         bind:registerTrigger={trigger}
     >
-        <div class="grid grid-cols-[10rem_1fr] w-full">
+        <div class="grid grid-cols-[12rem_1fr] w-full">
 
             <div class="flex flex-col text-sm p-3 w-full gap-1">
                 {#each sections as s}
