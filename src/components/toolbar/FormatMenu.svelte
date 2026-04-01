@@ -15,6 +15,7 @@
     import TypeH3 from "svelte-bootstrap-icons/lib/TypeH3.svelte";
     import ListUl from "svelte-bootstrap-icons/lib/ListUl.svelte";
     import ListOl from "svelte-bootstrap-icons/lib/ListOl.svelte";
+    import Link45deg from "svelte-bootstrap-icons/lib/Link45deg.svelte";
 
     import Button from "./Button.svelte";
     import ButtonGroup from "./ButtonGroup.svelte";
@@ -51,6 +52,11 @@
                 { cmd: "blockquote", icon: BlockquoteLeft, title: "Blockquote" },
                 { cmd: "inlineCode", icon: Code, title: "Inline Code" },
                 { cmd: "codeBlock",  icon: CodeSquare, title: "Code Block" }
+            ]
+        },
+        {
+            buttons: [
+                { cmd: "wikiLink", icon: Link45deg, title: "Insert Wiki Link" }
             ]
         }
     ];

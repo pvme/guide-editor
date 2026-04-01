@@ -134,6 +134,31 @@ export function pvmeExtensions(textStore, syncApi) {
       blockquote: formatBlockquote,
       inlineCode: formatInlineCode,
       codeBlock: formatCodeBlock,
+
+      wikiLink: (view) => {
+        const { state } = view;
+        const sel = state.selection.main;
+
+        const selected = state.doc.sliceString(sel.from, sel.to);
+        const text = selected || "item_name";
+
+        const formatted = encodeURIComponent(text.trim().replace(/\s+/g, "_"));
+
+        const url = `https://runescape.wiki/w/${formatted}`;
+        const markdown = `[${text}](${url})`;
+
+        view.dispatch({
+          changes: { from: sel.from, to: sel.to, insert: markdown },
+          selection: selected
+            ? { anchor: sel.from + markdown.length }
+            : {
+                anchor: sel.from + 1,
+                head: sel.from + text.length + 1,
+              },
+        });
+
+        return true;
+      },
     }),
 
     // Sync doc → Svelte store
