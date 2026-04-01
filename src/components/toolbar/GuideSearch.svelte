@@ -11,6 +11,26 @@
   let activeIndex = 0;
   let loaded = false;
 
+  function normalise(str) {
+    return str
+      .toLowerCase()
+      .replace(/[-_]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function fuzzyMatch(text, query) {
+    let t = 0;
+    let q = 0;
+
+    while (t < text.length && q < query.length) {
+      if (text[t] === query[q]) q++;
+      t++;
+    }
+
+    return q === query.length;
+  }
+
   async function loadGuideIndex() {
     if (loaded) return;
     loaded = true;
@@ -36,9 +56,21 @@
     query.length === 0
       ? []
       : guides
-          .filter(g =>
-            g.path.toLowerCase().includes(query.toLowerCase())
-          )
+          .map(g => {
+            const text = normalise(g.path);
+            const q = normalise(query);
+
+            const includes = text.includes(q);
+            const fuzzy = fuzzyMatch(text, q);
+
+            return {
+              guide: g,
+              score: includes ? 2 : fuzzy ? 1 : 0
+            };
+          })
+          .filter(x => x.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .map(x => x.guide)
           .slice(0, 10);
 
   // reset index when query changes
