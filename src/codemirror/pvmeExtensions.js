@@ -145,7 +145,7 @@ export function pvmeExtensions(textStore, syncApi) {
         const formatted = encodeURIComponent(text.trim().replace(/\s+/g, "_"));
 
         const url = `https://runescape.wiki/w/${formatted}`;
-        const markdown = `[${text}](${url})`;
+        const markdown = `[${text}](<${url}>)`;
 
         view.dispatch({
           changes: { from: sel.from, to: sel.to, insert: markdown },
