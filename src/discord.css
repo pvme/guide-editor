@@ -3,7 +3,17 @@
    ======================================================= */
 
 .discord-view {
-  font-family: "gg sans", Whitney, Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family:
+    "gg sans",
+    Whitney,
+    Helvetica Neue,
+    Helvetica,
+    "Segoe UI Symbol",
+    "DejaVu Sans",
+    "Noto Sans Symbols 2",
+    "Noto Sans Symbols",
+    Arial,
+    sans-serif;
 }
 
 .theme-dark .messages-wrapper {
