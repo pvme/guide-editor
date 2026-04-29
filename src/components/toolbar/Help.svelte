@@ -102,6 +102,36 @@
         </li>
     </ul>
 
+    <!-- ERROR CHECKER -->
+    <h3 class="text-xl font-semibold mt-8 mb-2">Error Checker</h3>
+    <p>
+        The checker appears below the editor as you write. It looks for common issues that
+        can break publishing, preview badly in Discord, or make table-of-contents links fail.
+    </p>
+
+    <ul class="list-disc ml-6 mt-3">
+        <li>
+            <strong>Message and command problems</strong> — invalid commands, bad attachments,
+            invalid embed JSON, messages over Discord limits, and empty-line issues.
+        </li>
+        <li>
+            <strong>Formatting structure</strong> — heading placement, unsupported heading levels,
+            redundant heading bolding, and list indentation.
+        </li>
+        <li>
+            <strong>Discord reliability</strong> — emoji spacing, emojis inside links,
+            Discord CDN images, raw PVME image links, and blocked hosts such as <code>streamable.com</code>.
+        </li>
+        <li>
+            <strong>Cleanup</strong> — trailing whitespace, accidental double spaces,
+            unspaced arrows, and spacer placeholders like <code>_ _</code>.
+        </li>
+        <li>
+            <strong>Table of contents links</strong> — <code>.tag:</code> names and
+            <code>$linkmsg_...$</code> references are checked both ways so typos are easier to catch.
+        </li>
+    </ul>
+
     <!-- KEYBINDS -->
     <h3 class="text-xl font-semibold mt-8 mb-2">Keyboard Shortcuts</h3>
 
@@ -199,6 +229,7 @@
     <h3 class="text-xl font-semibold mt-10 mb-2">Table of Contents</h3>
     <p>
         Add a line like <code>.tag:section-name</code> anywhere in your guide.
+        Reference it with <code>$linkmsg_section-name$</code>, either by itself or inside a link.
         The editor automatically creates a clickable table of contents based on these tags.
     </p>
 

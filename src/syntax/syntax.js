@@ -1,9 +1,12 @@
-import { embedSchema } from "./embedSchema";
+import { embedSchema } from "./embedSchema.js";
 import Ajv from "ajv";
 
 
 const ajv = new Ajv({allErrors:true});
 const validator = ajv.compile(embedSchema);
+const SECTION_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
+const LINKMSG_TOKEN_REGEX = /\$linkmsg[^$]*\$/g;
+const VALID_LINKMSG_REGEX = /^\$linkmsg_([A-Za-z0-9_-]+)\$$/;
 
 
 function formatError(error) {
@@ -22,7 +25,7 @@ function validateEmbedSchema(results, line, embed) {
                 type: "error",
                 text: formatError(error)
             });
-        }     
+        }
     }
 }
 
@@ -31,10 +34,11 @@ function findSyntaxErrors(text) {
     * 0 - parsing message content
     * 1 - parsing message commands
     */
-    const lines = text.split('\n');
+	const lines = text.split('\n');
     let state = 0;
 	const messages = [];
 	const tags = new Set();
+	const tagLines = new Map();
 
 	const results = [];
 
@@ -149,7 +153,13 @@ function findSyntaxErrors(text) {
 						});
 					}
 
-					if (tags.has(param)) {
+					if (!SECTION_NAME_REGEX.test(param)) {
+						results.push({
+							line: i + 1,
+							type: "error",
+							text: ".tag: value must contain only letters, numbers, underscores, or hyphens"
+						});
+					} else if (tags.has(param)) {
 						results.push({
 							line: i + 1,
 							type: "error",
@@ -157,6 +167,7 @@ function findSyntaxErrors(text) {
 						});
 					} else {
 						tags.add(param);
+						tagLines.set(param, i + 1);
 						message.tag = param;
 					}
 				} else if (base === "pin") {
@@ -180,6 +191,7 @@ function findSyntaxErrors(text) {
 					}
 
 					if (param === "json") {
+						message.linkText = message.text;
 						let json;
 
 						try {
@@ -237,7 +249,7 @@ function findSyntaxErrors(text) {
 								}
 							}
 						}
-						
+
 					catch(e) {
 						console.log("Error parsing embed fields: " + e);
 					}
@@ -275,17 +287,32 @@ function findSyntaxErrors(text) {
 	}
 	messages.push(message);
 
+	const linkedTags = new Set();
+
 	for (let i = 0; i < messages.length; i ++) {
 		const message = messages[i];
-		let msgLinks = message.text.match(/\$(?!data_pvme:)[^_]*(_[a-zA-Z0-9]+)\$/gm);
-		if(msgLinks) {
-			for(let j = 0 ; j < msgLinks.length ; j++) {
-				let keyword = msgLinks[j].slice(1,-1);
-				if(!tags.has(keyword)) {
+		const linkText = message.linkText ?? message.text;
+		let msgLinks = linkText.match(LINKMSG_TOKEN_REGEX);
+		if (msgLinks) {
+			for (let j = 0 ; j < msgLinks.length ; j++) {
+				const linkMatch = msgLinks[j].match(VALID_LINKMSG_REGEX);
+
+				if (!linkMatch) {
+					results.push({
+						line: [ message.firstline, message.lastline ],
+						type: "error",
+						text: "$linkmsg_ references must use only letters, numbers, underscores, or hyphens"
+					});
+					continue;
+				}
+
+				const sectionName = linkMatch[1];
+				linkedTags.add(sectionName);
+				if (!tags.has(sectionName)) {
 					results.push({
 						line: [ message.firstline, message.lastline ],
 						type: "warn",
-						text: `Message uses a "linkmsg_${keyword}$ without ${keyword} being defined in a .tag: command`
+						text: `$linkmsg_${sectionName}$ does not match any .tag:${sectionName}`
 					});
 				}
 			}
@@ -313,7 +340,7 @@ function findSyntaxErrors(text) {
 			results.push({
 				line: [message.firstline, message.lastline],
 				type: "error",
-				text: "Discord emoji must not appear inside markdown link text"
+				text: "Discord emoji must not appear inside links"
 			});
 		}
 
@@ -322,6 +349,17 @@ function findSyntaxErrors(text) {
 				line: [ message.firstline, message.lastline ],
 				type: "error",
 				text: "Message text exceeds 2000 characters"
+			});
+		}
+	}
+
+	for (const tag of tags) {
+		if (!linkedTags.has(tag)) {
+			const line = tagLines.get(tag);
+			results.push({
+				line: line,
+				type: "warn",
+				text: `.tag:${tag} does not have a matching $linkmsg_${tag}$ reference`
 			});
 		}
 	}

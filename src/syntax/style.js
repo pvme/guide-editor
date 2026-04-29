@@ -1,3 +1,90 @@
+const ALLOWED_EMOJI_NEIGHBOR_CHARS = /[\\`"'[\](){}.,!?;:_*\-]/;
+const EMOJI_REGEX = /<:[^:>]+:\d+>/g;
+const INVISIBLE_SPACE_CHARS = /[\u200B\u00A0]/;
+
+function escapeRegex(value) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function maskIgnoredInlineSpans(line) {
+	return line
+		.replace(/`[^`]*`/g, match => " ".repeat(match.length))
+		.replace(/<[^<>\s]+>/g, match => " ".repeat(match.length));
+}
+
+function hasInvalidSymbolSpacing(line) {
+	const maskedLine = maskIgnoredInlineSpans(line);
+
+	for (let index = 0; index < maskedLine.length; index++) {
+		if (maskedLine[index] !== "→") {
+			continue;
+		}
+
+		const before = maskedLine[index - 1] || "";
+		const after = maskedLine[index + 1] || "";
+		const hasValidBefore = index === 0 || /\s/.test(before);
+		const hasValidAfter = index === maskedLine.length - 1 || /\s/.test(after);
+
+		if (!hasValidBefore || !hasValidAfter) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+function isStandaloneEmojiPrefix(line, emojiStart) {
+	const prefix = line[emojiStart - 1] || "";
+
+	if (!/[rs_]/.test(prefix)) {
+		return false;
+	}
+
+	const beforePrefix = line[emojiStart - 2] || "";
+
+	return emojiStart === 1
+		|| /\s/.test(beforePrefix)
+		|| ALLOWED_EMOJI_NEIGHBOR_CHARS.test(beforePrefix);
+}
+
+function isInsideMarkdownLinkText(line) {
+	return /\[[^\]]*<:[^:>]+:\d+>[^\]]*\]\([^)]*\)/.test(line);
+}
+
+function isInsideBackticks(line, emoji) {
+	return new RegExp("`[^`]*" + escapeRegex(emoji) + "[^`]*`").test(line);
+}
+
+function hasZeroWidthSpacePrefix(line, emoji, emojiStart) {
+	const before = line[emojiStart - 1] || "";
+	return INVISIBLE_SPACE_CHARS.test(before)
+		|| line.startsWith("\\u200B" + emoji, emojiStart - 6)
+		|| line.startsWith("\\u00A0" + emoji, emojiStart - 6);
+}
+
+function hasValidEmojiBefore(line, emoji, emojiStart) {
+	if (emojiStart === 0) {
+		return true;
+	}
+
+	const before = line[emojiStart - 1] || "";
+
+	return before === " "
+		|| ALLOWED_EMOJI_NEIGHBOR_CHARS.test(before)
+		|| isStandaloneEmojiPrefix(line, emojiStart)
+		|| hasZeroWidthSpacePrefix(line, emoji, emojiStart);
+}
+
+function hasValidEmojiAfter(line, emojiEnd) {
+	if (emojiEnd === line.length) {
+		return true;
+	}
+
+	const after = line[emojiEnd] || "";
+
+	return after === " " || ALLOWED_EMOJI_NEIGHBOR_CHARS.test(after);
+}
+
 function findStyleErrors(text) {
     /* state values
 	 * 0 - parsing message content
@@ -6,14 +93,22 @@ function findStyleErrors(text) {
     const lines = text.split('\n');
 	let state = 0;
 	const messages = [];
-	const tags = new Set();
-
 	const results = [];
 
 	let message = {
 		text: "",
 		firstline: 1
 	};
+
+	for (let i = 0; i < lines.length; i++) {
+		if (i > 0 && /^#{1,3}(?!#)(?:\s|$)/.test(lines[i]) && lines[i - 1].trim() !== ".") {
+			results.push({
+				line: i + 1,
+				type: "error",
+				text: "Headings must be preceded by a line containing only '.'"
+			});
+		}
+	}
 
 	for (let i = 0; i < lines.length; i ++) {
 		let line = lines[i];
@@ -109,7 +204,7 @@ function findStyleErrors(text) {
 
 		for (let i = 0; i < mlines.length; i ++) {
 			let match;
-			if (match = mlines[i].match(/^(\s*)⬥/)) {
+			if (match = mlines[i].match(/^\u200B?(\s*)⬥/)) {
 				if (match[1].length > 0) {
 					results.push({
 						line: message.firstline + i,
@@ -119,7 +214,7 @@ function findStyleErrors(text) {
 				}
 			}
 
-			if (match = mlines[i].match(/^(\s*)•/)) {
+			if (match = mlines[i].match(/^\u200B?(\s*)•/)) {
 				if (match[1] !== "    ") {
 					results.push({
 						line: message.firstline + i,
@@ -129,7 +224,7 @@ function findStyleErrors(text) {
 				}
 			}
 
-			if (match = mlines[i].match(/^(\s*)⬩/)) {
+			if (match = mlines[i].match(/^\u200B?(\s*)⬩/)) {
 				if (match[1] !== "        ") {
 					results.push({
 						line: message.firstline + i,
@@ -163,6 +258,22 @@ function findStyleErrors(text) {
 				});
 			}
 
+			if (match = mlines[i].replace(/^[\u200B\s]+/, "").match(/ {2,}/)) {
+				results.push({
+					line: message.firstline + i,
+					type: "warn",
+					text: "Content should not include double spaces"
+				});
+			}
+
+			if (hasInvalidSymbolSpacing(mlines[i])) {
+				results.push({
+					line: message.firstline + i,
+					type: "warn",
+					text: "→ should have spaces around it"
+				});
+			}
+
 			if (match = mlines[i].match(/#{4,}/)) {
 				results.push({
 					line: message.firstline + i,
@@ -187,55 +298,26 @@ function findStyleErrors(text) {
 				});
 			}
 
-			const emojiRegex = /<:[^:>]+:\d+>/g;
-			const ALLOWED_CHARS = /[\\`"'[\](){}.,!?;:_*\-]/;
+			EMOJI_REGEX.lastIndex = 0;
 
-			emojiRegex.lastIndex = 0;
-
-			while ((match = emojiRegex.exec(mlines[i])) !== null) {
+			while ((match = EMOJI_REGEX.exec(mlines[i])) !== null) {
 				const emoji = match[0];
 				const start = match.index;
 				const end = start + emoji.length;
 
-				const before = mlines[i][start - 1] || "";
-				const after = mlines[i][end] || "";
 				const fullLine = mlines[i];
 
 				// 1) Skip if inside markdown link [text <:e:123>](url)
-				if (/\[[^\]]*<:[^:>]+:\d+>[^\]]*\]\([^)]*\)/.test(fullLine)) {
+				if (isInsideMarkdownLinkText(fullLine)) {
 					continue;
 				}
 
 				// 2) Skip if inside backticks
-				if (new RegExp("`[^`]*" + emoji.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "[^`]*`").test(fullLine)) {
+				if (isInsideBackticks(fullLine, emoji)) {
 					continue;
 				}
 
-				// 3) Skip if prefixed by r, s, or _
-				if (before && /[rs_]/.test(before)) {
-					continue;
-				}
-
-				// 4) Skip if prefixed by allowed punctuation
-				if (before && ALLOWED_CHARS.test(before)) {
-					continue;
-				}
-
-				// 5) Skip if followed by allowed punctuation
-				if (after && ALLOWED_CHARS.test(after)) {
-					continue;
-				}
-
-				// 6) Skip if prefixed by zero-width space
-				if (before === "\u200B" || mlines[i].startsWith("\\u200B" + emoji, start - 6)) {
-					continue;
-				}
-
-				// Failed checks, check for start/end of line
-				const atStart = start === 0;
-				const atEnd = end === mlines[i].length;
-
-				if ((!atStart && before !== " ") || (!atEnd && after !== " ")) {
+				if (!hasValidEmojiBefore(mlines[i], emoji, start) || !hasValidEmojiAfter(mlines[i], end)) {
 					results.push({
 						line: message.firstline + i,
 						type: "warn",
