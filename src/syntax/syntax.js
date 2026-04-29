@@ -9,6 +9,132 @@ const LINKMSG_TOKEN_REGEX = /\$linkmsg[^$]*\$/g;
 const VALID_LINKMSG_REGEX = /^\$linkmsg_([A-Za-z0-9_-]+)\$$/;
 
 
+function normalizeEmbedJson(json) {
+	return json
+		.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\uFEFF]/g, "")
+		.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, " ");
+}
+
+function extractEmbed(json) {
+	if (json.embeds) {
+		return json.embeds[0];
+	}
+
+	if (json.embed) {
+		return json.embed;
+	}
+
+	return json;
+}
+
+function getJsonErrorLocation(jsonText, error) {
+	const message = error?.message || "Invalid JSON";
+	const lineColumnMatch = message.match(/line (\d+) column (\d+)/i);
+
+	if (lineColumnMatch) {
+		return {
+			lineOffset: Number(lineColumnMatch[1]) - 1,
+			column: Number(lineColumnMatch[2]),
+			position: null,
+			message
+		};
+	}
+
+	const positionMatch = message.match(/position (\d+)/i);
+	if (!positionMatch) {
+		const tokenMatch = message.match(/Unexpected token '([^']+)'/i);
+		if (tokenMatch) {
+			const token = tokenMatch[1];
+			let inString = false;
+			let escape = false;
+
+			for (let i = 0; i < jsonText.length; i++) {
+				const char = jsonText[i];
+
+				if (escape) {
+					escape = false;
+					continue;
+				}
+
+				if (char === "\\") {
+					escape = inString;
+					continue;
+				}
+
+				if (char === "\"") {
+					inString = !inString;
+					continue;
+				}
+
+				if (!inString && char === token) {
+					const before = jsonText.slice(0, i);
+					const lineOffset = before.split("\n").length - 1;
+					const lastNewline = before.lastIndexOf("\n");
+					const column = i - lastNewline;
+
+					return {
+						lineOffset,
+						column,
+						position: i,
+						message
+					};
+				}
+			}
+		}
+
+		return {
+			lineOffset: 0,
+			column: 1,
+			position: null,
+			message
+		};
+	}
+
+	const position = Number(positionMatch[1]);
+	const before = jsonText.slice(0, position);
+	const lineOffset = before.split("\n").length - 1;
+	const lastNewline = before.lastIndexOf("\n");
+	const column = position - lastNewline;
+
+	return {
+		lineOffset,
+		column,
+		position,
+		message
+	};
+}
+
+function formatJsonParseError(jsonText, location) {
+	const lines = jsonText.split("\n");
+	const errorLine = lines[location.lineOffset] || "";
+	const valueStart = Math.max(location.column - 1, 0);
+	const beforeValue = errorLine.slice(0, valueStart);
+	const valueText = errorLine.slice(valueStart).trim();
+	const fieldMatch = beforeValue.match(/"([^"]+)"\s*:\s*$/);
+
+	if (/Bad control character in string literal/i.test(location.message)) {
+		const unterminatedStringMatch = errorLine.match(/"([^"]+)"\s*:\s*"([^"]*)$/);
+
+		if (unterminatedStringMatch) {
+			const fieldName = unterminatedStringMatch[1];
+			const preview = unterminatedStringMatch[2].slice(0, 30);
+
+			return `JSON embed is invalid near column ${location.column}: field "${fieldName}" looks like it is missing a closing quote after ${JSON.stringify(preview)}`;
+		}
+	}
+
+	if (fieldMatch && valueText) {
+		const fieldName = fieldMatch[1];
+		const preview = valueText
+			.replace(/[",\s]+$/g, "")
+			.slice(0, 30);
+
+		return `JSON embed is invalid near column ${location.column}: field "${fieldName}" looks like it is missing an opening quote before ${JSON.stringify(preview)}`;
+	}
+
+	return `JSON embed is invalid near column ${location.column}: ${location.message}`;
+}
+
 function formatError(error) {
     if (error.keyword === 'additionalProperties')
         return `Unrecognised property '${error.params.additionalProperty}'`;
@@ -29,6 +155,160 @@ function validateEmbedSchema(results, line, embed) {
     }
 }
 
+function validateEmbedFields(results, line, embed) {
+	try {
+		if (embed.fields) {
+			for(let j = 0 ; j < embed.fields.length; j++) {
+				if(embed.fields[j].name.trim().length == 0) {
+					results.push({
+						line: line,
+						type: "error",
+						text: "JSON embed object is invalid: \"name\" is empty in an embed field"
+					});
+				}
+				if(embed.fields[j].value.trim() == 0) {
+					results.push({
+						line: line,
+						type: "error",
+						text: "JSON embed object is invalid: \"value\" is empty in an embed field"
+					});
+				}
+			}
+		}
+	}
+	catch(e) {
+		console.log("Error parsing embed fields: " + e);
+	}
+}
+
+function validateEmbedJsonText(results, line, jsonText) {
+	let json;
+	const normalizedJsonText = normalizeEmbedJson(jsonText);
+
+	try {
+		json = JSON.parse(normalizedJsonText);
+	} catch (e) {
+		const location = getJsonErrorLocation(normalizedJsonText, e);
+		results.push({
+			line: line + location.lineOffset,
+			type: "error",
+			text: formatJsonParseError(normalizedJsonText, location)
+		});
+		return null;
+	}
+
+	const embed = extractEmbed(json);
+	validateEmbedFields(results, line, embed);
+	validateEmbedSchema(results, line, embed);
+
+	return { json, embed };
+}
+
+function findPotentialEmbedJsonBlocks(lines) {
+	const blocks = [];
+	let block = null;
+
+	function updateBlockState(block, line) {
+		for (let i = 0; i < line.length; i++) {
+			const char = line[i];
+
+			if (block.escape) {
+				block.escape = false;
+				continue;
+			}
+
+			if (char === "\\") {
+				block.escape = block.inString;
+				continue;
+			}
+
+			if (char === "\"") {
+				block.inString = !block.inString;
+				continue;
+			}
+
+			if (block.inString) {
+				continue;
+			}
+
+			if (char === "{") {
+				block.depth++;
+			} else if (char === "}") {
+				block.depth--;
+			}
+		}
+	}
+
+	function nextNonEmptyTrim(startIndex) {
+		for (let i = startIndex; i < lines.length; i++) {
+			const trimmed = lines[i].trim();
+			if (trimmed !== "") {
+				return trimmed;
+			}
+		}
+
+		return "";
+	}
+
+	for (let i = 0; i < lines.length; i++) {
+		const raw = lines[i];
+		const trimmed = raw.trim();
+
+		if (!block && trimmed.startsWith("{")) {
+			block = {
+				startLine: i + 1,
+				lines: [raw],
+				hasEmbedCommand: false,
+				depth: 0,
+				inString: false,
+				escape: false
+			};
+			updateBlockState(block, raw);
+
+			if (block.depth <= 0 && nextNonEmptyTrim(i + 1) !== ".embed:json") {
+				blocks.push(block);
+				block = null;
+			}
+			continue;
+		}
+
+		if (!block) {
+			continue;
+		}
+
+		if (trimmed === ".embed:json") {
+			block.hasEmbedCommand = true;
+			blocks.push(block);
+			block = null;
+			continue;
+		}
+
+		block.lines.push(raw);
+		updateBlockState(block, raw);
+
+		if (block.depth <= 0 && nextNonEmptyTrim(i + 1) !== ".embed:json") {
+			blocks.push(block);
+			block = null;
+		}
+	}
+
+	if (block) {
+		blocks.push(block);
+	}
+
+	return blocks;
+}
+
+function validatePotentialEmbedJsonBlocks(results, lines) {
+	for (const block of findPotentialEmbedJsonBlocks(lines)) {
+		if (block.hasEmbedCommand) {
+			continue;
+		}
+
+		validateEmbedJsonText(results, block.startLine, block.lines.join("\n"));
+	}
+}
+
 function findSyntaxErrors(text) {
     /* state values
     * 0 - parsing message content
@@ -46,6 +326,8 @@ function findSyntaxErrors(text) {
 		text: "",
 		firstline: 1
 	};
+
+	validatePotentialEmbedJsonBlocks(results, lines);
 
 	for (let i = 0; i < lines.length; i ++) {
 		let line = lines[i];
@@ -192,70 +474,17 @@ function findSyntaxErrors(text) {
 
 					if (param === "json") {
 						message.linkText = message.text;
-						let json;
-
-						try {
-							json = JSON.parse(message.text);
-						} catch (e) {
+						const embedText = message.text.slice(1);
+						const embedResult = validateEmbedJsonText(results, message.firstline, embedText);
+						if (!embedResult) {
 							// Suppress any further checking of the content
 							message.text = "";
-
-							results.push({
-								line: i + 1,
-								type: "error",
-								text: "JSON embed object is invalid"
-							});
 							continue;
 						}
 
-						let embed;
-
+						const json = embedResult.json;
 						message.text = json.content ? json.content : "";
 						delete json.content;
-
-						if (json.embeds) {
-							// if (json.embeds > 1) {
-							// 	const err = new Error("Message too long");
-							// 	err.reply = "Message #" + (messages.length + 1) +
-							// 		" contains multiple embeds, limit 1 embed per" +
-							// 		" message.";
-							// 	throw err;
-							// }
-
-							embed = json.embeds[0];
-						} else if (json.embed) {
-							embed = json.embed;
-						} else {
-							embed = json;
-						}
-
-						try {
-							if(embed.fields) {
-								for(let j = 0 ; j < embed.fields.length; j++) {
-									if(embed.fields[j].name.trim().length == 0) {
-										results.push({
-											line: i + 1,
-											type: "error",
-											text: "JSON embed object is invalid: \"name\" is empty in an embed field"
-										});
-									}
-									if(embed.fields[j].value.trim() == 0) {
-										results.push({
-											line: i + 1,
-											type: "error",
-											text: "JSON embed object is invalid: \"value\" is empty in an embed field"
-										});
-									}
-								}
-							}
-						}
-
-					catch(e) {
-						console.log("Error parsing embed fields: " + e);
-					}
-
-						// TODO: validate embed object
-                        const embedValid = validateEmbedSchema(results, i + 1, embed);
 
 					}
 				} else if (base === "react") {

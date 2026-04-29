@@ -85,12 +85,113 @@ function hasValidEmojiAfter(line, emojiEnd) {
 	return after === " " || ALLOWED_EMOJI_NEIGHBOR_CHARS.test(after);
 }
 
+function findEmbedJsonLineIndexes(lines) {
+	const indexes = new Set();
+	let block = null;
+
+	function updateBlockState(block, line) {
+		for (let i = 0; i < line.length; i++) {
+			const char = line[i];
+
+			if (block.escape) {
+				block.escape = false;
+				continue;
+			}
+
+			if (char === "\\") {
+				block.escape = block.inString;
+				continue;
+			}
+
+			if (char === "\"") {
+				block.inString = !block.inString;
+				continue;
+			}
+
+			if (block.inString) {
+				continue;
+			}
+
+			if (char === "{") {
+				block.depth++;
+			} else if (char === "}") {
+				block.depth--;
+			}
+		}
+	}
+
+	function nextNonEmptyTrim(startIndex) {
+		for (let i = startIndex; i < lines.length; i++) {
+			const trimmed = lines[i].trim();
+			if (trimmed !== "") {
+				return trimmed;
+			}
+		}
+
+		return "";
+	}
+
+	for (let i = 0; i < lines.length; i++) {
+		const raw = lines[i];
+		const trimmed = raw.trim();
+
+		if (!block && trimmed.startsWith("{")) {
+			block = {
+				indexes: [i],
+				depth: 0,
+				inString: false,
+				escape: false
+			};
+			updateBlockState(block, raw);
+
+			if (block.depth <= 0 && nextNonEmptyTrim(i + 1) !== ".embed:json") {
+				for (const index of block.indexes) {
+					indexes.add(index);
+				}
+				block = null;
+			}
+			continue;
+		}
+
+		if (!block) {
+			continue;
+		}
+
+		if (trimmed === ".embed:json") {
+			for (const index of block.indexes) {
+				indexes.add(index);
+			}
+			block = null;
+			continue;
+		}
+
+		block.indexes.push(i);
+		updateBlockState(block, raw);
+
+		if (block.depth <= 0 && nextNonEmptyTrim(i + 1) !== ".embed:json") {
+			for (const index of block.indexes) {
+				indexes.add(index);
+			}
+			block = null;
+		}
+	}
+
+	if (block) {
+		for (const index of block.indexes) {
+			indexes.add(index);
+		}
+	}
+
+	return indexes;
+}
+
 function findStyleErrors(text) {
     /* state values
 	 * 0 - parsing message content
 	 * 1 - parsing message commands
 	 */
     const lines = text.split('\n');
+	const embedJsonLineIndexes = findEmbedJsonLineIndexes(lines);
 	let state = 0;
 	const messages = [];
 	const results = [];
@@ -101,6 +202,10 @@ function findStyleErrors(text) {
 	};
 
 	for (let i = 0; i < lines.length; i++) {
+		if (embedJsonLineIndexes.has(i)) {
+			continue;
+		}
+
 		if (i > 0 && /^#{1,3}(?!#)(?:\s|$)/.test(lines[i]) && lines[i - 1].trim() !== ".") {
 			results.push({
 				line: i + 1,
@@ -155,6 +260,10 @@ function findStyleErrors(text) {
 				}
 				continue;
 			}
+		}
+
+		if (embedJsonLineIndexes.has(i)) {
+			continue;
 		}
 
 		if (state === 1) {
