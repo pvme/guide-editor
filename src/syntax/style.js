@@ -206,11 +206,14 @@ function findStyleErrors(text) {
 			continue;
 		}
 
-		if (i > 0 && /^#{1,3}(?!#)(?:\s|$)/.test(lines[i]) && lines[i - 1].trim() !== ".") {
+		const previousLine = lines[i - 1]?.trim() || "";
+		const hasValidHeadingPrefix = previousLine === "." || previousLine.startsWith(".tag:");
+
+		if (i > 0 && /^#{1,3}(?!#)(?:\s|$)/.test(lines[i]) && !hasValidHeadingPrefix) {
 			results.push({
 				line: i + 1,
 				type: "error",
-				text: "Headings must be preceded by a line containing only '.'"
+				text: "Headings must be preceded by a line containing only '.' or a .tag: command"
 			});
 		}
 	}

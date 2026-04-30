@@ -6,8 +6,11 @@ export function getGuidePrApiBase() {
 }
 
 export function getDiscordLoginUrl() {
+  const returnUrl = new URL(window.location.href);
+  returnUrl.searchParams.set("submit", "1");
+
   const params = new URLSearchParams({
-    returnTo: window.location.href
+    returnTo: returnUrl.toString()
   });
 
   return `${getGuidePrApiBase()}/auth/discord/start?${params}`;

@@ -28,6 +28,14 @@ function guideSubmitProxy(env) {
           return;
         }
 
+        const localAuthFailureRedirect = getLocalAuthFailureRedirect(req.url || "");
+        if (localAuthFailureRedirect) {
+          res.statusCode = 302;
+          res.setHeader("Location", localAuthFailureRedirect);
+          res.end("");
+          return;
+        }
+
         const endpoints = [
           env.VITE_GUIDE_PR_ENDPOINT_LOCAL,
           env.VITE_GUIDE_PR_ENDPOINT_LIVE
@@ -80,6 +88,51 @@ function guideSubmitProxy(env) {
       });
     }
   };
+}
+
+function getLocalAuthFailureRedirect(url) {
+  const parsed = new URL(url, "http://localhost:5173");
+  const path = parsed.pathname.startsWith(DEV_API_PROXY_PREFIX)
+    ? parsed.pathname.slice(DEV_API_PROXY_PREFIX.length) || "/"
+    : parsed.pathname || "/";
+
+  if (path !== "/auth/discord/callback" || !parsed.searchParams.has("error")) {
+    return "";
+  }
+
+  const fallback = "http://localhost:5173/guide-editor/";
+  const stateReturnTo = getUnsignedStateReturnTo(parsed.searchParams.get("state"));
+  let redirectUrl;
+
+  try {
+    redirectUrl = new URL(stateReturnTo || fallback, fallback);
+  } catch {
+    redirectUrl = new URL(fallback);
+  }
+
+  if (redirectUrl.origin !== "http://localhost:5173") {
+    redirectUrl = new URL(fallback);
+  }
+
+  redirectUrl.searchParams.set("submit", "1");
+  redirectUrl.searchParams.set(
+    "authError",
+    "Discord login was cancelled. You must log in with Discord to submit a guide update."
+  );
+
+  return redirectUrl.toString();
+}
+
+function getUnsignedStateReturnTo(state) {
+  const [payload] = String(state || "").split(".");
+  if (!payload) return "";
+
+  try {
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return typeof data.returnTo === "string" ? data.returnTo : "";
+  } catch {
+    return "";
+  }
 }
 
 function getUpstreamPath(url) {

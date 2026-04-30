@@ -44,6 +44,9 @@
   let pendingGuide = null;
   let showGuideSearch = false;
   let showSubmitPrModal = false;
+  let submitAuthError = "";
+  let errorViewFlashKey = 0;
+  let guideLoadStatus = "idle";
   let guideNotice = "";
   let removeGlobalKeydown = null;
 
@@ -84,6 +87,7 @@
   async function confirmLoadGuide() {
     if (!pendingGuide) return;
 
+    guideLoadStatus = "confirm";
     const loaded = await loadGuideText(pendingGuide, "auto");
 
     if (loaded.hasExistingReview) {
@@ -91,6 +95,7 @@
         ...pendingGuide,
         ...loaded
       };
+      guideLoadStatus = "idle";
       return;
     }
 
@@ -101,22 +106,27 @@
     
     pendingGuide = null;
     showGuideModal = false;
+    guideLoadStatus = "idle";
   }
 
   async function loadExistingReviewGuide() {
     if (!pendingGuide) return;
+    guideLoadStatus = "review";
     const loaded = await loadGuideText(pendingGuide, "review");
     applyLoadedGuide(loaded, "Loaded your existing review draft.");
     pendingGuide = null;
     showGuideModal = false;
+    guideLoadStatus = "idle";
   }
 
   async function loadLiveGuideReplacingReview() {
     if (!pendingGuide) return;
+    guideLoadStatus = "live";
     const loaded = await loadGuideText(pendingGuide, "master");
     applyLoadedGuide(loaded, "Loaded the live guide. Submitting will replace your existing open review.");
     pendingGuide = null;
     showGuideModal = false;
+    guideLoadStatus = "idle";
   }
 
   function applyLoadedGuide(loaded, notice) {
@@ -149,6 +159,7 @@
   }
 
   function cancelLoadGuide() {
+    if (guideLoadStatus !== "idle") return;
     pendingGuide = null;
     showGuideModal = false;
   }
@@ -198,6 +209,18 @@
 
     // --- Load guide from URL ---
     const params = new URLSearchParams(window.location.search);
+    if (params.get("authError")) {
+      submitAuthError = params.get("authError");
+    }
+
+    if (params.get("submit") === "1" || submitAuthError) {
+      showSubmitPrModal = true;
+      params.delete("submit");
+      params.delete("authError");
+      const nextUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, document.title, nextUrl);
+    }
+
     if (params.has("id")) {
       loadGuide(params.get("id"));
     }
@@ -311,6 +334,11 @@
 
     editor.focus();
   }
+
+  function handleReviewCheckerIssues() {
+    showSubmitPrModal = false;
+    errorViewFlashKey += 1;
+  }
 </script>
 
 <main>
@@ -347,7 +375,11 @@
           </div>
         {/if}
 
-        <ErrorView text={validText} on:jump={handleErrorJump} />
+        <ErrorView
+          text={validText}
+          flashKey={errorViewFlashKey}
+          on:jump={handleErrorJump}
+        />
       </div>
 
       <!-- PREVIEW -->
@@ -372,6 +404,7 @@
   <GuideLoadModal
     open={showGuideModal}
     guide={pendingGuide}
+    loadingAction={guideLoadStatus}
     on:confirm={confirmLoadGuide}
     on:loadReview={loadExistingReviewGuide}
     on:loadLive={loadLiveGuideReplacingReview}
@@ -386,7 +419,12 @@
 
   <SubmitPrModal
     open={showSubmitPrModal}
-    close={() => (showSubmitPrModal = false)}
+    authError={submitAuthError}
+    on:reviewIssues={handleReviewCheckerIssues}
+    close={() => {
+      showSubmitPrModal = false;
+      submitAuthError = "";
+    }}
   />
 
 </main>

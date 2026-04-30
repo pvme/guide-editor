@@ -9,14 +9,6 @@
         if (e.key === "Escape") close();
     }
 
-    function handleBackdropKeydown(e) {
-        if (e.target !== e.currentTarget) return;
-        if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            close();
-        }
-    }
-
     onMount(() => {
         document.addEventListener("keydown", handleEscape);
     });
@@ -29,16 +21,14 @@
 {#if open}
     <!-- BACKDROP (NOW THE TOPMOST LAYER) -->
     <div
-      class="modal-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      role="button"
-      tabindex="0"
+      class="modal-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer"
+      role="presentation"
       on:click={() => close()}
-      on:keydown={handleBackdropKeydown}
     >
         <!-- MODAL PANEL -->
         <div
           class={`modal-content relative bg-slate-800 border border-slate-700 rounded shadow-xl text-white
-                     max-w-3xl w-full max-h-[80vh] overflow-auto p-6 ${panelClass}`}
+                     max-w-3xl w-full max-h-[80vh] overflow-auto cursor-default p-6 ${panelClass}`}
               role="presentation"
               tabindex="-1"
               on:click|stopPropagation

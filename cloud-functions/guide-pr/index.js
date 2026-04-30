@@ -123,7 +123,7 @@ async function handleSubmitGuideUpdate(req, res) {
     if (currentMasterFile.text !== payload.originalContent) {
       throw httpError(
         409,
-        "This guide has changed since it was loaded. Reload the guide and apply your edits again before submitting."
+        "This guide has changed since it was loaded. You must reload the guide and apply your edits again to submit a guide update."
       );
     }
 
@@ -143,7 +143,7 @@ async function handleSubmitGuideUpdate(req, res) {
     if (currentReviewFile.text !== payload.originalContent) {
       throw httpError(
         409,
-        "Your review draft has changed since it was loaded. Reload the review and apply your edits again before submitting."
+        "Your review draft has changed since it was loaded. You must reload the review and apply your edits again to submit a guide update."
       );
     }
   }
@@ -175,15 +175,25 @@ async function handleSubmitGuideUpdate(req, res) {
   });
 
   const openPr = existingPr || await getOpenPullRequest(github, owner, repo, reviewBranch);
-  const pr = openPr || await github(`/repos/${owner}/${repo}/pulls`, {
-    method: "POST",
-    body: {
-      title: payload.title || `Update ${payload.path}`,
-      head: reviewBranch,
-      base: BASE_BRANCH,
-      body: createPullRequestBody(payload, user)
-    }
-  });
+  const prTitle = payload.title || `Update ${payload.path}`;
+  const prBody = createPullRequestBody(payload, user, openPr?.body || "");
+  const pr = openPr
+    ? await github(`/repos/${owner}/${repo}/pulls/${openPr.number}`, {
+      method: "PATCH",
+      body: {
+        title: prTitle,
+        body: prBody
+      }
+    })
+    : await github(`/repos/${owner}/${repo}/pulls`, {
+      method: "POST",
+      body: {
+        title: prTitle,
+        head: reviewBranch,
+        base: BASE_BRANCH,
+        body: prBody
+      }
+    });
 
   sendJson(res, openPr ? 200 : 201, {
     prUrl: pr.html_url,
@@ -317,11 +327,17 @@ function handleDiscordStart(req, res) {
 async function handleDiscordCallback(req, res) {
   requireDiscordConfig();
 
+  if (req.query.error) {
+    redirectAuthFailure(req, res, "Discord login was cancelled. You must log in with Discord to submit a guide update.");
+    return;
+  }
+
   const code = String(req.query.code || "");
   const state = verifySignedJson(String(req.query.state || ""));
 
   if (!code || !state || state.exp < nowSeconds() || !state.redirectUri) {
-    throw httpError(400, "Discord login could not be verified.");
+    redirectAuthFailure(req, res, "Discord login could not be verified.");
+    return;
   }
 
   const tokenRes = await fetch(`${DISCORD_API}/oauth2/token`, {
@@ -340,8 +356,9 @@ async function handleDiscordCallback(req, res) {
   const tokenData = await tokenRes.json().catch(() => ({}));
 
   if (!tokenRes.ok || !tokenData.access_token) {
-    const detail = getDiscordOAuthError(tokenData);
-    throw httpError(401, detail ? `Discord login failed: ${detail}` : "Discord login failed.");
+    console.warn("Discord OAuth token exchange failed:", getDiscordOAuthError(tokenData) || tokenRes.status);
+    redirectAuthFailure(req, res, "Discord login could not be verified.");
+    return;
   }
 
   const userRes = await fetch(`${DISCORD_API}/users/@me`, {
@@ -352,7 +369,8 @@ async function handleDiscordCallback(req, res) {
   const discordUser = await userRes.json().catch(() => ({}));
 
   if (!userRes.ok || !discordUser.id) {
-    throw httpError(401, "Discord user could not be loaded.");
+    redirectAuthFailure(req, res, "Discord login could not be verified.");
+    return;
   }
 
   setSessionCookie(res, {
@@ -364,6 +382,27 @@ async function handleDiscordCallback(req, res) {
   });
 
   res.redirect(state.returnTo || getFrontendOrigin(req));
+}
+
+function redirectAuthFailure(req, res, message) {
+  const state = verifySignedJson(String(req.query.state || ""));
+  const fallback = getFrontendOrigin(req);
+  const allowedOrigin = getUrlOrigin(fallback);
+  let redirectUrl;
+
+  try {
+    redirectUrl = new URL(state?.returnTo || fallback, fallback);
+  } catch {
+    redirectUrl = new URL(fallback);
+  }
+
+  if (redirectUrl.origin !== allowedOrigin) {
+    redirectUrl = new URL(fallback);
+  }
+
+  redirectUrl.searchParams.set("submit", "1");
+  redirectUrl.searchParams.set("authError", message);
+  res.redirect(redirectUrl.toString());
 }
 
 function createLoadedGuide({ path, text, source, branch, prUrl }) {
@@ -422,11 +461,11 @@ function validatePayload(payload) {
   }
 
   if (payload.content.trim().length === 0) {
-    throw httpError(400, "Guide content cannot be empty.");
+    throw httpError(400, "You must add guide text to submit a guide update.");
   }
 
   if (payload.content === payload.originalContent) {
-    throw httpError(400, "No guide changes were submitted.");
+    throw httpError(400, "You must make a guide change to submit a guide update.");
   }
 
   if (Buffer.byteLength(payload.content, "utf8") > MAX_CONTENT_BYTES) {
@@ -434,7 +473,7 @@ function validatePayload(payload) {
   }
 
   if (!payload.notes) {
-    throw httpError(400, "A summary of what changed is required.");
+    throw httpError(400, "You must describe what changed to submit a guide update.");
   }
 }
 
@@ -621,10 +660,25 @@ function createFileSlug(path) {
 }
 
 function createCommitMessage(payload, user) {
-  return `${payload.title || `Update ${payload.path}`}\n\nSubmitted by Discord user: ${userDisplayName(user)} (${user.discordId})`;
+  const lines = [
+    `Update ${payload.path}`
+  ];
+
+  if (payload.notes) {
+    lines.push("", payload.notes);
+  }
+
+  lines.push("", `Discord: ${userDisplayName(user)} (${user.discordId})`);
+
+  return lines.join("\n");
 }
 
-function createPullRequestBody(payload, user) {
+function createPullRequestBody(payload, user, existingBody = "") {
+  const summaries = getExistingUpdateSummaries(existingBody);
+  if (payload.notes) {
+    summaries.push(payload.notes);
+  }
+
   const lines = [
     "Submitted from the PvME Guide Editor.",
     "",
@@ -633,13 +687,54 @@ function createPullRequestBody(payload, user) {
     `Discord user ID: \`${user.discordId}\``
   ];
 
-  if (payload.notes) {
-    lines.push("", "Update summary:", payload.notes);
+  if (summaries.length > 0) {
+    lines.push("", "Update summaries:");
+    summaries.forEach((summary, index) => {
+      lines.push(`${index + 1}. ${formatSummaryListItem(summary)}`);
+    });
   }
 
   lines.push("", "This automated submission updates one existing guide file only.");
 
   return lines.join("\n");
+}
+
+function getExistingUpdateSummaries(body) {
+  const lines = String(body || "").split(/\r?\n/);
+  const summaries = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] === "Update summaries:") {
+      for (let j = i + 1; j < lines.length; j++) {
+        const line = lines[j];
+        if (!line.trim()) break;
+        const match = line.match(/^\d+\.\s+(.*)$/);
+        if (match) summaries.push(match[1].trim());
+      }
+      return summaries;
+    }
+
+    if (lines[i] === "Update summary:") {
+      const summary = [];
+      for (let j = i + 1; j < lines.length; j++) {
+        if (!lines[j].trim()) break;
+        summary.push(lines[j]);
+      }
+      if (summary.length > 0) summaries.push(summary.join("\n").trim());
+      return summaries;
+    }
+  }
+
+  return summaries;
+}
+
+function formatSummaryListItem(summary) {
+  return String(summary || "")
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" ");
 }
 
 function encodePath(path) {
@@ -835,7 +930,7 @@ function requireSession(req) {
   const user = getSessionUser(req);
 
   if (!user) {
-    throw httpError(401, "Log in with Discord before submitting an update.");
+    throw httpError(401, "You must log in with Discord to submit a guide update.");
   }
 
   return user;
