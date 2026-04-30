@@ -1,20 +1,20 @@
 <script>
     import { createEventDispatcher } from "svelte";
 
-    import ButtonGroup from "./ButtonGroup.svelte";
-    import SnippetMenu from "./SnippetMenu.svelte";
-    import TemplateMenu from "./TemplateMenu.svelte";
+    import FormatMenu from "./FormatMenu.svelte";
+    import InsertMenu from "./InsertMenu.svelte";
     import StyleGuideMenu from "./StyleGuideMenu.svelte";
     import EmbedGuide from "./EmbedGuide.svelte";
-    import FormatMenu from "./FormatMenu.svelte";
 
     import Help from "./Help.svelte";
     import Info from "./Info.svelte";
     import ToggleView from "./ToggleView.svelte";
     import ExportToTxt from "./ExportToTxt.svelte";
-    import GuideSearch from "./GuideSearch.svelte";
+    import SubmitPr from "./SubmitPr.svelte";
 
     export let insertAtCursor;
+    export let getEditorCursorPosition;
+    export let replaceEditorText;
 
     const dispatch = createEventDispatcher();
 </script>
@@ -25,29 +25,36 @@
          border-b border-slate-800
          shadow-sm shadow-[0_1px_0_rgba(15,23,42,0.6)]"
     >
-        <div class="flex flex-wrap mt-4 mb-2 mx-2 items-center">
+        <div class="mx-2 flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:pl-3">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-none">
+                <img
+                    src="https://pvme.io/assets/logo-no-bg.png"
+                    alt="PVME logo"
+                    title="PvME Guide Editor"
+                    class="h-9 w-auto flex-shrink-0"
+                />
 
-            <FormatMenu {dispatch} />
-
-            <!-- SNIPPETS / TEMPLATE / STYLE GUIDE (desktop only) -->
-            <div class="hidden lg:flex ml-2">
-                <ButtonGroup><SnippetMenu {insertAtCursor} /></ButtonGroup>
-                <ButtonGroup><TemplateMenu {insertAtCursor} /></ButtonGroup>
-                <ButtonGroup><StyleGuideMenu /></ButtonGroup>
-                <ButtonGroup><EmbedGuide {insertAtCursor} /></ButtonGroup>
+                <div class="inline-flex flex-wrap items-center gap-3">
+                    <FormatMenu {dispatch} />
+                    <InsertMenu {insertAtCursor} />
+                    <StyleGuideMenu />
+                    <EmbedGuide {insertAtCursor} {getEditorCursorPosition} {replaceEditorText} />
+                </div>
             </div>
 
-
-            <!-- RIGHT SIDE -->
-            <div class="inline-flex mx-2 ml-auto" role="group">
-                <ButtonGroup>
-                    <GuideSearch on:select={(e) => dispatch("loadGuide", e.detail)} />
-                    <ExportToTxt/>
-                </ButtonGroup>
+            <div class="flex justify-start lg:flex-1 lg:justify-center" role="group">
+                <div class="inline-flex">
+                    <SubmitPr
+                        corner="rounded"
+                        on:loadGuide={() => dispatch("openGuideSearch")}
+                        on:open={() => dispatch("openSubmitPr")}
+                    />
+                </div>
             </div>
 
-            <div class="inline-flex mb-2 mx-2 ml-auto" role="group">
+            <div class="flex flex-wrap items-center gap-3 lg:flex-none lg:justify-end">
                 <ToggleView {dispatch}/>
+                <ExportToTxt iconOnly />
                 <Help/>
                 <Info/>
             </div>

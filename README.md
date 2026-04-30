@@ -1,69 +1,45 @@
-Editor for [PVME Discord](https://discord.gg/6djqFVN) guides:
+# PvME Guide Editor
 
-[![Image from Gyazo](https://i.gyazo.com/5ec9f4f0fe50544067d36a24af37ef45.gif)](https://gyazo.com/5ec9f4f0fe50544067d36a24af37ef45)
+Web editor for PvME Discord guides. It loads existing guide files, previews Discord-style output, checks common issues, and submits updates through the Guide PR backend.
 
-## Development
+## Local Setup
 
-**install packages**
-
-```
+```powershell
 npm install
-```
-
-**Live development server**
-
-```
 npm run dev
 ```
 
-## Pipeline
+Create `.env.development`:
 
-```USER INPUT
-   ↓
-CodeMirror (stores.text)
-   ↓
-parseMessages()
-   ↓
-messages[] = {
-    content,
-    embed,
-    attachments,
-    lineMap  ← authoritative
-}
-   ↓
-DiscordView.svelte
-   ↓
-<Message lineMap={...} lineOffset={...} />
-   ↓
-DOM .pvme-line (final truth)
+```env
+VITE_GUIDE_PR_ENDPOINT_LOCAL=http://localhost:8080
+VITE_GUIDE_PR_ENDPOINT_LIVE=https://europe-west1-pvmebackend.cloudfunctions.net/submitGuideUpdate
+PVME_SUBMIT_SECRET=...
 ```
 
-## Compatibility Notice
+`PVME_SUBMIT_SECRET` is used only by the Vite dev proxy. Never put secrets in `VITE_*` vars.
 
-This project currently depends on a **specific, stable stack** due to breaking changes in Svelte 5 and the latest vite-plugin-svelte releases.
+## Production Build
 
-You **must** use the versions below:
+`.env.production`:
 
-- `"svelte": "5.37.0"`
-- `"@sveltejs/vite-plugin-svelte": "3.0.2"`
+```env
+VITE_GUIDE_PR_ENDPOINT_LIVE=https://europe-west1-pvmebackend.cloudfunctions.net/submitGuideUpdate
+```
 
-### Why these versions?
+Build:
 
-Newer versions of vite-plugin-svelte (4.x and above) assume the new Svelte 5 component API and **disable legacy `new App()` mounting**, even when `runes: false` and `compatibility.componentApi: 4` are configured.
+```powershell
+npm run build
+```
 
-This causes:
-- `<script>` in `.svelte` files to run
-- but the component **never mounts**
-- `onMount` **never fires**
-- no DOM is rendered
-- no errors are thrown
+## Backend
 
-Downgrading to vite-plugin-svelte `3.0.2` restores correct legacy behaviour and allows this project to keep using:
-- the Svelte 3/4-style component API
-- `new App()` root instantiation
-- standard reactivity
-- CodeMirror integration without runes
+The submit backend is in [cloud-functions/guide-pr](./cloud-functions/guide-pr).
 
-### Summary
+Quick checks:
 
-Do **not** upgrade Svelte or vite-plugin-svelte past these versions unless you plan to fully migrate the project to Svelte 5 runes and the new `App.mount()` API.
+```powershell
+npm run build
+npm run check:guide-pr
+```

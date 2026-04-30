@@ -1,11 +1,14 @@
 <!-- // components/toolbar/GuideSearch.svelte -->
 <script>
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher, onMount, tick } from "svelte";
+  import Search from "svelte-bootstrap-icons/lib/Search.svelte";
 
   const dispatch = createEventDispatcher();
 
+  export let open = false;
+
+  let inputEl;
   let query = "";
-  let open = false;
   let guides = [];
   let filtered = [];
   let activeIndex = 0;
@@ -52,9 +55,13 @@
 
   onMount(loadGuideIndex);
 
+  $: if (open) {
+    focusInput();
+  }
+
   $: filtered =
     query.length === 0
-      ? []
+      ? guides.slice(0, 10)
       : guides
           .map(g => {
             const text = normalise(g.path);
@@ -87,8 +94,17 @@
     if (!guide) return;
     dispatch("select", { ...guide });
     query = "";
-    open = false;
     activeIndex = 0;
+    close();
+  }
+
+  async function focusInput() {
+    await tick();
+    inputEl?.focus();
+  }
+
+  function close() {
+    dispatch("cancel");
   }
 
   function onKeydown(e) {
@@ -111,43 +127,59 @@
     }
 
     if (e.key === "Escape") {
-      open = false;
+      close();
     }
   }
 </script>
 
-<div class="relative mr-5 w-72">
-  <input
-    class="h-10 w-full rounded-md
-           bg-slate-800 border border-slate-700
-           px-3 text-sm text-slate-200
-           placeholder:text-slate-400
-           focus:outline-none focus:ring-2 focus:ring-indigo-500"
-    placeholder="Search and load a guide…"
-    bind:value={query}
-    on:focus={() => (open = true)}
-    on:keydown={onKeydown}
-  />
-
-  {#if open && filtered.length > 0}
+{#if open}
+  <div
+    class="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm px-4 pt-[12vh]"
+    role="presentation"
+    on:click={close}
+    on:keydown={(e) => {
+      if (e.key === "Escape") close();
+    }}
+  >
     <div
-      class="absolute z-50 mt-1 w-full
-             rounded-md border border-slate-700
-             bg-slate-900 shadow-lg"
+      class="w-full max-w-2xl rounded-lg border border-slate-700 bg-slate-900 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search guides"
+      tabindex="-1"
+      on:click|stopPropagation
+      on:keydown|stopPropagation
     >
-      {#each filtered as guide, i}
-        <button
-          class="w-full text-left px-3 py-1.5 text-sm
-                 hover:bg-slate-800
-                 {i === activeIndex ? 'bg-slate-800' : ''}"
-          on:mousedown={() => selectGuide(guide)}
-        >
-          <div class="text-slate-200">{guide.name}</div>
-          <div class="text-xs text-slate-400 truncate">
-            {guide.path}
+      <div class="flex items-center gap-3 border-b border-slate-700 px-4 py-3">
+        <Search class="text-slate-400" />
+        <input
+          class="h-10 w-full bg-transparent text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none"
+          placeholder="Search and load a guide..."
+          bind:this={inputEl}
+          bind:value={query}
+          on:keydown={onKeydown}
+        />
+      </div>
+
+      <div class="max-h-[55vh] overflow-auto py-2">
+        {#if filtered.length > 0}
+          {#each filtered as guide, i}
+            <button
+              class="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-slate-800 {i === activeIndex ? 'bg-slate-800' : ''}"
+              on:mousedown={() => selectGuide(guide)}
+            >
+              <div class="text-slate-100">{guide.name}</div>
+              <div class="text-xs text-slate-400 truncate">
+                {guide.path}
+              </div>
+            </button>
+          {/each}
+        {:else}
+          <div class="px-4 py-8 text-center text-sm text-slate-400">
+            No guides found
           </div>
-        </button>
-      {/each}
+        {/if}
+      </div>
     </div>
-  {/if}
-</div>
+  </div>
+{/if}

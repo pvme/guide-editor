@@ -48,6 +48,14 @@ async function setStyleGuide() {
     styleGuide = await rawGithubTextRequest('https://raw.githubusercontent.com/pvme/pvme-guides/master/editor-resources/editor-references/style-guide.txt');
 }
 
+export async function loadStyleGuide() {
+    if (!styleGuide) {
+        await setStyleGuide();
+    }
+
+    return styleGuide;
+}
+
 async function setPvmeSpreadsheet() {
     pvmeSpreadsheet = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/settings/pvme-spreadsheet/pvme_spreadsheet.json');
 }

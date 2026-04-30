@@ -5,3 +5,10 @@ const base = writable('');
 export let text = typeof window === 'undefined'
     ? base
     : persistBrowserLocal(base, 'text');
+
+const loadedGuideBase = writable(null);
+export let loadedGuide = typeof window === 'undefined'
+    ? loadedGuideBase
+    : persistBrowserLocal(loadedGuideBase, 'loadedGuide');
+
+export const authUser = writable(null);

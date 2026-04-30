@@ -3,6 +3,8 @@
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
     import { styleGuide } from "../../pvmeSettings";
 
+    export let compact = false;
+
     let open = false;
     let trigger;
 </script>
@@ -10,8 +12,7 @@
 <div class="relative inline-block">
     <button
         bind:this={trigger}
-        class="inline-flex items-center rounded bg-indigo-600 hover:bg-indigo-700
-               text-white px-4 py-2 text-sm border border-indigo-700"
+        class="{compact ? 'w-full justify-between' : ''} toolbar-btn rounded"
         on:click={() => open = !open}
     >
         Style Guide&nbsp;<CaretDownFill class="mt-1" />

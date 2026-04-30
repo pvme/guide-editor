@@ -5,6 +5,9 @@
     import { text } from "../../stores";
 
     export let insertAtCursor;
+    export let getEditorCursorPosition = () => null;
+    export let replaceEditorText = null;
+    export let compact = false;
 
     let open = false;
     let trigger;
@@ -122,15 +125,24 @@
     function insertProperty(key, val) {
         const current = $text;
         const embedBlocks = findEmbedBlocks(current);
+        const cursor = getEditorCursorPosition();
 
         if (embedBlocks.length === 0) {
-            const template = `\n{\n  "embed": {\n    ${JSON.stringify(key)}: ${val}\n  }\n}\n.embed:json|`;
+            const template = buildNewEmbedTemplate(key, val);
             insertAtCursor(template);
             open = false;
             return;
         }
 
-        const block = embedBlocks[embedBlocks.length - 1];
+        const block = embedBlocks.find(b => cursor !== null && cursor >= b.blockStart && cursor <= b.blockEnd);
+
+        if (!block) {
+            const template = buildNewEmbedTemplate(key, val);
+            insertAtCursor(template);
+            open = false;
+            return;
+        }
+
         try {
             const obj = JSON.parse(block.json);
             const embed = obj.embed || obj;
@@ -141,13 +153,26 @@
 
             const newJson = JSON.stringify(obj, null, 2);
             const updated = current.substring(0, block.jsonStart) + newJson + current.substring(block.jsonEnd);
-            text.set(updated);
+            const propertyIndex = newJson.indexOf(`${JSON.stringify(key)}:`);
+            const nextCursor = propertyIndex === -1
+                ? block.jsonStart
+                : block.jsonStart + propertyIndex;
+
+            if (replaceEditorText) {
+                replaceEditorText(updated, nextCursor);
+            } else {
+                text.set(updated);
+            }
         } catch {
             const snippet = `${JSON.stringify(key)}: ${val},\n    |`;
             insertAtCursor(snippet);
         }
 
         open = false;
+    }
+
+    function buildNewEmbedTemplate(key, val) {
+        return `\n.\n{\n  "embed": {\n    ${JSON.stringify(key)}: ${val}\n  }\n}\n.embed:json\n|`;
     }
 
     function insertColour(decimal) {
@@ -171,7 +196,13 @@
                 const joined = embedLines.join('\n');
                 try {
                     JSON.parse(joined);
-                    blocks.push({ json: joined, jsonStart: embedStartChar, jsonEnd: charPos + line.length });
+                    blocks.push({
+                        json: joined,
+                        jsonStart: embedStartChar,
+                        jsonEnd: charPos + line.length,
+                        blockStart: embedStartChar,
+                        blockEnd: charPos + line.length
+                    });
                     inEmbed = false;
                     embedLines = [];
                 } catch { /* keep collecting */ }
@@ -180,6 +211,10 @@
             }
 
             if (trimmed === '.embed:json') {
+                const lastBlock = blocks[blocks.length - 1];
+                if (lastBlock) {
+                    lastBlock.blockEnd = charPos + line.length;
+                }
                 charPos += line.length + 1;
                 continue;
             }
@@ -188,7 +223,13 @@
                 embedStartChar = charPos;
                 try {
                     JSON.parse(trimmed);
-                    blocks.push({ json: trimmed, jsonStart: charPos, jsonEnd: charPos + line.length });
+                    blocks.push({
+                        json: trimmed,
+                        jsonStart: charPos,
+                        jsonEnd: charPos + line.length,
+                        blockStart: charPos,
+                        blockEnd: charPos + line.length
+                    });
                 } catch {
                     inEmbed = true;
                     embedLines = [line];
@@ -214,11 +255,10 @@
 <div class="relative inline-block">
     <button
         bind:this={trigger}
-        class="inline-flex items-center rounded bg-indigo-600 hover:bg-indigo-700
-               text-white px-4 py-2 text-sm border border-indigo-700"
+        class="{compact ? 'w-full justify-between' : ''} toolbar-btn rounded"
         on:click={() => open = !open}
     >
-        Embed Guide&nbsp;<CaretDownFill class="mt-1" />
+        JSON Assistant&nbsp;<CaretDownFill class="mt-1" />
     </button>
 
     <DropdownPanel
@@ -232,10 +272,7 @@
             <div class="flex flex-col text-sm p-3 w-full gap-1">
                 {#each sections as s}
                     <button
-                        class="p-2 text-left rounded transition-colors
-                               {activeSection === s.id
-                                   ? 'bg-indigo-600 text-white'
-                                   : 'bg-slate-800 hover:bg-slate-600 text-slate-300'}"
+                        class="toolbar-submenu-option {activeSection === s.id ? 'toolbar-submenu-option-active' : ''}"
                         on:click={() => activeSection = s.id}
                     >
                         {s.label}
@@ -247,14 +284,14 @@
 
                 {#if activeSection === "properties"}
                     <div class="text-sm text-slate-300 mb-3">
-                        Top-level embed properties. Click <strong class="text-indigo-300">Insert</strong> to add to the last embed in your editor.
+                        Top-level embed properties. Place your cursor inside an embed JSON block, then click <strong class="text-blue-300">Insert</strong> to update that embed.
                     </div>
                     {#each properties as p}
                         <div class="flex items-center gap-3 p-2 rounded mb-1 bg-slate-800">
-                            <code class="text-indigo-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
+                            <code class="text-blue-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
                             <span class="text-slate-400 text-xs flex-1">{p.desc}</span>
                             <button
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2 py-1 rounded border border-indigo-700 whitespace-nowrap"
+                                class="toolbar-menu-option whitespace-nowrap text-xs"
                                 on:click={() => insertProperty(p.key, p.val)}
                             >Insert</button>
                         </div>
@@ -265,10 +302,10 @@
                     <div class="text-sm text-slate-300 mb-3">Author block — small text and icon above the title.</div>
                     {#each authorProps as p}
                         <div class="flex items-center gap-3 p-2 rounded mb-1 bg-slate-800">
-                            <code class="text-indigo-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
+                            <code class="text-blue-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
                             <span class="text-slate-400 text-xs flex-1">{p.desc}</span>
                             <button
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2 py-1 rounded border border-indigo-700 whitespace-nowrap"
+                                class="toolbar-menu-option whitespace-nowrap text-xs"
                                 on:click={() => insertProperty(p.key, p.val)}
                             >Insert</button>
                         </div>
@@ -285,10 +322,10 @@
                     <div class="text-sm text-slate-300 mb-3">Fields — a grid of labelled sections inside the embed.</div>
                     {#each fieldProps as p}
                         <div class="flex items-center gap-3 p-2 rounded mb-1 bg-slate-800">
-                            <code class="text-indigo-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
+                            <code class="text-blue-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
                             <span class="text-slate-400 text-xs flex-1">{p.desc}</span>
                             <button
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2 py-1 rounded border border-indigo-700 whitespace-nowrap"
+                                class="toolbar-menu-option whitespace-nowrap text-xs"
                                 on:click={() => insertProperty(p.key, p.val)}
                             >Insert</button>
                         </div>
@@ -305,10 +342,10 @@
                     <div class="text-sm text-slate-300 mb-3">Image properties for embeds.</div>
                     {#each imageProps as p}
                         <div class="flex items-center gap-3 p-2 rounded mb-1 bg-slate-800">
-                            <code class="text-indigo-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
+                            <code class="text-blue-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
                             <span class="text-slate-400 text-xs flex-1">{p.desc}</span>
                             <button
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2 py-1 rounded border border-indigo-700 whitespace-nowrap"
+                                class="toolbar-menu-option whitespace-nowrap text-xs"
                                 on:click={() => insertProperty(p.key, p.val)}
                             >Insert</button>
                         </div>
@@ -319,10 +356,10 @@
                     <div class="text-sm text-slate-300 mb-3">Footer — small text and icon at the bottom of the embed.</div>
                     {#each footerProps as p}
                         <div class="flex items-center gap-3 p-2 rounded mb-1 bg-slate-800">
-                            <code class="text-indigo-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
+                            <code class="text-blue-300 font-mono text-xs min-w-[7rem]">"{p.key}"</code>
                             <span class="text-slate-400 text-xs flex-1">{p.desc}</span>
                             <button
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2 py-1 rounded border border-indigo-700 whitespace-nowrap"
+                                class="toolbar-menu-option whitespace-nowrap text-xs"
                                 on:click={() => insertProperty(p.key, p.val)}
                             >Insert</button>
                         </div>
@@ -337,7 +374,7 @@
 
                 {#if activeSection === "colours"}
                     <div class="text-sm text-slate-300 mb-3">
-                        Click a colour to set it on the last embed. Convert hex at
+                        Place your cursor inside an embed JSON block, then click a colour to set it on that embed. Convert hex at
                         <a href="https://www.binaryhexconverter.com/hex-to-decimal-converter"
                            target="_blank" class="text-blue-400 hover:underline">binaryhexconverter.com</a>.
                     </div>
@@ -361,8 +398,7 @@
                          style="max-height: 45vh;">{fullExample}</pre>
                     <div class="flex items-center mt-2">
                         <button
-                            class="inline-flex items-center rounded bg-indigo-600 hover:bg-indigo-700
-                                   text-white px-2 py-2 active:bg-indigo-800 text-sm border border-indigo-700"
+                            class="toolbar-btn rounded"
                             on:click={copyExample}
                         >
                             <Clipboard />&nbsp;Copy

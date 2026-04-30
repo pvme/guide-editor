@@ -1,0 +1,12 @@
+{
+  "type": "update",
+  "repo": "pvme/pvme-guides",
+  "baseBranch": "master",
+  "path": "example/example-guide.txt",
+  "content": "Example updated guide content.\n",
+  "originalContent": "Example guide content.\n",
+  "title": "Update example guide",
+  "notes": "Smoke test payload.",
+  "source": "master",
+  "branch": "master"
+}

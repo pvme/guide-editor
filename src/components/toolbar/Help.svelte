@@ -6,12 +6,13 @@
 </script>
 
 <button
-    class="rounded-l bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-2
-           active:bg-indigo-800 text-sm border border-indigo-700"
+    class="toolbar-btn rounded"
     title="Help"
+    type="button"
     on:click={() => (open = true)}
 >
     <QuestionCircle />
+    Help
 </button>
 
 <Modal {open} close={() => (open = false)}>

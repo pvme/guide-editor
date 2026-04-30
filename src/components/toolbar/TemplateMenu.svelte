@@ -14,6 +14,8 @@
         commandTemplate
     } from "./templateData";
 
+    export let compact = false;
+
     let open = false;
     let trigger;
     let preview = "";
@@ -84,8 +86,7 @@
 <div class="relative inline-block">
     <button
         bind:this={trigger}
-        class="inline-flex items-center rounded bg-indigo-600 hover:bg-indigo-700
-               text-white px-4 py-2 text-sm border border-indigo-700"
+        class="{compact ? 'w-full justify-between' : ''} toolbar-btn rounded"
         on:click={() => open = !open}
     >
         Template&nbsp;<CaretDownFill class="mt-1" />
@@ -104,7 +105,7 @@
 
                 <!-- Guides -->
                 <div>
-                    <div class="font-semibold mb-2 text-indigo-200">Guides</div>
+                    <div class="font-semibold mb-2 text-blue-200">Guides</div>
 
                     <div class="flex flex-col">
                         <button
@@ -129,7 +130,7 @@
 
                 <!-- Embeds -->
                 <div>
-                    <div class="font-semibold mb-2 text-indigo-200">Embeds</div>
+                    <div class="font-semibold mb-2 text-blue-200">Embeds</div>
 
                     <div class="flex flex-col">
                         <button

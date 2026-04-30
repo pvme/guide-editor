@@ -1,6 +1,7 @@
 // src/components/GuideLoadModal.js
 
 import { rawGithubJSONRequest, rawGithubTextRequest } from "../pvmeSettings";
+import { loadGuideForReview } from "../guidePrApi";
 
 // Find a guide from ?id=xxxxx (channel ID OR path-like ref)
 export async function findGuideFromParam(paramID) {
@@ -20,6 +21,7 @@ export async function findGuideFromParam(paramID) {
         if (matches) {
             return {
                 name: channel.name,
+                path: channel.path,
                 url: `https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`
             };
         }
@@ -28,7 +30,17 @@ export async function findGuideFromParam(paramID) {
     return null;
 }
 
-// Fetch the raw text of the guide file from GitHub
-export async function loadGuideText(url) {
-    return rawGithubTextRequest(url);
+// Fetch guide text plus review metadata from the guide PR backend.
+export async function loadGuideText(guide, source = "auto") {
+    if (guide?.path) {
+        return loadGuideForReview(guide.path, source);
+    }
+
+    return {
+        source: "master",
+        branch: "master",
+        baseBranch: "master",
+        prUrl: "",
+        originalText: await rawGithubTextRequest(guide.url)
+    };
 }

@@ -29,7 +29,7 @@
     <table class="table-auto text-left w-full">
         <tbody>
             {#each errors as error}
-                <Error {error}/>
+                <Error {error} on:jump={(e) => dispatch('jump', e.detail)} />
             {/each}
         </tbody>
     </table>

@@ -3,6 +3,7 @@
   import Message from "./Message.svelte";
   import Bot from "./Bot.svelte";
   import { parseMessages } from "../../parser/parseMessages.js";
+  import { highlightPreviewMessage } from "../../codemirror/messageSync.js";
 
   export let text;
   export let scrollBottom = false;
@@ -31,6 +32,7 @@
      Link Intercept Popover
   ------------------------------------------------------- */
   let popover = null; // { url, x, y }
+  let tagFlashTimer = null;
 
   function handleRootClick(event) {
     // Detect any link in ancestry
@@ -41,6 +43,13 @@
     event.preventDefault();
     event.stopPropagation();
 
+    const targetTag = getLinkmsgTarget(link);
+    if (targetTag) {
+      closePopover();
+      scrollToTag(targetTag);
+      return;
+    }
+
     // Show popover
     const linkBox = link.getBoundingClientRect();
     const containerBox = container.getBoundingClientRect();
@@ -49,6 +58,51 @@
     const y = linkBox.top - containerBox.top + container.scrollTop;
 
     openPopover(link.href, x, y);
+  }
+
+  function getLinkmsgTarget(link) {
+    const rawHref = link.getAttribute("href") || "";
+    const candidates = [
+      rawHref,
+      safeDecode(rawHref),
+      link.href,
+      safeDecode(link.href)
+    ];
+
+    for (const candidate of candidates) {
+      const match = candidate.match(/\$linkmsg_([^$]+)\$/);
+      if (match) return match[1];
+    }
+
+    return null;
+  }
+
+  function safeDecode(value) {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+
+  function scrollToTag(tag) {
+    const targetIndex = messages.findIndex((msg) =>
+      msg.tag?.toLowerCase() === tag.toLowerCase()
+    );
+    if (targetIndex === -1) return;
+
+    const target = container.querySelector(
+      `.pvme-message[data-msg-index="${targetIndex}"]`
+    );
+    target?.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    clearTimeout(tagFlashTimer);
+    tagFlashTimer = setTimeout(() => {
+      highlightPreviewMessage(targetIndex);
+    }, 180);
   }
 
   function openPopover(url, x, y) {
@@ -134,7 +188,7 @@
       <span>Open link?</span>
 
       <button
-        class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 rounded 
+        class="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded 
                text-white text-xs focus:outline-none"
         on:click|stopPropagation={confirmOpen}
       >
@@ -171,6 +225,7 @@
                     <div
                       class="message pvme-message"
                       data-msg-index={i}
+                      data-tag={msg.tag || undefined}
                       role="button"
                       tabindex="0"
                       on:dblclick={(e) => handleMessageClick(i, e)}

@@ -8,6 +8,8 @@
   const dispatch = createEventDispatcher();
 
   const confirm = () => dispatch("confirm");
+  const loadReview = () => dispatch("loadReview");
+  const loadLive = () => dispatch("loadLive");
   const cancel = () => dispatch("cancel");
 
   function onKeydown(e) {
@@ -18,7 +20,7 @@
       cancel();
     }
 
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !guide?.hasExistingReview) {
       e.preventDefault();
       confirm();
     }
@@ -39,32 +41,65 @@
       on:keydown={onKeydown}
       bind:this={modalEl}
     >
-      <h2 class="text-xl font-semibold text-white mb-4">
-        Load Guide
-      </h2>
+      {#if guide?.hasExistingReview}
+        <h2 class="text-xl font-semibold text-white mb-4">
+          You already have an open review for this guide
+        </h2>
 
-      <p class="text-slate-300 mb-6 leading-relaxed">
-        Load the
-        <span class="text-indigo-400 font-medium">{guide?.name}</span>
-        guide?<br />
-        This will overwrite your current editor content.
-      </p>
+        <p class="text-slate-300 mb-6 leading-relaxed">
+          You can continue editing your existing submitted version, or start again from the current live guide.
+        </p>
 
-      <div class="flex justify-end gap-3">
-        <button
-          on:click={cancel}
-          class="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 transition"
-        >
-          Cancel
-        </button>
+        <div class="flex flex-col gap-3">
+          <button
+            on:click={loadReview}
+            class="toolbar-btn rounded-md font-medium"
+          >
+            Continue editing existing review
+          </button>
 
-        <button
-          on:click={confirm}
-          class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition"
-        >
+          <button
+            on:click={loadLive}
+            class="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 transition"
+          >
+            Start afresh from live guide
+          </button>
+
+          <button
+            on:click={cancel}
+            class="px-4 py-2 rounded-md text-slate-300 hover:text-white transition"
+          >
+            Cancel
+          </button>
+        </div>
+      {:else}
+        <h2 class="text-xl font-semibold text-white mb-4">
           Load Guide
-        </button>
-      </div>
+        </h2>
+
+        <p class="text-slate-300 mb-6 leading-relaxed">
+          Load the
+          <span class="text-blue-400 font-medium">{guide?.name}</span>
+          guide?<br />
+          This will overwrite your current editor content.
+        </p>
+
+        <div class="flex justify-end gap-3">
+          <button
+            on:click={cancel}
+            class="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 transition"
+          >
+            Cancel
+          </button>
+
+          <button
+            on:click={confirm}
+            class="toolbar-btn rounded-md font-medium"
+          >
+            Load Guide
+          </button>
+        </div>
+      {/if}
     </div>
   </div>
 {/if}
