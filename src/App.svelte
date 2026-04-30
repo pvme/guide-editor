@@ -113,7 +113,7 @@
     if (!pendingGuide) return;
     guideLoadStatus = "review";
     const loaded = await loadGuideText(pendingGuide, "review");
-    applyLoadedGuide(loaded, "Loaded your existing review draft.");
+    applyLoadedGuide(loaded, "Loaded your submitted update.");
     pendingGuide = null;
     showGuideModal = false;
     guideLoadStatus = "idle";
@@ -123,7 +123,7 @@
     if (!pendingGuide) return;
     guideLoadStatus = "live";
     const loaded = await loadGuideText(pendingGuide, "master");
-    applyLoadedGuide(loaded, "Loaded the live guide. Submitting will replace your existing open review.");
+    applyLoadedGuide(loaded, "Loaded the live guide. Submitting will replace your existing submitted update.");
     pendingGuide = null;
     showGuideModal = false;
     guideLoadStatus = "idle";

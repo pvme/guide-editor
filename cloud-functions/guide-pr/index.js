@@ -130,12 +130,12 @@ async function handleSubmitGuideUpdate(req, res) {
     if (existingPr && !payload.replaceExistingReview) {
       throw httpError(
         409,
-        "This will replace your existing open review with this version based on the live guide."
+        "This will replace your existing submitted update with this version based on the live guide."
       );
     }
   } else if (payload.source === "user-pr") {
     if (!branchRef) {
-      throw httpError(409, "Your existing review branch could not be found. Reload the guide and try again.");
+      throw httpError(409, "Your existing submitted update could not be found. Reload the guide and try again.");
     }
 
     const currentReviewFile = await getFile(github, owner, repo, payload.path, reviewBranch);
@@ -143,7 +143,7 @@ async function handleSubmitGuideUpdate(req, res) {
     if (currentReviewFile.text !== payload.originalContent) {
       throw httpError(
         409,
-        "Your review draft has changed since it was loaded. You must reload the review and apply your edits again to submit a guide update."
+        "Your submitted update has changed since it was loaded. You must reload it and apply your edits again to submit a guide update."
       );
     }
   }
@@ -271,7 +271,7 @@ async function handleLoadGuide(req, res) {
 
   if (source === "review") {
     if (!user || !existingReview) {
-      throw httpError(404, "No open review was found for this guide.");
+      throw httpError(404, "No submitted update was found for this guide.");
     }
 
     const reviewFile = await getFile(github, owner, repo, path, existingReview.reviewBranch);

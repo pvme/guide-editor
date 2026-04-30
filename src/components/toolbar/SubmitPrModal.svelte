@@ -243,7 +243,7 @@
     if (text.includes("No guide changes") || text.includes("make a guide change")) return "You must make a guide change to submit a guide update.";
     if (text.includes("summary of what changed") || text.includes("describe what changed")) return "You must describe what changed to submit a guide update.";
     if (text.includes("changed since it was loaded")) return text;
-    if (text.includes("replace your existing open review")) return text;
+    if (text.includes("replace your existing open review") || text.includes("replace your existing submitted update")) return text;
 
     return text.endsWith(".") ? text : `${text}.`;
   }
@@ -263,7 +263,7 @@
           target="_blank"
           rel="noreferrer"
         >
-          Open review
+          View submitted update
         </a>
       {/if}
 
@@ -352,7 +352,7 @@
                 bind:checked={replaceExistingReview}
               />
               <span class="text-sm text-amber-50">
-                This will replace your existing open review with this version based on the live guide.
+                This will replace your existing submitted update with this version based on the live guide.
               </span>
             </label>
           {/if}
@@ -399,7 +399,7 @@
         >
           {message}
           {#if prUrl}
-            <a class="ml-1 text-blue-300 underline" href={prUrl} target="_blank" rel="noreferrer">Open review</a>
+            <a class="ml-1 text-blue-300 underline" href={prUrl} target="_blank" rel="noreferrer">View submitted update</a>
           {/if}
         </div>
       {/if}

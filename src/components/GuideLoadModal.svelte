@@ -46,7 +46,7 @@
     >
       {#if guide?.hasExistingReview}
         <h2 class="text-xl font-semibold text-white mb-4">
-          You already have an open review for this guide
+          You already have a submitted update for this guide
         </h2>
 
         <p class="text-slate-300 mb-6 leading-relaxed">
