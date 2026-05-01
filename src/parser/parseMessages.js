@@ -52,6 +52,8 @@ export function parseMessages(rawText) {
             pin: null,
             react: [],
             isBlank: false,
+            followsAttachment: false,
+            hasTrailingBlank: false,
             firstEditorLine: startLine,
             lastEditorLine: startLine,
             lineMap: []
@@ -67,6 +69,10 @@ export function parseMessages(rawText) {
 
     function isHeadingLine(line) {
         return /^#{1,3}\s+/.test(line.trim());
+    }
+
+    function lastRawPartType() {
+        return current.rawParts[current.rawParts.length - 1]?.type || "";
     }
 
     // -----------------------------------------------------------
@@ -295,6 +301,13 @@ export function parseMessages(rawText) {
             const cmd = trimmed.match(/^\.([a-zA-Z]+):(.*)$/);
 
             if (trimmed === ".") {
+                if (
+                    current.rawParts.length > 0 &&
+                    current.rawParts[current.rawParts.length - 1]?.type === "text" &&
+                    current.rawParts[current.rawParts.length - 1]?.raw === ""
+                ) {
+                    current.hasTrailingBlank = true;
+                }
                 finalize();
                 current = createMessage(lineNum + 1);
                 continue;
@@ -347,6 +360,18 @@ export function parseMessages(rawText) {
 
         // BLANK LINE
         if (!trimmed) {
+            if (lastRawPartType() === "attachment") {
+                finalize();
+                current = createMessage(lineNum);
+                current.isBlank = true;
+                current.rawParts.push({
+                    type: "text",
+                    raw: "",
+                    editorLine: lineNum
+                });
+                continue;
+            }
+
             current.rawParts.push({
                 type: "text",
                 raw: "",
@@ -381,6 +406,12 @@ export function parseMessages(rawText) {
         ) {
             finalize();
             current = createMessage(lineNum);
+        }
+
+        if (lastRawPartType() === "attachment") {
+            finalize();
+            current = createMessage(lineNum);
+            current.followsAttachment = true;
         }
 
         if (!current.rawParts.some(p => p.editorLine === lineNum)) {

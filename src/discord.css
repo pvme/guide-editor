@@ -44,12 +44,20 @@
 }
 
 .message.pvme-message {
-  padding: 10px 0;
+  padding: 7px 0;
 }
 
 .message.pvme-message--json-embed {
   padding-top: 4px;
   padding-bottom: 4px;
+}
+
+.message.pvme-message--after-attachment {
+  padding-top: 2px;
+}
+
+.message.pvme-message--trailing-blank {
+  padding-bottom: 20px;
 }
 
 /* Discord-style row hover */

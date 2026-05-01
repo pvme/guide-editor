@@ -225,6 +225,8 @@
                     <div
                       class="message pvme-message"
                       class:pvme-message--json-embed={msg.lineMap?.some((item) => item.type === "embed")}
+                      class:pvme-message--after-attachment={msg.followsAttachment}
+                      class:pvme-message--trailing-blank={msg.hasTrailingBlank}
                       data-msg-index={i}
                       data-tag={msg.tag || undefined}
                       role="button"
