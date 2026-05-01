@@ -251,6 +251,7 @@
                 href="https://discord.com/channels/534508796639182860/724129126314803230"
                 class="text-blue-400 visited:text-purple-400"
                 target="_blank"
+                rel="noreferrer"
             >#editors-chat</a>
         </strong>.
     </p>
