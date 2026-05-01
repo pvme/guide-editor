@@ -40,7 +40,11 @@
 .message {
   display: block;
   min-height: 25px;
-  margin: 20px 0;
+  margin: 0;
+}
+
+.message.pvme-message {
+  padding: 10px 0;
 }
 
 /* Discord-style row hover */
