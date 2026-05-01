@@ -47,6 +47,11 @@
   padding: 10px 0;
 }
 
+.message.pvme-message--json-embed {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
 /* Discord-style row hover */
 .message.pvme-message:hover {
   background: linear-gradient(
@@ -205,6 +210,10 @@
   margin: 0;
 }
 
+.discord-view .pvme-line.attachment-after-heading {
+  padding-top: 8px;
+}
+
 /* OG / preset previews */
 .discord-view .attachment--embed {
   display: inline-block;
@@ -243,7 +252,7 @@
   display: inline-block;
   width: 1.375em;
   height: 1.375em;
-  vertical-align: -0.25em;
+  vertical-align: middle;
   object-fit: contain;
 }
 

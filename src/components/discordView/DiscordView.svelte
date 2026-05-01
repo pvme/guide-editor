@@ -224,6 +224,7 @@
                   {#each messages as msg, i}
                     <div
                       class="message pvme-message"
+                      class:pvme-message--json-embed={msg.lineMap?.some((item) => item.type === "embed")}
                       data-msg-index={i}
                       data-tag={msg.tag || undefined}
                       role="button"

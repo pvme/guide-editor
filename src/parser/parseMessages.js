@@ -65,6 +65,10 @@ export function parseMessages(rawText) {
         return obj;
     }
 
+    function isHeadingLine(line) {
+        return /^#{1,3}\s+/.test(line.trim());
+    }
+
     // -----------------------------------------------------------
     // FINALIZE message → convert rawParts → lineMap
     // -----------------------------------------------------------
@@ -369,6 +373,16 @@ export function parseMessages(rawText) {
         }
 
         // NORMAL TEXT
+        if (
+            isHeadingLine(raw) &&
+            current.rawParts.length > 0 &&
+            i > 0 &&
+            lines[i - 1].trim().startsWith(".tag:")
+        ) {
+            finalize();
+            current = createMessage(lineNum);
+        }
+
         if (!current.rawParts.some(p => p.editorLine === lineNum)) {
             current.firstEditorLine = Math.min(current.firstEditorLine, lineNum);
         }

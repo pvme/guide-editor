@@ -6,7 +6,7 @@
   export let globalOffset = 0;
 </script>
 
-{#each lineMap as item}
+{#each lineMap as item, i}
   {#if item.type === "text"}
     <div class="pvme-line" data-src-line={item.line + globalOffset}>
       {@html item.html}
@@ -15,6 +15,7 @@
   {:else if item.type === "attachment"}
     <div
       class="pvme-line attachment attachment--{item.kind}"
+      class:attachment-after-heading={lineMap[i - 1]?.html?.includes('class="pvme-h')}
       data-src-line={item.line + globalOffset}
     >
       <Attachment url={item.url} />
