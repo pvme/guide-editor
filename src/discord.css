@@ -85,7 +85,7 @@
 .username-wrapper .user-name {
   font-weight: 600;
   font-size: 16px;
-  background: linear-gradient(90deg, #00cafe 0%, #b44dff 50%, #ff49e1 100%);
+  background: linear-gradient(90deg, #00cafe, #b44dff, #ff49e1);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -97,7 +97,6 @@
       0 0 30px rgba(0, 202, 254, 0.35);
 }
 
-
 .avatar {
   display: inline-block;
   width: 30px;
@@ -107,32 +106,6 @@
 
 .message.first {
   margin-top: 0;
-}
-
-.message.first:hover .user-name {
-  background: linear-gradient(
-    90deg,
-    #00cafe,
-    #b44dff,
-    #ff49e1,
-    #00cafe,   /* repeat start → enables seamless loop */
-    #b44dff,
-    #ff49e1,
-    #00cafe
-  );
-
-  background-size: 400% 100%; /* enough room for 2 full cycles */
-  animation: usernameGradientScroll 3s linear infinite;
-
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Moves exactly ONE cycle width, so it wraps smoothly */
-@keyframes usernameGradientScroll {
-  0%   { background-position:   0% 0%; }
-  100% { background-position: -200% 0%; }
 }
 
 /* =======================================================
@@ -207,14 +180,24 @@
    ATTACHMENTS / IMAGES
    ======================================================= */
 
-.pvme-line.attachment img {
+.pvme-line.attachment img,
+.pvme-line.attachment video,
+.pvme-line.attachment iframe {
   display: block;
   max-width: 100% !important;
   border-radius: 3px;
 }
 
-.pvme-line.attachment.attachment--direct img {
+.pvme-line.attachment.attachment--direct img,
+.pvme-line.attachment.attachment--direct video,
+.pvme-line.attachment.attachment--direct iframe {
   max-width: 520px !important;
+}
+
+.pvme-line.attachment video {
+  width: 520px;
+  max-height: 360px;
+  background: #000;
 }
 
 /* OG / preset previews */
@@ -300,7 +283,7 @@
 
 .pvme-codeblock {
     @apply bg-gray-800 text-gray-300 rounded-md p-3 my-2 whitespace-pre overflow-x-auto border border-gray-700;
-    @apply border-l-2 border-indigo-400;
+    @apply border-l-2 border-blue-400;
 }
 
 .pvme-codeblock code {
@@ -309,7 +292,7 @@
 
 code.inline {
     @apply bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded font-mono text-[13px] border border-gray-700;
-    @apply border-l-2 border-indigo-400;
+    @apply border-l-2 border-blue-400;
 }
 
 /* =======================================================

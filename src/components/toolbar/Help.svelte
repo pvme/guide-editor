@@ -1,18 +1,21 @@
 <script>
     import QuestionCircle from "svelte-bootstrap-icons/lib/QuestionCircle.svelte";
     import Modal from "./Modal.svelte";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
     let open = false;
 </script>
 
-<button
-    class="rounded-l bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-2
-           active:bg-indigo-800 text-sm border border-indigo-700"
-    title="Help"
-    on:click={() => (open = true)}
->
-    <QuestionCircle />
-</button>
+<ToolbarTooltip text="Help" align="right">
+    <button
+        class="toolbar-btn rounded"
+        type="button"
+        on:click={() => (open = true)}
+    >
+        <QuestionCircle />
+        Help
+    </button>
+</ToolbarTooltip>
 
 <Modal {open} close={() => (open = false)}>
 
@@ -250,6 +253,7 @@
                 href="https://discord.com/channels/534508796639182860/724129126314803230"
                 class="text-blue-400 visited:text-purple-400"
                 target="_blank"
+                rel="noreferrer"
             >#editors-chat</a>
         </strong>.
     </p>

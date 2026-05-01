@@ -111,6 +111,16 @@ function applySpecialChannels(text) {
         );
 }
 
+function isYouTubeURL(rawUrl) {
+    try {
+        const parsed = new URL(rawUrl);
+        const host = parsed.hostname.replace(/^www\./, "").replace(/^m\./, "");
+        return host === "youtu.be" || host === "youtube.com";
+    } catch {
+        return false;
+    }
+}
+
 // -----------------------------------------------------------
 // TOKEN-BASED HEADING SYSTEM
 // -----------------------------------------------------------
@@ -237,12 +247,20 @@ export default function markdownToHTML(input) {
     // 4) Restore heading HTML
     rendered = restoreHeadings(rendered);
 
-    // 5) Add preset links from markdown-link prepass
+    // 5) Add preset / video links from markdown-link prepass
     // (Do NOT scan <a href>; avoids double-embeds)
     for (const url of presetLinks) {
         if (input.includes(`<${url}>`)) continue; // escaped with angle brackets → no embed
         messageAttachments.push(url);
     }
+
+    working.replace(/\[([^\]]+)\]\((<?)(https?:\/\/[^)>]+)(>?)\)/g,
+        (m, label, openAngle, url, closeAngle) => {
+            if (openAngle || closeAngle) return;
+            if (!isYouTubeURL(url)) return;
+            messageAttachments.push(url);
+        }
+    );
 
     // 6) Build lineMap
     const lines = safeSplitLines(rendered);

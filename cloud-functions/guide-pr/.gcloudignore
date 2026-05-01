@@ -1,0 +1,11 @@
+.git
+.gitignore
+.gcloudignore
+node_modules
+npm-debug.log
+*.local
+.env
+.env.*
+README.md
+deploy.js
+smoke-payload.json

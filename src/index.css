@@ -86,7 +86,12 @@
 
 .cm-gutter {
   font-size: 14px;
-  margin-left: 10px;
+  margin-left: 2px;
+}
+
+.cm-lineNumbers .cm-gutterElement {
+  min-width: 2.25ch;
+  padding: 0 4px 0 2px;
 }
 
 .cm-activeLine {
@@ -205,17 +210,85 @@
 
 @layer components {
   .group-btn {
-    @apply bg-indigo-600
-           hover:bg-indigo-700
-           active:bg-indigo-800
-           border border-indigo-700
+    @apply bg-blue-600
+           hover:bg-blue-700
+           active:bg-blue-800
+           border border-blue-700
            px-3 py-2
            text-left
-           text-sm
+           text-sm text-white
            transition-colors
            duration-150;
   }
   .group-btn:disabled {
     @apply opacity-50 cursor-not-allowed;
+  }
+
+  .toolbar-btn {
+    @apply inline-flex h-10 items-center justify-center gap-2
+           bg-blue-600
+           hover:bg-blue-700
+           active:bg-blue-800
+           border border-blue-700
+           px-3 py-2
+           text-sm text-white
+           transition-colors
+           duration-150
+           disabled:opacity-60
+           disabled:cursor-not-allowed
+           disabled:hover:bg-blue-600;
+  }
+
+  .toolbar-icon-btn {
+    @apply inline-flex h-10 w-10 items-center justify-center
+           bg-blue-600
+           hover:bg-blue-700
+           active:bg-blue-800
+           border border-blue-700
+           px-2 py-2
+           text-sm text-white
+           transition-colors
+           duration-150
+           disabled:opacity-60
+           disabled:cursor-not-allowed
+           disabled:hover:bg-blue-600;
+  }
+
+  .toolbar-menu-option {
+    @apply rounded border border-blue-700
+           bg-blue-600
+           px-2 py-2
+           text-left text-sm text-white
+           transition-colors
+           duration-150
+           hover:bg-blue-700
+           active:bg-blue-800;
+  }
+
+  .toolbar-menu-option-active {
+    @apply border-blue-400 bg-blue-700;
+  }
+
+  .toolbar-submenu-option {
+    @apply rounded
+           bg-slate-800
+           px-2 py-2
+           text-left text-sm text-slate-300
+           transition-colors
+           duration-150
+           hover:bg-slate-600;
+  }
+
+  .toolbar-submenu-option-active {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+
+  .toolbar-secondary-btn {
+    @apply rounded bg-slate-700
+           hover:bg-slate-600
+           px-4 py-2
+           text-sm text-slate-200
+           transition-colors
+           duration-150;
   }
 }

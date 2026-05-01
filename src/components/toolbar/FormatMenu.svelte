@@ -1,6 +1,7 @@
 <script>
     import DropdownPanel from "./DropdownPanel.svelte";
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
     // Formatting icons
     import BlockquoteLeft from "svelte-bootstrap-icons/lib/BlockquoteLeft.svelte";
@@ -16,9 +17,6 @@
     import ListUl from "svelte-bootstrap-icons/lib/ListUl.svelte";
     import ListOl from "svelte-bootstrap-icons/lib/ListOl.svelte";
     import Link45deg from "svelte-bootstrap-icons/lib/Link45deg.svelte";
-
-    import Button from "./Button.svelte";
-    import ButtonGroup from "./ButtonGroup.svelte";
 
     export let dispatch;
 
@@ -69,43 +67,21 @@
 </script>
 
 
-<!-- =======================================================
-   DESKTOP FORMAT TOOLBAR (visible only at lg and up)
-======================================================= -->
-<div class="hidden lg:flex space-x-1">
-    {#each groups as group}
-        <ButtonGroup>
-            {#each group.buttons as b, i}
-                <Button
-                    title={b.title}
-                    corner={i === 0 ? "rounded-l" : i === group.buttons.length - 1 ? "rounded-r" : undefined}
-                    on:click={() => dispatch("command", b.cmd)}
-                >
-                    <svelte:component this={b.icon} />
-                </Button>
-            {/each}
-        </ButtonGroup>
-    {/each}
-</div>
-
-
-<!-- =======================================================
-   MOBILE/TABLET: FORMAT DROPDOWN
-======================================================= -->
-<div class="lg:hidden relative inline-block mr-2">
-    <button
-        bind:this={trigger}
-        class="inline-flex items-center rounded bg-indigo-600 hover:bg-indigo-700
-               text-white px-3 py-2 text-sm border border-indigo-700"
-        on:click={() => (open = !open)}
-    >
-        Format&nbsp;<CaretDownFill class="mt-1" />
-    </button>
+<div class="relative inline-block">
+    <ToolbarTooltip text="Formatting tools">
+        <button
+            bind:this={trigger}
+            class="toolbar-btn rounded"
+            on:click={() => (open = !open)}
+        >
+            Format&nbsp;<CaretDownFill class="mt-1" />
+        </button>
+    </ToolbarTooltip>
 
     <DropdownPanel
         {open}
         close={() => (open = false)}
-        width="200px"
+        width="260px"
         centered={false}
         bind:registerTrigger={trigger}
     >
@@ -113,15 +89,14 @@
             {#each groups as group}
                 {#each group.buttons as b}
                     <button
-                        class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
-                               border border-indigo-700 p-2 mb-1 rounded text-left flex items-center gap-2"
+                        class="toolbar-submenu-option mb-1 flex items-center gap-2"
                         on:click={() => {
                             dispatch("command", b.cmd);
                             open = false;
                         }}
                     >
                         <svelte:component this={b.icon} />
-                        {b.title}
+                        <span class="flex-1">{b.title}</span>
                     </button>
                 {/each}
             {/each}
