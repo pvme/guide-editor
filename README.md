@@ -2,9 +2,7 @@
 
 Web editor for PvME Discord guides. It loads existing guide files, previews Discord-style output, checks common guide issues, and submits updates for review through the Guide PR backend.
 
-<video src="./example-vid.mp4" controls muted playsinline width="100%">
-  Demo video: PvME Guide Editor in action.
-</video>
+https://github.com/user-attachments/assets/78ac849d-f7a6-4abb-bf52-49314a083d31
 
 ## Install
 
@@ -102,22 +100,6 @@ Health check:
 Invoke-RestMethod https://europe-west1-pvmebackend.cloudfunctions.net/submitGuideUpdate
 ```
 
-## Publish Frontend
-
-Set `VITE_GUIDE_PR_ENDPOINT_LIVE` as a GitHub Actions repository variable:
-
-```text
-https://europe-west1-pvmebackend.cloudfunctions.net/submitGuideUpdate
-```
-
-Build locally:
-
-```powershell
-npm run build
-```
-
-The production site is served from `https://pvme.io/guide-editor/`.
-
 ## Checks
 
 ```powershell
@@ -125,10 +107,6 @@ npm run build
 npm run check:guide-pr
 ```
 
-## Notes
+## Publish Frontend
 
-- GitHub writes are always performed by the GitHub App.
-- Contributors do not need GitHub accounts.
-- Contributor identity comes from Discord OAuth and PvME Discord membership.
-- One Discord user plus one guide file reuses one branch/PR.
-- Branch format: `guide-editor/discord-{discordId}/{file-slug}`.
+Build locally by pushing to `main` branch - this will auto-deploy the app to `https://pvme.io/guide-editor/`.
