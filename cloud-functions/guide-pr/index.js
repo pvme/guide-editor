@@ -20,6 +20,7 @@ const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 const OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60;
 const ANON_GUIDE_LOAD_LIMIT = 2;
 const ANON_GUIDE_USAGE_MAX_AGE_SECONDS = 24 * 60 * 60;
+const MAX_SESSION_ROLES = 40;
 const authRateLimits = new Map();
 
 exports.submitGuideUpdate = async (req, res) => {
@@ -411,9 +412,7 @@ async function handleDiscordCallback(req, res) {
     avatar: discordUser.avatar ? String(discordUser.avatar) : "",
     pvmeMember: true,
     pvmeGuildId: PVME_GUILD_ID,
-    pvmeRoles: Array.isArray(guildMember.member.roles)
-      ? guildMember.member.roles.map(String)
-      : [],
+    pvmeRoles: getSessionRoles(guildMember.member),
     exp: nowSeconds() + SESSION_MAX_AGE_SECONDS
   });
 
@@ -438,6 +437,17 @@ async function fetchPvmeGuildMember(accessToken) {
 
   const member = await memberRes.json().catch(() => ({}));
   return { ok: true, member };
+}
+
+function getSessionRoles(member) {
+  if (!Array.isArray(member?.roles)) {
+    return [];
+  }
+
+  return member.roles
+    .map(String)
+    .filter(Boolean)
+    .slice(0, MAX_SESSION_ROLES);
 }
 
 function redirectAuthFailure(req, res, message) {
@@ -1118,7 +1128,7 @@ function getCookieSameSite() {
 }
 
 function isCookieSecure() {
-  return process.env.AUTH_COOKIE_SECURE !== "false";
+  return process.env.AUTH_COOKIE_SECURE !== "false" || !isDryRun();
 }
 
 function signJson(value) {
