@@ -6,14 +6,27 @@ const GITHUB_API = "https://api.github.com";
 const REPO = "pvme/pvme-guides";
 const BASE_BRANCH = "master";
 const MAX_CONTENT_BYTES = 2 * 1024 * 1024;
+const MAX_TITLE_CHARS = 120;
+const MAX_NOTES_CHARS = 2000;
+const MAX_PR_BODY_CHARS = 9000;
+const MAX_PR_SUMMARIES = 5;
+const PVME_GUILD_ID = "534508796639182860";
+const DISCORD_OAUTH_SCOPE = "identify guilds.members.read";
 const DEFAULT_TRUSTED_ORIGIN = "https://pvme.io";
 const DEFAULT_ALLOWED_ORIGIN = "http://localhost:5173,https://pvme.io";
 const SESSION_COOKIE = "pvme_guide_session";
+const ANON_GUIDE_USAGE_COOKIE = "pvme_guide_anon_loads";
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 const OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60;
+const ANON_GUIDE_LOAD_LIMIT = 2;
+const ANON_GUIDE_USAGE_MAX_AGE_SECONDS = 24 * 60 * 60;
+const authRateLimits = new Map();
 
 exports.submitGuideUpdate = async (req, res) => {
-  setCorsHeaders(req, res);
+  if (!setCorsHeaders(req, res)) {
+    sendJson(res, 403, { error: "Guide update submission is not authorized from this origin." });
+    return;
+  }
 
   if (req.method === "OPTIONS") {
     res.status(204).send("");
@@ -44,6 +57,7 @@ exports.submitGuideUpdate = async (req, res) => {
     }
 
     if (route === "/auth/discord/start" && req.method === "GET") {
+      enforceRateLimit(req, "auth:start", 10, 10 * 60);
       handleDiscordStart(req, res);
       return;
     }
@@ -87,7 +101,7 @@ exports.submitGuideUpdate = async (req, res) => {
 };
 
 async function handleSubmitGuideUpdate(req, res) {
-  const user = requireSession(req);
+  const user = requirePvmeMemberSession(req);
   const payload = normalizePayload(req.body);
   validatePayload(payload);
 
@@ -216,6 +230,10 @@ async function handleLoadGuide(req, res) {
     throw httpError(400, "The guide source is invalid.");
   }
 
+  if (!user) {
+    enforceAnonymousGuideLoadLimit(req, res);
+  }
+
   if (isDryRun() && source !== "review") {
     const fallbackText = await getPublicMasterFile(path);
     sendJson(res, 200, {
@@ -317,7 +335,7 @@ function handleDiscordStart(req, res) {
     client_id: getDiscordClientId(),
     redirect_uri: redirectUri,
     response_type: "code",
-    scope: "identify",
+    scope: DISCORD_OAUTH_SCOPE,
     state
   });
 
@@ -326,6 +344,7 @@ function handleDiscordStart(req, res) {
 
 async function handleDiscordCallback(req, res) {
   requireDiscordConfig();
+  enforceRateLimit(req, "auth:callback", 20, 10 * 60);
 
   if (req.query.error) {
     redirectAuthFailure(req, res, "Discord login was cancelled. You must log in with Discord to submit a guide update.");
@@ -373,15 +392,52 @@ async function handleDiscordCallback(req, res) {
     return;
   }
 
+  const guildMember = await fetchPvmeGuildMember(tokenData.access_token);
+
+  if (!guildMember.ok) {
+    if (guildMember.notMember) {
+      redirectAuthFailure(req, res, "You must be a member of the PvME Discord server to submit guide changes.");
+      return;
+    }
+
+    redirectAuthFailure(req, res, "Discord login could not be verified.");
+    return;
+  }
+
   setSessionCookie(res, {
     discordId: String(discordUser.id),
     username: String(discordUser.username || ""),
     globalName: discordUser.global_name ? String(discordUser.global_name) : "",
     avatar: discordUser.avatar ? String(discordUser.avatar) : "",
+    pvmeMember: true,
+    pvmeGuildId: PVME_GUILD_ID,
+    pvmeRoles: Array.isArray(guildMember.member.roles)
+      ? guildMember.member.roles.map(String)
+      : [],
     exp: nowSeconds() + SESSION_MAX_AGE_SECONDS
   });
 
   res.redirect(state.returnTo || getFrontendOrigin(req));
+}
+
+async function fetchPvmeGuildMember(accessToken) {
+  const memberRes = await fetch(`${DISCORD_API}/v10/users/@me/guilds/${PVME_GUILD_ID}/member`, {
+    headers: {
+      "Authorization": `Bearer ${accessToken}`
+    }
+  });
+
+  if ([401, 403, 404].includes(memberRes.status)) {
+    return { ok: false, notMember: true };
+  }
+
+  if (!memberRes.ok) {
+    console.warn("Discord PvME guild membership check failed:", memberRes.status);
+    return { ok: false, notMember: false };
+  }
+
+  const member = await memberRes.json().catch(() => ({}));
+  return { ok: true, member };
 }
 
 function redirectAuthFailure(req, res, message) {
@@ -472,8 +528,20 @@ function validatePayload(payload) {
     throw httpError(413, "Guide content is too large.");
   }
 
+  if (Buffer.byteLength(payload.originalContent, "utf8") > MAX_CONTENT_BYTES) {
+    throw httpError(413, "Original guide content is too large.");
+  }
+
+  if (payload.title.length > MAX_TITLE_CHARS) {
+    throw httpError(400, `Update title must be ${MAX_TITLE_CHARS} characters or fewer.`);
+  }
+
   if (!payload.notes) {
     throw httpError(400, "You must describe what changed to submit a guide update.");
+  }
+
+  if (payload.notes.length > MAX_NOTES_CHARS) {
+    throw httpError(400, `Update summary must be ${MAX_NOTES_CHARS} characters or fewer.`);
   }
 }
 
@@ -678,6 +746,7 @@ function createPullRequestBody(payload, user, existingBody = "") {
   if (payload.notes) {
     summaries.push(payload.notes);
   }
+  const visibleSummaries = summaries.slice(-MAX_PR_SUMMARIES);
 
   const lines = [
     "Submitted from the PvME Guide Editor.",
@@ -687,16 +756,19 @@ function createPullRequestBody(payload, user, existingBody = "") {
     `Discord user ID: \`${user.discordId}\``
   ];
 
-  if (summaries.length > 0) {
+  if (visibleSummaries.length > 0) {
     lines.push("", "Update summaries:");
-    summaries.forEach((summary, index) => {
+    visibleSummaries.forEach((summary, index) => {
       lines.push(`${index + 1}. ${formatSummaryListItem(summary)}`);
     });
   }
 
   lines.push("", "This automated submission updates one existing guide file only.");
 
-  return lines.join("\n");
+  const body = lines.join("\n");
+  return body.length > MAX_PR_BODY_CHARS
+    ? `${body.slice(0, MAX_PR_BODY_CHARS - 120).trim()}\n\n_Update summary history was trimmed to keep this submission readable._`
+    : body;
 }
 
 function getExistingUpdateSummaries(body) {
@@ -762,6 +834,11 @@ function setCorsHeaders(req, res) {
   const allowedOrigins = allowedOrigin.split(",").map((value) => value.trim()).filter(Boolean);
   const origin = req.get("origin");
 
+  if (!isDryRun() && origin && allowedOrigins.includes("*")) {
+    res.set("Vary", "Origin");
+    return false;
+  }
+
   if (allowedOrigins.includes("*") && origin) {
     res.set("Access-Control-Allow-Origin", origin);
     res.set("Access-Control-Allow-Credentials", "true");
@@ -774,6 +851,7 @@ function setCorsHeaders(req, res) {
   res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Content-Type, X-PVME-Submit-Secret");
   res.set("Access-Control-Max-Age", "3600");
+  return true;
 }
 
 function validateRequestAccess(req) {
@@ -922,6 +1000,11 @@ function getSessionUser(req) {
     username: String(session.username || ""),
     globalName: String(session.globalName || ""),
     avatar: String(session.avatar || ""),
+    pvmeMember: session.pvmeMember === true,
+    pvmeGuildId: String(session.pvmeGuildId || ""),
+    pvmeRoles: Array.isArray(session.pvmeRoles)
+      ? session.pvmeRoles.map(String)
+      : [],
     exp: Number(session.exp)
   };
 }
@@ -934,6 +1017,55 @@ function requireSession(req) {
   }
 
   return user;
+}
+
+function requirePvmeMemberSession(req) {
+  const user = requireSession(req);
+
+  if (user.pvmeMember !== true || user.pvmeGuildId !== PVME_GUILD_ID) {
+    throw httpError(403, "You must be a member of the PvME Discord server to submit guide changes.");
+  }
+
+  return user;
+}
+
+function enforceAnonymousGuideLoadLimit(req, res) {
+  const usage = getAnonymousGuideUsage(req);
+  const count = Number(usage.count || 0);
+
+  if (count >= ANON_GUIDE_LOAD_LIMIT) {
+    throw httpError(401, "Please log in with Discord to continue loading guides.");
+  }
+
+  setAnonymousGuideUsage(res, {
+    count: count + 1,
+    exp: nowSeconds() + ANON_GUIDE_USAGE_MAX_AGE_SECONDS
+  });
+}
+
+function getAnonymousGuideUsage(req) {
+  const cookie = parseCookies(req.get("cookie") || "")[ANON_GUIDE_USAGE_COOKIE];
+  if (!cookie) return { count: 0 };
+
+  const usage = verifySignedJson(cookie);
+  if (!usage || usage.exp < nowSeconds()) {
+    return { count: 0 };
+  }
+
+  return {
+    count: Math.max(0, Number(usage.count) || 0),
+    exp: Number(usage.exp)
+  };
+}
+
+function setAnonymousGuideUsage(res, usage) {
+  res.set("Set-Cookie", serializeCookie(ANON_GUIDE_USAGE_COOKIE, signJson(usage), {
+    httpOnly: true,
+    secure: isCookieSecure(),
+    sameSite: getCookieSameSite(),
+    path: "/",
+    maxAge: ANON_GUIDE_USAGE_MAX_AGE_SECONDS
+  }));
 }
 
 function setSessionCookie(res, session) {
@@ -1027,8 +1159,50 @@ function publicUser(user) {
     username: user.username,
     globalName: user.globalName,
     avatar: user.avatar,
+    pvmeMember: user.pvmeMember === true,
     displayName: userDisplayName(user)
   };
+}
+
+function enforceRateLimit(req, bucket, limit, windowSeconds) {
+  // TODO: For multi-instance production hardening, move this limiter to shared
+  // storage such as Firestore, Redis, Cloud Armor, or an API gateway.
+  const now = nowSeconds();
+  const key = `${bucket}:${getRequestIp(req)}`;
+  const entry = authRateLimits.get(key);
+
+  pruneRateLimits(now);
+
+  if (!entry || entry.resetAt <= now) {
+    authRateLimits.set(key, { count: 1, resetAt: now + windowSeconds });
+    return;
+  }
+
+  if (entry.count >= limit) {
+    throw httpError(429, "Too many login attempts. Please wait a few minutes and try again.");
+  }
+
+  entry.count += 1;
+}
+
+function pruneRateLimits(now) {
+  if (authRateLimits.size < 500) return;
+
+  for (const [key, entry] of authRateLimits) {
+    if (entry.resetAt <= now) {
+      authRateLimits.delete(key);
+    }
+  }
+}
+
+function getRequestIp(req) {
+  const forwardedFor = String(req.get("x-forwarded-for") || "");
+  return forwardedFor.split(",")[0].trim()
+    || req.get("fastly-client-ip")
+    || req.get("x-real-ip")
+    || req.ip
+    || req.connection?.remoteAddress
+    || "unknown";
 }
 
 function getDiscordOAuthError(data) {
