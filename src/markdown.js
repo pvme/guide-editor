@@ -225,7 +225,7 @@ export default function markdownToHTML(input) {
     // PREPASS: detect markdown links to preset URLs
     // -----------------------------------------------------------
     const presetLinks = [];
-    working.replace(/\[([^\]]+)\]\((https:\/\/presets\.pvme\.io\/\?id=[^)]+)\)/g,
+    working.replace(/\[([^\]]+)\]\((https:\/\/presets\.pvme\.io\/?\?id=[^)]+)\)/g,
         (m, label, url) => {
             presetLinks.push(url);
         }
