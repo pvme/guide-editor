@@ -11,6 +11,7 @@
     import ToggleView from "./ToggleView.svelte";
     import ExportToTxt from "./ExportToTxt.svelte";
     import SubmitPr from "./SubmitPr.svelte";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
     export let insertAtCursor;
     export let getEditorCursorPosition;
@@ -27,12 +28,13 @@
     >
         <div class="mx-2 flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:pl-3">
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-none">
-                <img
-                    src="https://pvme.io/assets/logo-no-bg.png"
-                    alt="PVME logo"
-                    title="PvME Guide Editor"
-                    class="h-9 w-auto flex-shrink-0"
-                />
+                <ToolbarTooltip text="PvME Guide Editor" align="left">
+                    <img
+                        src="https://pvme.io/assets/logo-no-bg.png"
+                        alt="PVME logo"
+                        class="h-9 w-auto flex-shrink-0"
+                    />
+                </ToolbarTooltip>
 
                 <div class="inline-flex flex-wrap items-center gap-3">
                     <FormatMenu {dispatch} />

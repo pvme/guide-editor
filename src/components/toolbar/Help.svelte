@@ -1,19 +1,21 @@
 <script>
     import QuestionCircle from "svelte-bootstrap-icons/lib/QuestionCircle.svelte";
     import Modal from "./Modal.svelte";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
     let open = false;
 </script>
 
-<button
-    class="toolbar-btn rounded"
-    title="Help"
-    type="button"
-    on:click={() => (open = true)}
->
-    <QuestionCircle />
-    Help
-</button>
+<ToolbarTooltip text="Help" align="right">
+    <button
+        class="toolbar-btn rounded"
+        type="button"
+        on:click={() => (open = true)}
+    >
+        <QuestionCircle />
+        Help
+    </button>
+</ToolbarTooltip>
 
 <Modal {open} close={() => (open = false)}>
 

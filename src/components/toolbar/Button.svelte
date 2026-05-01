@@ -1,8 +1,12 @@
 <script>
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
+
     export let corner = '';
     export let title = '';
 </script>
 
-<button on:click class='{corner} toolbar-btn px-2' title={title} type="button">
-    <slot />
-</button>
+<ToolbarTooltip text={title}>
+    <button on:click class='{corner} toolbar-btn px-2' type="button">
+        <slot />
+    </button>
+</ToolbarTooltip>

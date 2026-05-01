@@ -1,6 +1,7 @@
 <script>
     import DropdownPanel from "./DropdownPanel.svelte";
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
     // Formatting icons
     import BlockquoteLeft from "svelte-bootstrap-icons/lib/BlockquoteLeft.svelte";
@@ -67,13 +68,15 @@
 
 
 <div class="relative inline-block">
-    <button
-        bind:this={trigger}
-        class="toolbar-btn rounded"
-        on:click={() => (open = !open)}
-    >
-        Format&nbsp;<CaretDownFill class="mt-1" />
-    </button>
+    <ToolbarTooltip text="Formatting tools">
+        <button
+            bind:this={trigger}
+            class="toolbar-btn rounded"
+            on:click={() => (open = !open)}
+        >
+            Format&nbsp;<CaretDownFill class="mt-1" />
+        </button>
+    </ToolbarTooltip>
 
     <DropdownPanel
         {open}

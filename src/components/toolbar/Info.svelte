@@ -2,20 +2,21 @@
     import InfoCircle from "svelte-bootstrap-icons/lib/InfoCircle.svelte";
     import FileEarmarkArrowDown from "svelte-bootstrap-icons/lib/FileEarmarkArrowDown.svelte";
     import Modal from "./Modal.svelte";
-    import { Code } from "svelte-bootstrap-icons";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
     let open = false;
 </script>
 
-<button
-    class="toolbar-btn rounded"
-    title="About"
-    type="button"
-    on:click={() => (open = true)}
->
-    <InfoCircle />
-    About
-</button>
+<ToolbarTooltip text="About" align="right">
+    <button
+        class="toolbar-btn rounded"
+        type="button"
+        on:click={() => (open = true)}
+    >
+        <InfoCircle />
+        About
+    </button>
+</ToolbarTooltip>
 
 <Modal {open} close={() => (open = false)}>
     <h2 class="text-2xl font-semibold mb-4">About this editor</h2>

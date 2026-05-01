@@ -2,6 +2,7 @@
     import DropdownPanel from "./DropdownPanel.svelte";
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
     import { styleGuide } from "../../pvmeSettings";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
     export let compact = false;
 
@@ -10,13 +11,15 @@
 </script>
 
 <div class="relative inline-block">
-    <button
-        bind:this={trigger}
-        class="{compact ? 'w-full justify-between' : ''} toolbar-btn rounded"
-        on:click={() => open = !open}
-    >
-        Style Guide&nbsp;<CaretDownFill class="mt-1" />
-    </button>
+    <ToolbarTooltip text="Open the PvME style guide">
+        <button
+            bind:this={trigger}
+            class="{compact ? 'w-full justify-between' : ''} toolbar-btn rounded"
+            on:click={() => open = !open}
+        >
+            Style Guide&nbsp;<CaretDownFill class="mt-1" />
+        </button>
+    </ToolbarTooltip>
 
     <DropdownPanel
         {open}

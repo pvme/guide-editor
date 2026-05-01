@@ -1,6 +1,7 @@
 <script>
   import FileEarmarkArrowDown from "svelte-bootstrap-icons/lib/FileEarmarkArrowDown.svelte";
   import { text } from './../../stores'; 
+  import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
   export let corner = "rounded";
   export let iconOnly = false;
@@ -22,11 +23,12 @@
   }
 </script>
 
-<button on:click={exportText} class='{corner} {iconOnly ? "toolbar-icon-btn" : "toolbar-btn px-2"}' title="Export to text file" type="button">
-  {#if iconOnly}
-    <FileEarmarkArrowDown />
-  {:else}
-    Export to .txt file
-  {/if}
-</button>
-
+<ToolbarTooltip text="Export to text file" align={iconOnly ? "right" : "center"}>
+  <button on:click={exportText} class='{corner} {iconOnly ? "toolbar-icon-btn" : "toolbar-btn px-2"}' type="button">
+    {#if iconOnly}
+      <FileEarmarkArrowDown />
+    {:else}
+      Export to .txt file
+    {/if}
+  </button>
+</ToolbarTooltip>

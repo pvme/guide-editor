@@ -1,5 +1,6 @@
 <script>
     import DropdownPanel from "./DropdownPanel.svelte";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
     import Clipboard from "svelte-bootstrap-icons/lib/Clipboard.svelte";
     import { text } from "../../stores";
@@ -253,13 +254,15 @@
 </script>
 
 <div class="relative inline-block">
-    <button
-        bind:this={trigger}
-        class="{compact ? 'w-full justify-between' : ''} toolbar-btn rounded"
-        on:click={() => open = !open}
-    >
-        JSON Assistant&nbsp;<CaretDownFill class="mt-1" />
-    </button>
+    <ToolbarTooltip text="Build or edit JSON embeds">
+        <button
+            bind:this={trigger}
+            class="{compact ? 'w-full justify-between' : ''} toolbar-btn rounded"
+            on:click={() => open = !open}
+        >
+            JSON Assistant&nbsp;<CaretDownFill class="mt-1" />
+        </button>
+    </ToolbarTooltip>
 
     <DropdownPanel
         {open}

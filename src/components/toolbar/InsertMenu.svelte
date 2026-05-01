@@ -2,6 +2,7 @@
     import DropdownPanel from "./DropdownPanel.svelte";
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
     import Clipboard from "svelte-bootstrap-icons/lib/Clipboard.svelte";
+    import ToolbarTooltip from "./ToolbarTooltip.svelte";
     import { text } from "../../stores";
     import {
         afkGuide,
@@ -103,13 +104,15 @@
 </script>
 
 <div class="relative inline-block">
-    <button
-        bind:this={trigger}
-        class="toolbar-btn rounded"
-        on:click={() => open = !open}
-    >
-        Templates&nbsp;<CaretDownFill class="mt-1" />
-    </button>
+    <ToolbarTooltip text="Guide templates and snippets">
+        <button
+            bind:this={trigger}
+            class="toolbar-btn rounded"
+            on:click={() => open = !open}
+        >
+            Templates&nbsp;<CaretDownFill class="mt-1" />
+        </button>
+    </ToolbarTooltip>
 
     <DropdownPanel
         {open}
