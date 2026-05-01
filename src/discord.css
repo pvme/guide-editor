@@ -58,23 +58,19 @@
    ======================================================= */
 
 .app-tag {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  padding: 1px 4px;
+  @apply text-[12px] font-bold uppercase rounded px-1.5 py-0.5 leading-none inline-flex items-center;
   margin-left: 6px;
   border-radius: 3px;
-  background: #5865F2;
+  background: #5865f2;
   line-height: 14px;
-  @apply text-[10px] font-bold uppercase rounded px-1.5 py-0.5 leading-none inline-flex items-center;
   color: white !important;
   letter-spacing: 0.3px;
   box-shadow: 0 0 4px rgba(88, 101, 242, 0.65);
 }
 
 .message .username-wrapper {
-    margin: 0;
-    line-height: 1;
+  margin: 0;
+  line-height: 1;
 }
 
 .username-wrapper {
@@ -91,10 +87,10 @@
   background-clip: text;
 
   text-shadow:
-      0 0 6px rgba(119, 0, 205, 0.55),
-      0 0 12px rgba(180, 77, 255, 0.45),
-      0 0 20px rgba(255, 73, 225, 0.40),
-      0 0 30px rgba(0, 202, 254, 0.35);
+    0 0 6px rgba(119, 0, 205, 0.55),
+    0 0 12px rgba(180, 77, 255, 0.45),
+    0 0 20px rgba(255, 73, 225, 0.4),
+    0 0 30px rgba(0, 202, 254, 0.35);
 }
 
 .avatar {
@@ -147,19 +143,19 @@
    BLOCKQUOTES
    ======================================================= */
 
-.blockquoteContainer {
+.discord-view .blockquoteContainer {
   display: flex;
   margin: 0;
 }
 
-.blockquoteDivider {
+.discord-view .blockquoteDivider {
   width: 4px;
   background: rgba(79, 84, 92, 0.6);
   border-radius: 0 !important;
   margin-right: 8px;
 }
 
-.blockquoteContainer blockquote {
+.discord-view .blockquoteContainer blockquote {
   margin: 0;
   padding: 0;
   line-height: 1.375;
@@ -174,7 +170,6 @@
   display: block;
   margin-top: 2px;
 }
-
 
 /* =======================================================
    ATTACHMENTS / IMAGES
@@ -200,33 +195,55 @@
   background: #000;
 }
 
+.discord-view .media {
+  max-width: 560px !important;
+  max-height: 400px;
+  margin: 0;
+}
+
 /* OG / preset previews */
-.attachment--embed {
+.discord-view .attachment--embed {
   display: inline-block;
-  max-width: 520px;
-  margin-top: 20px;
+  max-width: min(520px, calc(100% - 30px));
+  margin-top: 4px;
   margin-left: 30px;
-  padding: 7px 12px;
+  padding: 12px 14px 14px;
   box-sizing: border-box;
   border-radius: 3px;
   background-color: rgba(46, 48, 54, 0.3);
   border: 1px solid rgba(46, 48, 54, 0.6);
   border-left: 4px solid #3b3a42;
+  white-space: normal;
+}
+
+.discord-view .attachment-og-title {
+  display: block;
+  margin-bottom: 16px;
+  color: #00a8fc;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.discord-view .attachment-og-title:hover {
+  text-decoration: underline;
 }
 
 /* =======================================================
    EMOJIS
    ======================================================= */
 
-.emoji,
-.d-emoji {
-  width: 22px;
-  height: 22px;
-  vertical-align: -3px;
+.discord-view .emoji,
+.discord-view .d-emoji {
+  display: inline-block;
+  width: 1.375em;
+  height: 1.375em;
+  vertical-align: -0.25em;
   object-fit: contain;
 }
 
-.emoji.jumboable {
+.discord-view .emoji.jumboable {
   width: 32px;
   height: 32px;
 }
@@ -259,7 +276,7 @@
   border-radius: 6px;
   pointer-events: none;
   box-shadow: 0 0 0 2px rgb(99 102 241 / 1);
-  background: rgba(99, 102, 241, 0.20);
+  background: rgba(99, 102, 241, 0.2);
   animation: pvmeRingFlash 1.4s ease-out forwards;
 }
 
@@ -282,17 +299,37 @@
    ======================================================= */
 
 .pvme-codeblock {
-    @apply bg-gray-800 text-gray-300 rounded-md p-3 my-2 whitespace-pre overflow-x-auto border border-gray-700;
-    @apply border-l-2 border-blue-400;
+  @apply bg-gray-800 text-gray-300 rounded-md p-3 my-2 whitespace-pre overflow-x-auto border border-gray-700;
+  @apply border-l-2 border-blue-400;
 }
 
 .pvme-codeblock code {
-    @apply font-mono text-sm leading-relaxed;
+  @apply font-mono text-sm leading-relaxed;
 }
 
-code.inline {
-    @apply bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded font-mono text-[13px] border border-gray-700;
-    @apply border-l-2 border-blue-400;
+.discord-view code.inline {
+  display: inline;
+  padding: 0.1em 0.25em;
+  border: 0;
+  border-radius: 3px;
+  background: #2b2d31;
+  color: #dbdee1;
+  font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console",
+    "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono",
+    "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier,
+    monospace;
+  font-size: 0.875em;
+  line-height: 1.125;
+  white-space: break-spaces;
+}
+
+.discord-view .d-mention {
+  display: inline;
+  padding: 0 2px;
+  border-radius: 3px;
+  background: hsla(235, 85.6%, 64.7%, 0.3);
+  color: hsl(236, 83.3%, 92.9%);
+  font-weight: 500;
 }
 
 /* =======================================================
@@ -303,8 +340,10 @@ code.inline {
 .discord-view .embed-wrapper {
   position: relative;
   margin-top: 5px;
-  max-width: 520px;
-  display: flex;
+  display: inline-flex;
+  width: fit-content;
+  max-width: min(520px, 100%);
+  vertical-align: top;
 }
 
 .discord-view .embed-color-pill {
@@ -319,15 +358,15 @@ code.inline {
 .discord-view .pvme-line .embed {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
   padding: 8px 10px;
   box-sizing: border-box;
   border-radius: 0 3px 3px 0;
   background-color: rgba(46, 48, 54, 0.3);
   border: 1px solid rgba(46, 48, 54, 0.6);
-
-  /* IMPORTANT: reset inherited text size */
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: 14px;
+  line-height: 1.375;
 }
 
 /* Content layout */
@@ -335,27 +374,29 @@ code.inline {
   display: flex;
   width: 100%;
   margin-bottom: 8px;
+  min-width: 0;
 }
 
 .discord-view .embed-content-inner,
 .discord-view .embed-field {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 /* Title */
 .discord-view .embed-title {
   font-size: 14px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.375;
   margin-bottom: 4px;
   color: #ffffff;
 }
 
 /* Description */
 .discord-view .embed-description {
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: 14px;
+  line-height: 1.375;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.9);
 }
@@ -367,17 +408,27 @@ code.inline {
   gap: 8px;
 }
 
+.discord-view .embed-field {
+  flex: 1 1 100%;
+  max-width: 100%;
+}
+
+.discord-view .embed-field-inline {
+  flex: 1 1 30%;
+  min-width: 150px;
+}
+
 .discord-view .embed-field-name {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.375;
   margin-bottom: 2px;
   color: #ffffff;
 }
 
 .discord-view .embed-field-value {
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: 14px;
+  line-height: 1.375;
   font-weight: 400;
   color: #dbdee1;
 }
@@ -386,14 +437,9 @@ code.inline {
 .discord-view .embed-footer,
 .discord-view .embed-provider,
 .discord-view .embed-author-name {
-  font-size: 11px;
-  line-height: 1.2;
+  font-size: 12px;
+  line-height: 1.333;
   color: rgba(255, 255, 255, 0.6);
-}
-
-/* Emoji alignment (Discord-accurate) */
-.d-emoji {
-    vertical-align: -3px;
 }
 /* =======================================================
    TAILWIND PREFLIGHT SAFETY

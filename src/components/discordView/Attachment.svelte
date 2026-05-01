@@ -1,7 +1,20 @@
 <script>
     export let url;
 
+    let presetTitle = "PvME Preset";
+    let lastPresetId = null;
+
+    $: presetId = getPresetId(url);
+    $: presetShareUrl = presetId
+        ? `https://presets.pvme.io?id=${encodeURIComponent(presetId)}`
+        : "";
+    $: presetImageUrl = presetId
+        ? `https://firebasestorage.googleapis.com/v0/b/preset-images/o/images%2F${encodeURIComponent(presetId)}.png?alt=media`
+        : "";
     $: urlHTML = urlToHTML(url);
+    $: if (presetId && presetId !== lastPresetId) {
+        loadPresetTitle(presetId);
+    }
 
     function escapeAttr(value) {
         return value
@@ -9,6 +22,40 @@
             .replace(/"/g, "&quot;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");
+    }
+
+    function getPresetId(rawUrl) {
+        if (!rawUrl.match(/https?:\/\/presets\.pvme\.io\/?\?id=/)) return null;
+        try {
+            return new URL(rawUrl).searchParams.get("id");
+        } catch {
+            return null;
+        }
+    }
+
+    async function loadPresetTitle(id) {
+        lastPresetId = id;
+        presetTitle = "PvME Preset";
+
+        if (window.location.origin !== "https://pvme.io") {
+            return;
+        }
+
+        try {
+            const presetRes = await fetch(
+                `https://getpresetv2-bi6xdqcqpq-uc.a.run.app?id=${encodeURIComponent(id)}`
+            );
+            if (!presetRes.ok) return;
+
+            const data = await presetRes.json();
+            if (lastPresetId === id && data?.presetName) {
+                presetTitle = `PvME Preset: ${data.presetName}`;
+            }
+        } catch {
+            if (lastPresetId === id) {
+                presetTitle = "PvME Preset";
+            }
+        }
     }
 
     function renderImage(url) {
@@ -70,13 +117,6 @@
         if (url.match(/^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)(?:\?.*)?$/i))
             return renderImage(url);
 
-        if (url.match(/https?:\/\/presets\.pvme\.io\/?\?id=/)) {
-            const id = new URL(url).searchParams.get("id");
-            return `<img class='media'
-                src='https://firebasestorage.googleapis.com/v0/b/preset-images/o/images%2F${id}.png?alt=media'
-                alt='Preset preview'>`;
-        }
-
         const youtubeId = getYouTubeId(url);
         if (youtubeId) {
             return `<iframe class='media' width='560' height='315'
@@ -90,4 +130,11 @@
     }
 </script>
 
-{@html urlHTML}
+{#if presetId}
+    <a class="attachment-og-title" href={presetShareUrl} rel="noopener noreferrer">
+        {presetTitle}
+    </a>
+    <img class="media" src={presetImageUrl} alt="Preset preview">
+{:else}
+    {@html urlHTML}
+{/if}
