@@ -15,7 +15,7 @@ Create `.env.development`:
 
 ```env
 VITE_GUIDE_PR_ENDPOINT_LOCAL=http://localhost:8080
-VITE_GUIDE_PR_ENDPOINT_LIVE=https://europe-west1-pvmebackend.cloudfunctions.net/submitGuideUpdate
+VITE_GUIDE_PR_ENDPOINT_LIVE=https://guide-api.pvme.io
 PVME_SUBMIT_SECRET=...
 DISCORD_CLIENT_ID=...
 DISCORD_CLIENT_SECRET=...
@@ -69,7 +69,7 @@ From repo root:
 ```powershell
 $env:PVME_SUBMIT_SECRET = "..."
 $env:DISCORD_CLIENT_ID = "..."
-$env:DISCORD_REDIRECT_URI = "https://europe-west1-pvmebackend.cloudfunctions.net/submitGuideUpdate/auth/discord/callback"
+$env:DISCORD_REDIRECT_URI = "https://guide-api.pvme.io/auth/discord/callback"
 $env:FRONTEND_ORIGIN = "https://pvme.io/guide-editor/"
 $env:GITHUB_INSTALLATION_ID = "128427383"
 
@@ -97,7 +97,7 @@ npm run deploy:guide-pr
 Health check:
 
 ```powershell
-Invoke-RestMethod https://europe-west1-pvmebackend.cloudfunctions.net/submitGuideUpdate
+Invoke-RestMethod https://guide-api.pvme.io
 ```
 
 ## Checks

@@ -1106,6 +1106,8 @@ function serializeCookie(name, value, options) {
     `SameSite=${options.sameSite || "Lax"}`
   ];
 
+  const domain = getCookieDomain();
+  if (domain) parts.push(`Domain=${domain}`);
   if (options.httpOnly) parts.push("HttpOnly");
   if (options.secure) parts.push("Secure");
 
@@ -1125,6 +1127,10 @@ function parseCookies(header) {
 
 function getCookieSameSite() {
   return process.env.AUTH_COOKIE_SAMESITE || "None";
+}
+
+function getCookieDomain() {
+  return String(process.env.AUTH_COOKIE_DOMAIN || "").trim();
 }
 
 function isCookieSecure() {

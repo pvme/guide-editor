@@ -1,5 +1,5 @@
 const DEV_API_BASE = "/api/guide-pr";
-const DEFAULT_LIVE_API_BASE = "https://europe-west1-pvmebackend.cloudfunctions.net/submitGuideUpdate";
+const DEFAULT_LIVE_API_BASE = "https://guide-api.pvme.io";
 const LIVE_API_BASE =
   import.meta.env.VITE_GUIDE_PR_ENDPOINT_LIVE ||
   import.meta.env.VITE_GUIDE_PR_ENDPOINT ||
