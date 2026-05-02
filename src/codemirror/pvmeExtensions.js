@@ -45,6 +45,7 @@ import { listKeymap } from "./listIndent.js";
 import { autoformatOnUpdate } from "./autoformat.js";
 
 import { messageSyncExtension } from "./messageSync.js";
+import { errorGutterExtension } from "./errorGutter.js";
 
 function selectNextOccurrenceSafe(view) {
   const handled = selectNextOccurrence(view);
@@ -85,6 +86,7 @@ export function pvmeExtensions(textStore, syncApi) {
     ]),
 
     history(),
+    errorGutterExtension,
     lineNumbers(),
     markdown(),
     EditorView.lineWrapping,

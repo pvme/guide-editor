@@ -11,9 +11,12 @@
   import { populateConstants } from "./pvmeSettings";
   import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
   import { getAuthenticatedUser } from "./guidePrApi";
+  import findStyleErrors from "./syntax/style";
+  import findSyntaxErrors from "./syntax/syntax";
   import GuideLoadModal from "./components/GuideLoadModal.svelte";
   import GuideSearch from "./components/toolbar/GuideSearch.svelte";
   import SubmitPrModal from "./components/toolbar/SubmitPrModal.svelte";
+  import { setEditorIssuesEffect } from "./codemirror/errorGutter.js";
   import {
     pvmeExtensions,
     commandDispatch,
@@ -49,6 +52,13 @@
   let guideLoadStatus = "idle";
   let guideNotice = "";
   let removeGlobalKeydown = null;
+
+  $: checkerIssues = [...findStyleErrors(validText), ...findSyntaxErrors(validText)];
+  $: if (editor) {
+    editor.dispatch({
+      effects: setEditorIssuesEffect.of(checkerIssues)
+    });
+  }
 
   // -----------------------------
   // Wrappers for sync helpers
