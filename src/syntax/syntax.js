@@ -7,6 +7,7 @@ const validator = ajv.compile(embedSchema);
 const SECTION_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
 const LINKMSG_TOKEN_REGEX = /\$linkmsg[^$]*\$/g;
 const VALID_LINKMSG_REGEX = /^\$linkmsg_([A-Za-z0-9_-]+)\$$/;
+const DISCORD_MENTION_REGEX = /<(@!?\d+|@&\d+|#\d+)>|@(everyone|here)\b/i;
 
 
 function normalizeEmbedJson(json) {
@@ -142,6 +143,37 @@ function formatError(error) {
         return `'${error.instancePath.slice(1)}' ${error.message}`;
 }
 
+function hasDiscordMention(value) {
+	return typeof value === "string" && DISCORD_MENTION_REGEX.test(value);
+}
+
+function findJsonPropertyLine(jsonText, property, value, usedLines = new Set()) {
+	const lines = jsonText.split("\n");
+	const quotedProperty = JSON.stringify(property);
+	const quotedValue = JSON.stringify(value);
+
+	for (let i = 0; i < lines.length; i++) {
+		if (usedLines.has(i)) continue;
+
+		const line = lines[i];
+		if (line.includes(quotedProperty) && line.includes(quotedValue)) {
+			usedLines.add(i);
+			return i + 1;
+		}
+	}
+
+	for (let i = 0; i < lines.length; i++) {
+		if (usedLines.has(i)) continue;
+
+		if (lines[i].includes(quotedProperty)) {
+			usedLines.add(i);
+			return i + 1;
+		}
+	}
+
+	return 1;
+}
+
 function validateEmbedSchema(results, line, embed) {
     const valid = validator(embed);
     if (!valid) {
@@ -155,8 +187,18 @@ function validateEmbedSchema(results, line, embed) {
     }
 }
 
-function validateEmbedFields(results, line, embed) {
+function validateEmbedFields(results, line, embed, jsonText = "") {
 	try {
+		const usedFieldNameLines = new Set();
+
+		if (hasDiscordMention(embed.title)) {
+			results.push({
+				line: line + findJsonPropertyLine(jsonText, "title", embed.title) - 1,
+				type: "error",
+				text: "JSON embed object is invalid: Discord mentions are not allowed in embed titles"
+			});
+		}
+
 		if (embed.fields) {
 			for(let j = 0 ; j < embed.fields.length; j++) {
 				if(embed.fields[j].name.trim().length == 0) {
@@ -164,6 +206,13 @@ function validateEmbedFields(results, line, embed) {
 						line: line,
 						type: "error",
 						text: "JSON embed object is invalid: \"name\" is empty in an embed field"
+					});
+				}
+				if(hasDiscordMention(embed.fields[j].name)) {
+					results.push({
+						line: line + findJsonPropertyLine(jsonText, "name", embed.fields[j].name, usedFieldNameLines) - 1,
+						type: "error",
+						text: "JSON embed object is invalid: Discord mentions are not allowed in embed field names"
 					});
 				}
 				if(embed.fields[j].value.trim() == 0) {
@@ -198,7 +247,7 @@ function validateEmbedJsonText(results, line, jsonText) {
 	}
 
 	const embed = extractEmbed(json);
-	validateEmbedFields(results, line, embed);
+	validateEmbedFields(results, line, embed, normalizedJsonText);
 	validateEmbedSchema(results, line, embed);
 
 	return { json, embed };
