@@ -3,6 +3,7 @@
   import Github from "svelte-bootstrap-icons/lib/Github.svelte";
   import Search from "svelte-bootstrap-icons/lib/Search.svelte";
   import { loadedGuide, text } from "../../stores";
+  import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
   export let corner = "";
 
@@ -45,9 +46,13 @@
     {/if}
     <span class="font-medium">{label}</span>
     {#if hasLoadedGuide}
-      <span class="hidden 2xl:inline max-w-40 truncate rounded bg-black/20 px-1.5 py-0.5 text-xs text-blue-100">
-        {detail}
-      </span>
+      <ToolbarTooltip text={detail}>
+        <span class="submit-guide-file hidden 2xl:inline max-w-40 rounded bg-black/20 px-1.5 py-0.5 text-xs text-blue-100">
+          <span class="submit-guide-file-name truncate">
+            {detail}
+          </span>
+        </span>
+      </ToolbarTooltip>
     {/if}
   </button>
   <span id="submit-guide-help" class="submit-guide-tooltip" role="tooltip">
@@ -93,9 +98,19 @@
     color: rgb(148 163 184);
   }
 
-  .submit-guide-main:disabled span:last-child {
+  .submit-guide-main:disabled .submit-guide-file {
     background: rgb(15 23 42 / 0.55);
     color: rgb(148 163 184);
+  }
+
+  .submit-guide-file {
+    position: relative;
+    max-width: 10rem;
+  }
+
+  .submit-guide-file-name {
+    display: block;
+    min-width: 0;
   }
 
   .submit-guide-tooltip {
@@ -152,9 +167,15 @@
     transform: translate(-50%, 0);
   }
 
+  .submit-guide-main:hover:has(.submit-guide-file:hover) + .submit-guide-tooltip {
+    opacity: 0;
+    transform: translate(-50%, -0.25rem);
+  }
+
   .submit-guide-search:hover + .submit-guide-search-tooltip,
   .submit-guide-search:focus + .submit-guide-search-tooltip {
     opacity: 1;
     transform: translate(0, 0);
   }
+
 </style>
