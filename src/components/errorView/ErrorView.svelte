@@ -6,6 +6,7 @@
 
     export let text;
     export let flashKey = 0;
+    export let ignoredTrailingWhitespaceLine = null;
 
     const dispatch = createEventDispatcher();
     let errorViewEl;
@@ -29,7 +30,10 @@
     }
 
     function findErrors(text) {
-        return [...findStyleErrors(text), ...findSyntaxErrors(text)];
+        return [
+            ...findStyleErrors(text, { ignoredTrailingWhitespaceLine }),
+            ...findSyntaxErrors(text)
+        ];
     }
 
     async function flashChecker() {

@@ -185,13 +185,14 @@ function findEmbedJsonLineIndexes(lines) {
 	return indexes;
 }
 
-function findStyleErrors(text) {
+function findStyleErrors(text, options = {}) {
     /* state values
 	 * 0 - parsing message content
 	 * 1 - parsing message commands
 	 */
     const lines = text.split('\n');
 	const embedJsonLineIndexes = findEmbedJsonLineIndexes(lines);
+	const ignoredTrailingWhitespaceLine = Number(options.ignoredTrailingWhitespaceLine) || null;
 	let state = 0;
 	const messages = [];
 	const results = [];
@@ -362,17 +363,21 @@ function findStyleErrors(text) {
 				});
 			}
 
-			if (match = mlines[i].match(/[ \t]$/)) {
+			if (message.firstline + i !== ignoredTrailingWhitespaceLine && (match = mlines[i].match(/[ \t]+$/))) {
 				results.push({
 					line: message.firstline + i,
+					column: [match.index + 1, mlines[i].length + 1],
 					type: "warn",
 					text: "Content should not include trailing whitespace"
 				});
 			}
 
-			if (match = mlines[i].replace(/^[\u200B\s]+/, "").match(/ {2,}/)) {
+			const visibleContentStart = mlines[i].match(/^[\u200B\s]+/)?.[0].length || 0;
+			if (match = mlines[i].slice(visibleContentStart).match(/ {2,}/)) {
+				const columnStart = visibleContentStart + match.index + 1;
 				results.push({
 					line: message.firstline + i,
+					column: [columnStart, columnStart + match[0].length],
 					type: "warn",
 					text: "Content should not include double spaces"
 				});

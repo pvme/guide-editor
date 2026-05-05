@@ -52,8 +52,16 @@
   let guideLoadStatus = "idle";
   let guideNotice = "";
   let removeGlobalKeydown = null;
+  let activeEditorLine = 1;
+  let confirmedTrailingWhitespaceLines = new Set();
 
-  $: checkerIssues = [...findStyleErrors(validText), ...findSyntaxErrors(validText)];
+  $: ignoredTrailingWhitespaceLine = confirmedTrailingWhitespaceLines.has(activeEditorLine)
+    ? null
+    : activeEditorLine;
+  $: checkerIssues = [
+    ...findStyleErrors(validText, { ignoredTrailingWhitespaceLine }),
+    ...findSyntaxErrors(validText)
+  ];
   $: if (editor) {
     editor.dispatch({
       effects: setEditorIssuesEffect.of(checkerIssues)
@@ -149,6 +157,7 @@
         insert: guideText
       }
     });
+    confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
 
     text.set(guideText);
     loadedGuide.set({
@@ -172,6 +181,50 @@
     if (guideLoadStatus !== "idle") return;
     pendingGuide = null;
     showGuideModal = false;
+  }
+
+  function lineHasTrailingWhitespace(doc, lineNumber) {
+    if (!doc || lineNumber < 1 || lineNumber > doc.lines) return false;
+    return /[ \t]$/.test(doc.line(lineNumber).text);
+  }
+
+  function getTrailingWhitespaceLines(doc) {
+    const lines = new Set();
+
+    for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber += 1) {
+      if (lineHasTrailingWhitespace(doc, lineNumber)) {
+        lines.add(lineNumber);
+      }
+    }
+
+    return lines;
+  }
+
+  function confirmTrailingWhitespaceLine(doc, lineNumber) {
+    const next = new Set(confirmedTrailingWhitespaceLines);
+
+    if (lineHasTrailingWhitespace(doc, lineNumber)) {
+      next.add(lineNumber);
+    } else {
+      next.delete(lineNumber);
+    }
+
+    confirmedTrailingWhitespaceLines = next;
+  }
+
+  function pruneConfirmedTrailingWhitespaceLines(doc) {
+    const next = new Set(
+      [...confirmedTrailingWhitespaceLines].filter(lineNumber =>
+        lineHasTrailingWhitespace(doc, lineNumber)
+      )
+    );
+
+    if (
+      next.size !== confirmedTrailingWhitespaceLines.size
+      || [...next].some(lineNumber => !confirmedTrailingWhitespaceLines.has(lineNumber))
+    ) {
+      confirmedTrailingWhitespaceLines = next;
+    }
   }
 
 
@@ -210,12 +263,26 @@
           highlightPreviewMessage,
           scrollEditorToMessage: _scrollEditorToMessage,
           highlightEditorMessage
+        }),
+        EditorView.updateListener.of((update) => {
+          if (!update.selectionSet && !update.docChanged) return;
+
+          const nextActiveLine = update.state.doc.lineAt(update.state.selection.main.head).number;
+
+          if (nextActiveLine !== activeEditorLine) {
+            confirmTrailingWhitespaceLine(update.state.doc, activeEditorLine);
+          } else if (update.docChanged) {
+            pruneConfirmedTrailingWhitespaceLines(update.state.doc);
+          }
+
+          activeEditorLine = nextActiveLine;
         })
       ]
     });
 
     editor = new EditorView({ state, parent: inputEl });
     syncEngine = editor.state.facet(SyncEngineFacet)[0];
+    confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
 
     // --- Load guide from URL ---
     const params = new URLSearchParams(window.location.search);
@@ -250,6 +317,7 @@
         editor.dispatch({
           changes: { from: 0, to: cur.length, insert: v }
         });
+        confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
       }
     });
   });
@@ -388,6 +456,7 @@
         <ErrorView
           text={validText}
           flashKey={errorViewFlashKey}
+          {ignoredTrailingWhitespaceLine}
           on:jump={handleErrorJump}
         />
       </div>

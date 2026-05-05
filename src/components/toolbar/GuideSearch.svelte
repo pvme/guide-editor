@@ -36,6 +36,12 @@
     return q === query.length;
   }
 
+  function tokenMatch(text, query) {
+    const terms = query.split(" ").filter(Boolean);
+
+    return terms.length > 0 && terms.every(term => text.includes(term));
+  }
+
   async function loadGuideIndex() {
     if (loaded || loading) return;
     loading = true;
@@ -116,15 +122,16 @@
       ? guides.slice(0, 10)
       : guides
           .map(g => {
-            const text = normalise(g.path);
+            const text = normalise(`${g.name} ${g.path}`);
             const q = normalise(query);
 
             const includes = text.includes(q);
+            const tokens = tokenMatch(text, q);
             const fuzzy = fuzzyMatch(text, q);
 
             return {
               guide: g,
-              score: includes ? 2 : fuzzy ? 1 : 0
+              score: includes ? 3 : tokens ? 2 : fuzzy ? 1 : 0
             };
           })
           .filter(x => x.score > 0)

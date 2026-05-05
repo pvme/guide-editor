@@ -43,12 +43,32 @@ const lineDecorations = {
   warning: Decoration.line({ class: "cm-guide-issue-line cm-guide-issue-line--warning" })
 };
 
+const markDecorations = {
+  error: Decoration.mark({ class: "cm-guide-issue-span cm-guide-issue-span--error" }),
+  warning: Decoration.mark({ class: "cm-guide-issue-span cm-guide-issue-span--warning" })
+};
+
 function normalizeType(type) {
   return type === "error" ? "error" : "warning";
 }
 
+function getIssueColumnRange(issue, line) {
+  if (!Array.isArray(issue.column)) {
+    return null;
+  }
+
+  const [start, end] = issue.column;
+  const fromColumn = Math.max(1, Number(start) || 1);
+  const toColumn = Math.max(fromColumn, Number(end) || fromColumn);
+  const from = Math.min(line.to, line.from + fromColumn - 1);
+  const to = Math.min(line.to, line.from + toColumn - 1);
+
+  return from < to ? { from, to } : null;
+}
+
 function buildIssueState(doc, issues) {
   const byLine = new Map();
+  const markRanges = [];
 
   for (const issue of issues || []) {
     const issueType = normalizeType(issue.type);
@@ -58,6 +78,25 @@ function buildIssueState(doc, issues) {
 
     const fromLine = Math.max(1, Number(start) || 1);
     const toLine = Math.min(doc.lines, Math.max(fromLine, Number(end) || fromLine));
+
+    if (fromLine === toLine) {
+      const line = doc.line(fromLine);
+      const columnRange = getIssueColumnRange(issue, line);
+
+      if (columnRange) {
+        markRanges.push(markDecorations[issueType].range(columnRange.from, columnRange.to));
+      } else if (line.from < line.to) {
+        markRanges.push(markDecorations[issueType].range(line.from, line.to));
+      }
+    } else {
+      for (let lineNumber = fromLine; lineNumber <= toLine; lineNumber += 1) {
+        const line = doc.line(lineNumber);
+
+        if (line.from < line.to) {
+          markRanges.push(markDecorations[issueType].range(line.from, line.to));
+        }
+      }
+    }
 
     for (let lineNumber = fromLine; lineNumber <= toLine; lineNumber += 1) {
       const current = byLine.get(lineNumber);
@@ -75,19 +114,19 @@ function buildIssueState(doc, issues) {
 
   const markerBuilder = new RangeSetBuilder();
   const gutterClassBuilder = new RangeSetBuilder();
-  const decorationBuilder = new RangeSetBuilder();
+  const decorations = [];
 
   for (const [lineNumber, issue] of [...byLine].sort((a, b) => a[0] - b[0])) {
     const line = doc.line(lineNumber);
     markerBuilder.add(line.from, line.from, new IssueMarker(issue.type, issue.titles.join("\n")));
     gutterClassBuilder.add(line.from, line.from, new IssueLineMarker(issue.type));
-    decorationBuilder.add(line.from, line.from, lineDecorations[issue.type]);
+    decorations.push(lineDecorations[issue.type].range(line.from));
   }
 
   return {
     markers: markerBuilder.finish(),
     gutterClasses: gutterClassBuilder.finish(),
-    decorations: decorationBuilder.finish()
+    decorations: Decoration.set([...decorations, ...markRanges], true)
   };
 }
 
