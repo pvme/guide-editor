@@ -8,7 +8,7 @@
 
     import Help from "./Help.svelte";
     import Info from "./Info.svelte";
-    import ToggleView from "./ToggleView.svelte";
+    import Settings from "./Settings.svelte";
     import ExportToTxt from "./ExportToTxt.svelte";
     import SubmitPr from "./SubmitPr.svelte";
     import ToolbarTooltip from "./ToolbarTooltip.svelte";
@@ -16,6 +16,7 @@
     export let insertAtCursor;
     export let getEditorCursorPosition;
     export let replaceEditorText;
+    export let showView = true;
 
     const dispatch = createEventDispatcher();
 </script>
@@ -55,7 +56,7 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3 lg:flex-none lg:justify-end">
-                <ToggleView {dispatch}/>
+                <Settings {showView} on:toggleView={() => dispatch("toggleView")} />
                 <ExportToTxt iconOnly />
                 <Help/>
                 <Info/>

@@ -7,7 +7,7 @@
   import { EditorView } from "@codemirror/view";
   import { onMount, onDestroy } from "svelte";
 
-  import { authUser, loadedGuide, text } from "./stores";
+  import { authUser, loadedGuide, text, editorSettings, normalizeEditorSettings } from "./stores";
   import { populateConstants } from "./pvmeSettings";
   import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
   import { getAuthenticatedUser } from "./guidePrApi";
@@ -22,6 +22,7 @@
     commandDispatch,
     SyncEngineFacet
   } from "./codemirror/pvmeExtensions.js";
+  import { reconfigureEditorSettings } from "./codemirror/editorSettings.js";
 
   import {
     getMessageAtEditorLine,
@@ -54,6 +55,8 @@
   let removeGlobalKeydown = null;
   let activeEditorLine = 1;
   let confirmedTrailingWhitespaceLines = new Set();
+  let removeEditorSettingsSubscription = null;
+  let currentEditorSettings = normalizeEditorSettings();
 
   $: ignoredTrailingWhitespaceLine = confirmedTrailingWhitespaceLines.has(activeEditorLine)
     ? null
@@ -235,6 +238,17 @@
   text.subscribe(v => (initialDoc = v))();
 
   onMount(() => {
+    removeEditorSettingsSubscription = editorSettings.subscribe(settings => {
+      currentEditorSettings = normalizeEditorSettings(settings);
+      showView = currentEditorSettings.showPreview;
+
+      if (editor) {
+        editor.dispatch({
+          effects: reconfigureEditorSettings(currentEditorSettings)
+        });
+      }
+    });
+
     getAuthenticatedUser()
       .then((user) => authUser.set(user))
       .catch(() => authUser.set(null));
@@ -263,7 +277,7 @@
           highlightPreviewMessage,
           scrollEditorToMessage: _scrollEditorToMessage,
           highlightEditorMessage
-        }),
+        }, currentEditorSettings),
         EditorView.updateListener.of((update) => {
           if (!update.selectionSet && !update.docChanged) return;
 
@@ -324,6 +338,7 @@
 
   onDestroy(() => {
     removeGlobalKeydown?.();
+    removeEditorSettingsSubscription?.();
     editor?.destroy();
   });
 
@@ -417,6 +432,17 @@
     showSubmitPrModal = false;
     errorViewFlashKey += 1;
   }
+
+  function togglePreviewVisibility() {
+    editorSettings.update(settings => {
+      const current = normalizeEditorSettings(settings);
+
+      return {
+        ...current,
+        showPreview: !current.showPreview
+      };
+    });
+  }
 </script>
 
 <main>
@@ -426,8 +452,9 @@
       {insertAtCursor}
       {getEditorCursorPosition}
       {replaceEditorText}
+      {showView}
       on:command={(e) => runCommand(e.detail)}
-      on:toggleView={() => (showView = !showView)}
+      on:toggleView={togglePreviewVisibility}
       on:loadGuide={(e) => handleGuideSearchSelect(e.detail)}
       on:openGuideSearch={() => (showGuideSearch = true)}
       on:openSubmitPr={() => (showSubmitPrModal = true)}

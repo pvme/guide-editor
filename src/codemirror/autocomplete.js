@@ -1,6 +1,7 @@
 // src/codemirror/pvmeAutocomplete.js
 
 import { usersFormat, channelsFormat, emojisFormat, emojiSearch, channels } from "../pvmeSettings";
+import { editorSettingsFacet } from "./editorSettings.js";
 
 const DEBUG = false;
 const log = (...args) => DEBUG && console.log("[AUTOFORMAT]", ...args);
@@ -12,16 +13,16 @@ export function autocompletionSource(context) {
 
   const text = line.text.slice(0, pos - line.from);
 
-  // CLOSED EMOJI PREVIEW (:emoji:)
-  const closedEmoji = text.match(/:([a-zA-Z0-9_-]{2,}):$/);
+  // CLOSED EMOJI PREVIEW (:emoji: or ;emoji;)
+  const closedEmoji = text.match(/([:;])([a-zA-Z0-9_-]{2,})\1$/);
   if (closedEmoji) {
-    const name = closedEmoji[1].toLowerCase();
+    const name = closedEmoji[2].toLowerCase();
     const matches = Object.keys(emojisFormat)
       .filter(e => e.toLowerCase() === name);
     if (matches.length === 1) {
       const emojiName = matches[0];
-      const insertText = emojisFormat[emojiName];
-      const from = pos - (name.length + 2); // ":res:"
+      const insertText = withEmojiTrailingInsert(context.state, emojisFormat[emojiName], doc, pos);
+      const from = pos - (name.length + 2); // ":res:" or ";res;"
       const to   = pos;
       return {
         from,
@@ -45,17 +46,18 @@ export function autocompletionSource(context) {
   // MATCHES:
   // @user, ;@user
   // #chan, ;#chan
-  // :emoji, ;:emoji
+  // :emoji, ;emoji, ;:emoji
   //
   // Group 1 = optional semicolon
   // Group 2 = trigger char (@,#,:)
   // Group 3 = query (letters / numbers / underscores / hyphens)
-  const m = text.match(/(;)?([@#:])([a-zA-Z0-9_-]*)$/);
+  const m = text.match(/(;)?([@#:])([a-zA-Z0-9_-]*)$/) ||
+    text.match(/(;)()([a-zA-Z0-9_-]*)$/);
 
   if (!m) return null;
 
   const semicolon = m[1];     // may be undefined
-  const prefix     = m[2];    // "@", "#", or ":"
+  const prefix     = m[2] || ";";    // "@", "#", ":", or bare ";"
   const query      = m[3].toLowerCase();
 
   if (query.length < 2) return null;  // prevent autocomplete until 2+ chars typed
@@ -83,7 +85,7 @@ export function autocompletionSource(context) {
   }
 
   // EMOJIS ------------------------------------------------------
-  else if (prefix === ":") {
+  else if (prefix === ":" || prefix === ";") {
     raw = emojiSearch
       .filter(e =>
         e.id.includes(query) ||
@@ -97,7 +99,7 @@ export function autocompletionSource(context) {
       .slice(0, 25)
       .map(e => ({
         label: e.id,
-        insertText: e.format,
+        insertText: withEmojiTrailingInsert(context.state, e.format, doc, pos),
         type: "emoji"
       }));
   }
@@ -122,21 +124,46 @@ export function autocompletionSource(context) {
       apply(view, completion, from, toPos) {
         // Remove everything from the optional semicolon + prefix up to the cursor
         //
-        // If semicolon exists, remove 2 chars: ";@"
-        // If semicolon doesn't exist, remove 1 char: "@"
-        const prefixLen = semicolon ? 2 : 1;
+        // If semicolon decorates @/#/:, remove 2 chars. Bare ;emoji removes 1 char.
+        const prefixLen = semicolon && prefix !== ";" ? 2 : 1;
         const replaceFrom = triggerFrom - prefixLen;
         const replaceTo   = toPos;
+
+        const insert = item.type === "emoji"
+          ? withEmojiTrailingInsert(view.state, item.insertText, view.state.doc, replaceTo)
+          : item.insertText;
 
         view.dispatch({
           changes: {
             from: replaceFrom,
             to: replaceTo,
-            insert: item.insertText
+            insert
           }
         });
       }
     })),
     filter: false
   };
+}
+
+function withEmojiTrailingInsert(state, value, doc, pos) {
+  const settings = state.facet(editorSettingsFacet);
+  const mode = settings.emojiTrailingInsert || (settings.autoSpaceAfterEmoji ? "space" : "none");
+  if (mode === "none") return value;
+
+  const next = pos < doc.length ? doc.sliceString(pos, pos + 1) : "";
+  const hasHorizontalSpace = next && /[ \t]/.test(next);
+
+  if (mode === "space") {
+    return value.endsWith(" ") || hasHorizontalSpace ? value : `${value} `;
+  }
+
+  if (mode === "spaceArrowSpace") {
+    if (value.endsWith(" → ")) return value;
+    if (value.endsWith(" →") && hasHorizontalSpace) return value;
+    if (value.endsWith(" ")) return `${value}→${hasHorizontalSpace ? "" : " "}`;
+    return `${value} →${hasHorizontalSpace ? "" : " "}`;
+  }
+
+  return value;
 }

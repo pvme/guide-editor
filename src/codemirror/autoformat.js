@@ -11,6 +11,7 @@ import {
   rolesFormat,
   emojisFormat
 } from "../pvmeSettings";
+import { editorSettingsFacet } from "./editorSettings.js";
 
 const DEBUG = false;
 const log = (...args) => DEBUG && console.log("[AUTOFORMAT]", ...args);
@@ -19,7 +20,8 @@ const ARROW   = /->$/;
 const USER    = /;@([^;]+);/;
 const ROLE    = /;@&([^;]+);/;
 const CHANNEL = /;#([^;]+);/;
-const TOKEN   = /;([a-zA-Z0-9_-]+);$/;
+const SEMICOLON_TOKEN = /;([a-zA-Z0-9_-]+);$/;
+const COLON_EMOJI = /:([a-zA-Z0-9_-]+):$/;
 const PRESET_MAKER_URL = /(https:\/\/pvme\.io\/preset-maker\/#\/([^\s)\]>]+))(?:([)\]>\s]))?$/;
 const PRESET_MAKER_URL_GLOBAL = /https:\/\/pvme\.io\/preset-maker\/#\/([^\s)\]>]+)/g;
 
@@ -36,7 +38,7 @@ const special = {
   space: "\u00A0"
 };
 
-function trySuffix(doc, pos, regex, make) {
+function trySuffix(state, doc, pos, regex, make) {
   // Look backwards up to 50 chars (safe & fast)
   const start = Math.max(0, pos - 50);
   const slice = doc.sliceString(start, pos);
@@ -45,13 +47,35 @@ function trySuffix(doc, pos, regex, make) {
   const m = slice.match(regex);
   if (!m) return null;
 
-  const replacement = make(m);
+  const replacement = make(m, state, doc, pos);
   if (!replacement) return null;
 
   const from = pos - m[0].length;
   const to = pos;
 
   return { from, to, insert: replacement };
+}
+
+function withEmojiTrailingInsert(state, value, doc, pos) {
+  const settings = state.facet(editorSettingsFacet);
+  const mode = settings.emojiTrailingInsert || (settings.autoSpaceAfterEmoji ? "space" : "none");
+  if (mode === "none") return value;
+
+  const next = pos < doc.length ? doc.sliceString(pos, pos + 1) : "";
+  const hasHorizontalSpace = next && /[ \t]/.test(next);
+
+  if (mode === "space") {
+    return value.endsWith(" ") || hasHorizontalSpace ? value : `${value} `;
+  }
+
+  if (mode === "spaceArrowSpace") {
+    if (value.endsWith(" → ")) return value;
+    if (value.endsWith(" →") && hasHorizontalSpace) return value;
+    if (value.endsWith(" ")) return `${value}→${hasHorizontalSpace ? "" : " "}`;
+    return `${value} →${hasHorizontalSpace ? "" : " "}`;
+  }
+
+  return value;
 }
 
 function tryPresetMakerUrl(doc, pos, typed) {
@@ -125,11 +149,24 @@ export function autoformatOnUpdate() {
     // try matching on newDoc
     const match =
       tryPresetMakerUrl(newDoc, cursor, typed) ||
-      trySuffix(newDoc, cursor, ARROW, () => "→") ||
-      trySuffix(newDoc, cursor, USER,  m => `<@${usersFormat[m[1].toLowerCase()]}>`) ||
-      trySuffix(newDoc, cursor, ROLE,  m => `<@&${rolesFormat[m[1].toLowerCase()]}>`) ||
-      trySuffix(newDoc, cursor, CHANNEL, m => `<#${channelsFormat[m[1].toLowerCase()]}>`) ||
-      trySuffix(newDoc, cursor, TOKEN, m => emojisFormat[m[1].toLowerCase()] || special[m[1].toLowerCase()])
+      trySuffix(tr.startState, newDoc, cursor, ARROW, () => "→") ||
+      trySuffix(tr.startState, newDoc, cursor, USER,  m => `<@${usersFormat[m[1].toLowerCase()]}>`) ||
+      trySuffix(tr.startState, newDoc, cursor, ROLE,  m => `<@&${rolesFormat[m[1].toLowerCase()]}>`) ||
+      trySuffix(tr.startState, newDoc, cursor, CHANNEL, m => `<#${channelsFormat[m[1].toLowerCase()]}>`) ||
+      trySuffix(tr.startState, newDoc, cursor, SEMICOLON_TOKEN, (m, state, doc, pos) => {
+        const key = m[1].toLowerCase();
+        const emoji = emojisFormat[key];
+        if (emoji) {
+          return withEmojiTrailingInsert(state, emoji, doc, pos);
+        }
+        return special[key];
+      }) ||
+      trySuffix(tr.startState, newDoc, cursor, COLON_EMOJI, (m, state, doc, pos) => {
+        const emoji = emojisFormat[m[1].toLowerCase()];
+        if (!emoji) return null;
+
+        return withEmojiTrailingInsert(state, emoji, doc, pos);
+      })
 
     if (!match) {
       log("no match → passthrough");

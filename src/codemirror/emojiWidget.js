@@ -1,7 +1,7 @@
 // src/codemirror/emojiWidget.js
 
 export function emojiWidget(completion) {
-  const value = completion?.applyText ?? completion?.text;
+  const value = (completion?.applyText ?? completion?.text)?.trim();
   if (typeof value !== "string") return null;
 
   const wrap = document.createElement("div");

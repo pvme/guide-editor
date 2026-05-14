@@ -43,6 +43,7 @@ import { emojiWidget } from "./emojiWidget.js";
 import { draculaTheme } from "./draculaTheme";
 import { listKeymap } from "./listIndent.js";
 import { autoformatOnUpdate } from "./autoformat.js";
+import { editorSettingsExtension } from "./editorSettings.js";
 
 import { messageSyncExtension } from "./messageSync.js";
 import { errorGutterExtension } from "./errorGutter.js";
@@ -57,10 +58,12 @@ export const SyncEngineFacet = Facet.define();
 
 export const commandDispatch = Facet.define();
 
-export function pvmeExtensions(textStore, syncApi) {
+export function pvmeExtensions(textStore, syncApi, editorSettings = {}) {
   const sync = messageSyncExtension(syncApi);
 
   return [
+    editorSettingsExtension(editorSettings),
+
     SyncEngineFacet.of(sync),
 
     EditorState.allowMultipleSelections.of(true),
