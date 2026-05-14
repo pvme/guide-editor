@@ -17,12 +17,15 @@ export function autocompletionSource(context) {
   const closedEmoji = text.match(/([:;])([a-zA-Z0-9_-]{2,})\1$/);
   if (closedEmoji) {
     const name = closedEmoji[2].toLowerCase();
+    const from = pos - (name.length + 2); // ":res:" or ";res;"
+    const isDiscordEmojiFragment = closedEmoji[1] === ":" && from > line.from && doc.sliceString(from - 1, from) === "<";
+    if (isDiscordEmojiFragment) return null;
+
     const matches = Object.keys(emojisFormat)
       .filter(e => e.toLowerCase() === name);
     if (matches.length === 1) {
       const emojiName = matches[0];
       const insertText = withEmojiTrailingInsert(context.state, emojisFormat[emojiName], doc, pos);
-      const from = pos - (name.length + 2); // ":res:" or ";res;"
       const to   = pos;
       return {
         from,
@@ -109,6 +112,14 @@ export function autocompletionSource(context) {
   // Calculate positions -----------------------------------------
   // triggerFrom = start of query
   const triggerFrom = pos - query.length;
+  const emojiColonTriggerFrom = prefix === ":" && !semicolon ? triggerFrom - 1 : null;
+  if (
+    emojiColonTriggerFrom !== null &&
+    emojiColonTriggerFrom > line.from &&
+    doc.sliceString(emojiColonTriggerFrom - 1, emojiColonTriggerFrom) === "<"
+  ) {
+    return null;
+  }
 
   return {
     from: triggerFrom,

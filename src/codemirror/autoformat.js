@@ -47,11 +47,19 @@ function trySuffix(state, doc, pos, regex, make) {
   const m = slice.match(regex);
   if (!m) return null;
 
-  const replacement = make(m, state, doc, pos);
-  if (!replacement) return null;
-
   const from = pos - m[0].length;
   const to = pos;
+
+  if (
+    regex === COLON_EMOJI &&
+    from > 0 &&
+    doc.sliceString(from - 1, from) === "<"
+  ) {
+    return null;
+  }
+
+  const replacement = make(m, state, doc, pos);
+  if (!replacement) return null;
 
   return { from, to, insert: replacement };
 }
