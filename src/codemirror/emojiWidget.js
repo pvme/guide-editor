@@ -2,13 +2,12 @@
 
 export function emojiWidget(completion) {
   const value = (completion?.applyText ?? completion?.text)?.trim();
-  if (typeof value !== "string") return null;
+  if (typeof value !== "string" && !completion?.emojiId) return null;
 
   const wrap = document.createElement("div");
   wrap.className = "cm-emoji-option";
 
-  const match = value.match(/:(\d+)>$/);
-  const id = match ? match[1] : null;
+  const id = completion?.emojiId || getEmojiId(value);
 
   if (id) {
     const img = document.createElement("img");
@@ -19,4 +18,9 @@ export function emojiWidget(completion) {
   }
 
   return wrap;
+}
+
+function getEmojiId(value) {
+  const matches = [...String(value || "").matchAll(/:(\d+)>/g)];
+  return matches.length ? matches[matches.length - 1][1] : null;
 }

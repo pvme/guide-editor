@@ -33,6 +33,7 @@ export function autocompletionSource(context) {
         options: [{
           label: emojiName,
           type: "emoji",
+          emojiId: getEmojiId(emojisFormat[emojiName]),
           text: insertText,
           detail: "Press Enter to insert",
           apply(view) {
@@ -103,6 +104,7 @@ export function autocompletionSource(context) {
       .map(e => ({
         label: e.id,
         insertText: withEmojiTrailingInsert(context.state, e.format, doc, pos),
+        emojiId: e.emojiId,
         type: "emoji"
       }));
   }
@@ -127,6 +129,7 @@ export function autocompletionSource(context) {
     options: raw.map(item => ({
       label: item.label,
       type: item.type || undefined,
+      emojiId: item.emojiId,
       text: item.insertText,
       detail: "",
       info: "",
@@ -177,4 +180,9 @@ function withEmojiTrailingInsert(state, value, doc, pos) {
   }
 
   return value;
+}
+
+function getEmojiId(value) {
+  const matches = [...String(value || "").matchAll(/:(\d+)>/g)];
+  return matches.length ? matches[matches.length - 1][1] : null;
 }

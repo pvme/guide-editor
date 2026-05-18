@@ -135,6 +135,7 @@ async function setEmojis() {
 
         emojiSearch.push({
             id: idKey,
+            emojiId: String(emoji.emoji_id),
             format: emojiFormat,
             search: [...searchTerms]
         });
