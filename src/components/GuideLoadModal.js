@@ -5,9 +5,9 @@ import { loadGuideForReview } from "../guidePrApi";
 
 // Find a guide from ?id=xxxxx (channel ID OR path-like ref)
 export async function findGuideFromParam(paramID) {
-    if (!paramID) return null;
+    const normalized = normalizeGuideParam(paramID);
 
-    const isPath = paramID.includes("/") && !paramID.endsWith("/");
+    if (!normalized) return null;
 
     const channelsJSON = await rawGithubJSONRequest(
         "https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json"
@@ -15,8 +15,8 @@ export async function findGuideFromParam(paramID) {
 
     for (const channel of channelsJSON) {
         const matches =
-            channel.id === paramID ||
-            (isPath && channel.path.includes(paramID.substring(0, paramID.length - 2)));
+            channel.id === normalized.id ||
+            (normalized.path && pathsMatch(channel.path, normalized.path));
 
         if (matches) {
             return {
@@ -28,6 +28,38 @@ export async function findGuideFromParam(paramID) {
     }
 
     return null;
+}
+
+function normalizeGuideParam(paramID) {
+    if (!paramID) return null;
+
+    let id = String(paramID).trim();
+
+    try {
+        id = decodeURIComponent(id);
+    } catch {
+        // URLSearchParams already decodes values; keep the original if this is not encoded.
+    }
+
+    id = id.replace(/^\/+|\/+$/g, "");
+
+    if (!id) return null;
+
+    if (!id.includes("/")) {
+        return { id, path: "" };
+    }
+
+    const path = id.endsWith(".txt") ? id : `${id}.txt`;
+
+    return { id, path };
+}
+
+function pathsMatch(channelPath, requestedPath) {
+    if (!channelPath) return false;
+
+    const normalizedChannelPath = channelPath.replace(/^\/+|\/+$/g, "");
+
+    return normalizedChannelPath === requestedPath;
 }
 
 // Fetch guide text plus review metadata from the guide PR backend.
