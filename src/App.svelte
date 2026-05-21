@@ -6,8 +6,9 @@
   import { EditorState } from "@codemirror/state";
   import { EditorView } from "@codemirror/view";
   import { onMount, onDestroy } from "svelte";
+  import { get } from "svelte/store";
 
-  import { authUser, loadedGuide, text, editorSettings, normalizeEditorSettings } from "./stores";
+  import { activeDraft, authUser, drafts, getDraftTitle, loadedGuide, text, editorSettings, normalizeEditorSettings } from "./stores";
   import { populateConstants } from "./pvmeSettings";
   import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
   import { getAuthenticatedUser } from "./guidePrApi";
@@ -52,11 +53,20 @@
   let errorViewFlashKey = 0;
   let guideLoadStatus = "idle";
   let guideNotice = "";
+  let showNewDraftConfirm = false;
+  let draftToRename = null;
+  let renameDraftValue = "";
+  let draftToDelete = null;
   let removeGlobalKeydown = null;
   let activeEditorLine = 1;
   let confirmedTrailingWhitespaceLines = new Set();
   let removeEditorSettingsSubscription = null;
+  let removeActiveDraftSubscription = null;
+  let removeTextSubscription = null;
+  let removeLoadedGuideSubscription = null;
   let currentEditorSettings = normalizeEditorSettings();
+  let activeDraftId = null;
+  let syncingDraftToStores = false;
 
   $: ignoredTrailingWhitespaceLine = confirmedTrailingWhitespaceLines.has(activeEditorLine)
     ? null
@@ -144,7 +154,7 @@
     if (!pendingGuide) return;
     guideLoadStatus = "live";
     const loaded = await loadGuideText(pendingGuide, "master");
-    applyLoadedGuide(loaded, "Loaded the live guide. Submitting will replace your existing submitted update.");
+    applyLoadedGuide(loaded, "Started a new draft from the PvME guide. Submitting will replace your existing submitted update.");
     pendingGuide = null;
     showGuideModal = false;
     guideLoadStatus = "idle";
@@ -152,18 +162,7 @@
 
   function applyLoadedGuide(loaded, notice) {
     const guideText = loaded.originalText || "";
-    // Replace editor text
-    editor.dispatch({
-      changes: {
-        from: 0,
-        to: editor.state.doc.length,
-        insert: guideText
-      }
-    });
-    confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
-
-    text.set(guideText);
-    loadedGuide.set({
+    const guide = {
       name: loaded.name || pendingGuide?.name,
       path: loaded.path || pendingGuide?.path,
       url: pendingGuide?.url,
@@ -175,6 +174,12 @@
       existingReviewBranch: loaded.existingReviewBranch || "",
       existingReviewUrl: loaded.existingReviewUrl || "",
       originalText: guideText
+    };
+
+    drafts.create({
+      name: guide.name || guide.path?.split("/").pop() || "Loaded guide",
+      content: guideText,
+      loadedGuide: guide
     });
 
     guideNotice = notice;
@@ -235,7 +240,26 @@
   // Setup editor
   // ------------------------------------------------
   let initialDoc = "";
+  let initialLoadedGuide = null;
   text.subscribe(v => (initialDoc = v))();
+  loadedGuide.subscribe(v => (initialLoadedGuide = v))();
+
+  const initialDraftState = get(drafts);
+  const initialDraft = initialDraftState.drafts.find(draft => draft.id === initialDraftState.activeDraftId);
+  const hasLegacyContent = initialDoc.trim().length > 0 || Boolean(initialLoadedGuide);
+  const hasOnlyBlankInitialDraft = initialDraftState.drafts.length === 1
+    && (initialDraft?.content || "").trim().length === 0
+    && !initialDraft?.loadedGuide;
+
+  if (hasLegacyContent && hasOnlyBlankInitialDraft) {
+    drafts.updateActive({
+      name: initialLoadedGuide?.name || initialLoadedGuide?.path?.split("/").pop() || "Current draft",
+      content: initialDoc,
+      loadedGuide: initialLoadedGuide
+    });
+  }
+
+  initialDoc = get(activeDraft)?.content || initialDoc;
 
   onMount(() => {
     removeEditorSettingsSubscription = editorSettings.subscribe(settings => {
@@ -298,6 +322,28 @@
     syncEngine = editor.state.facet(SyncEngineFacet)[0];
     confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
 
+    removeActiveDraftSubscription = activeDraft.subscribe(draft => {
+      if (!draft || !editor || draft.id === activeDraftId) return;
+
+      activeDraftId = draft.id;
+      syncingDraftToStores = true;
+      guideNotice = "";
+
+      loadedGuide.set(draft.loadedGuide || null);
+      text.set(draft.content || "");
+
+      const cur = editor.state.doc.toString();
+      const next = draft.content || "";
+      if (cur !== next) {
+        editor.dispatch({
+          changes: { from: 0, to: cur.length, insert: next }
+        });
+      }
+
+      confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
+      syncingDraftToStores = false;
+    });
+
     // --- Load guide from URL ---
     const params = new URLSearchParams(window.location.search);
     if (params.get("authError")) {
@@ -319,10 +365,14 @@
     editor.focus();
 
     // Sync store → editor
-    text.subscribe(v => {
+    removeTextSubscription = text.subscribe(v => {
       validText = v;
 
-      if (v.trim().length === 0) {
+      if (!syncingDraftToStores && activeDraftId) {
+        drafts.updateActive({ content: v });
+      }
+
+      if (!syncingDraftToStores && v.trim().length === 0) {
         loadedGuide.set(null);
       }
 
@@ -334,11 +384,19 @@
         confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
       }
     });
+
+    removeLoadedGuideSubscription = loadedGuide.subscribe(v => {
+      if (syncingDraftToStores || !activeDraftId) return;
+      drafts.updateActive({ loadedGuide: v });
+    });
   });
 
   onDestroy(() => {
     removeGlobalKeydown?.();
     removeEditorSettingsSubscription?.();
+    removeActiveDraftSubscription?.();
+    removeTextSubscription?.();
+    removeLoadedGuideSubscription?.();
     editor?.destroy();
   });
 
@@ -443,6 +501,43 @@
       };
     });
   }
+
+  function openRenameDraftModal(draft) {
+    draftToRename = draft;
+    renameDraftValue = getDraftTitle(draft);
+  }
+
+  function requestNewDraft() {
+    if (editor?.state.doc.toString().trim().length > 0) {
+      showNewDraftConfirm = true;
+      return;
+    }
+
+    createNewDraft();
+  }
+
+  function createNewDraft() {
+    drafts.create();
+    showNewDraftConfirm = false;
+    guideNotice = "";
+  }
+
+  function confirmRenameDraft() {
+    if (!draftToRename) return;
+    drafts.rename(draftToRename.id, renameDraftValue);
+    draftToRename = null;
+    renameDraftValue = "";
+  }
+
+  function openDeleteDraftModal(draft) {
+    draftToDelete = draft;
+  }
+
+  function confirmDeleteDraft() {
+    if (!draftToDelete) return;
+    drafts.delete(draftToDelete.id);
+    draftToDelete = null;
+  }
 </script>
 
 <main>
@@ -458,6 +553,9 @@
       on:loadGuide={(e) => handleGuideSearchSelect(e.detail)}
       on:openGuideSearch={() => (showGuideSearch = true)}
       on:openSubmitPr={() => (showSubmitPrModal = true)}
+      on:newDraft={requestNewDraft}
+      on:renameDraft={(e) => openRenameDraftModal(e.detail)}
+      on:deleteDraft={(e) => openDeleteDraftModal(e.detail)}
     />
 
 
@@ -532,5 +630,89 @@
       submitAuthError = "";
     }}
   />
+
+  {#if showNewDraftConfirm}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+      <div class="w-full max-w-md rounded border border-slate-700 bg-slate-800 p-5 text-white shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+        <h2 class="text-lg font-semibold">Create New Draft</h2>
+        <p class="mt-3 text-sm text-slate-300">
+          This draft is saved in Local drafts. Creating a new draft will only clear the editor window.
+        </p>
+        <div class="mt-5 flex justify-end gap-2">
+          <button
+            class="rounded border border-slate-600 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700"
+            type="button"
+            on:click={() => (showNewDraftConfirm = false)}
+          >
+            Cancel
+          </button>
+          <button class="toolbar-btn rounded font-medium" type="button" on:click={createNewDraft}>
+            New draft
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if draftToRename}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+      <form
+        class="w-full max-w-md rounded border border-slate-700 bg-slate-800 p-5 text-white shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+        on:submit|preventDefault={confirmRenameDraft}
+      >
+        <h2 class="text-lg font-semibold">Rename Draft</h2>
+        <label class="mt-4 block text-sm text-slate-300" for="draft-name">Draft name</label>
+        <input
+          id="draft-name"
+          class="mt-2 w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
+          bind:value={renameDraftValue}
+        />
+        <div class="mt-5 flex justify-end gap-2">
+          <button
+            class="rounded border border-slate-600 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700"
+            type="button"
+            on:click={() => (draftToRename = null)}
+          >
+            Cancel
+          </button>
+          <button class="toolbar-btn rounded font-medium" type="submit">
+            Rename
+          </button>
+        </div>
+      </form>
+    </div>
+  {/if}
+
+  {#if draftToDelete}
+    {@const isOnlyDraft = $drafts.drafts.length <= 1}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+      <div class="w-full max-w-md rounded border border-slate-700 bg-slate-800 p-5 text-white shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+        <h2 class="text-lg font-semibold">Discard Draft</h2>
+        <p class="mt-3 text-sm text-slate-300">
+          {#if isOnlyDraft}
+            Discard "{getDraftTitle(draftToDelete)}" and start a blank draft?
+          {:else}
+            Discard "{getDraftTitle(draftToDelete)}"?
+          {/if}
+        </p>
+        <div class="mt-5 flex justify-end gap-2">
+          <button
+            class="rounded border border-slate-600 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700"
+            type="button"
+            on:click={() => (draftToDelete = null)}
+          >
+            Cancel
+          </button>
+          <button
+            class="rounded border border-red-700 bg-red-700 px-3 py-2 text-sm font-medium text-white hover:bg-red-800"
+            type="button"
+            on:click={confirmDeleteDraft}
+          >
+            Discard
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 
 </main>

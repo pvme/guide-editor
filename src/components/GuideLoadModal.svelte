@@ -50,7 +50,7 @@
         </h2>
 
         <p class="text-slate-300 mb-6 leading-relaxed">
-          You can continue editing your existing submitted version, or start again from the current live guide.
+          You can keep working from your submitted update, or start a separate draft from the PvME guide.
         </p>
 
         <div class="flex flex-col gap-3">
@@ -63,7 +63,7 @@
               <span class="loading-spinner" aria-hidden="true"></span>
               Loading
             {:else}
-              Continue from my last submitted update
+              Continue from submitted update
             {/if}
           </button>
 
@@ -76,7 +76,7 @@
               <span class="loading-spinner" aria-hidden="true"></span>
               Loading
             {:else}
-              Start fresh from the live guide
+              Start from PvME guide
             {/if}
           </button>
 

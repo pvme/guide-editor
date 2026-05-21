@@ -1,7 +1,7 @@
 <script>
   import Modal from "./Modal.svelte";
   import { createEventDispatcher, tick } from "svelte";
-  import { authUser, loadedGuide, text } from "../../stores";
+  import { authUser, getGuideSourceContext, loadedGuide, text } from "../../stores";
   import findStyleErrors from "../../syntax/style";
   import findSyntaxErrors from "../../syntax/syntax";
   import {
@@ -48,13 +48,7 @@
     : "Update guide";
 
   $: displayName = $authUser?.displayName || $authUser?.globalName || $authUser?.username || "";
-  $: reviewBranch = $loadedGuide?.source === "user-pr"
-    ? $loadedGuide.branch
-    : $loadedGuide?.existingReviewBranch || "";
-  $: branchLabel = reviewBranch
-    ? "Review branch"
-    : "Source branch";
-  $: branchValue = reviewBranch || $loadedGuide?.branch || "master";
+  $: sourceContext = getGuideSourceContext($loadedGuide);
   $: validationItems = getValidationItems($loadedGuide);
   $: blockingItems = validationItems.filter((item) => !item.done);
   $: submitTooltip = canSubmit
@@ -318,9 +312,8 @@
                 {$loadedGuide?.path || "No guide loaded"}
               </div>
               {#if $loadedGuide?.path}
-                <div class="mt-1 truncate font-mono text-xs text-slate-400">
-                  <span class="font-sans font-medium">{branchLabel}:</span>
-                  {branchValue}
+                <div class="mt-1 truncate text-xs text-slate-400">
+                  {sourceContext}
                 </div>
               {/if}
             </div>
@@ -352,7 +345,7 @@
                 bind:checked={replaceExistingReview}
               />
               <span class="text-sm text-amber-50">
-                This will replace your existing submitted update with this version based on the live guide.
+                This will replace your existing submitted update with this draft started from the PvME guide.
               </span>
             </label>
           {/if}

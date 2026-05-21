@@ -2,7 +2,7 @@
   import { createEventDispatcher } from "svelte";
   import Github from "svelte-bootstrap-icons/lib/Github.svelte";
   import Search from "svelte-bootstrap-icons/lib/Search.svelte";
-  import { loadedGuide, text } from "../../stores";
+  import { getGuideSourceContext, loadedGuide, text } from "../../stores";
   import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
   export let corner = "";
@@ -29,6 +29,9 @@
         ? "No changes yet"
         : "Submit update";
   $: detail = $loadedGuide?.path;
+  $: detailTitle = $loadedGuide?.path
+    ? `${$loadedGuide.path} · ${getGuideSourceContext($loadedGuide)}`
+    : "";
 </script>
 
 <div class="submit-guide-group inline-flex items-center">
@@ -46,7 +49,7 @@
     {/if}
     <span class="font-medium">{label}</span>
     {#if hasLoadedGuide}
-      <ToolbarTooltip text={detail}>
+      <ToolbarTooltip text={detailTitle}>
         <span class="submit-guide-file hidden 2xl:inline max-w-40 rounded bg-black/20 px-1.5 py-0.5 text-xs text-blue-100">
           <span class="submit-guide-file-name truncate">
             {detail}

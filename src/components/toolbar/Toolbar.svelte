@@ -9,6 +9,7 @@
     import Help from "./Help.svelte";
     import Info from "./Info.svelte";
     import Settings from "./Settings.svelte";
+    import DraftsMenu from "./DraftsMenu.svelte";
     import ExportToTxt from "./ExportToTxt.svelte";
     import SubmitPr from "./SubmitPr.svelte";
     import ToolbarTooltip from "./ToolbarTooltip.svelte";
@@ -57,6 +58,11 @@
 
             <div class="flex flex-wrap items-center gap-3 lg:flex-none lg:justify-end">
                 <Settings {showView} on:toggleView={() => dispatch("toggleView")} />
+                <DraftsMenu
+                    on:newDraft={() => dispatch("newDraft")}
+                    on:renameDraft={(e) => dispatch("renameDraft", e.detail)}
+                    on:deleteDraft={(e) => dispatch("deleteDraft", e.detail)}
+                />
                 <ExportToTxt iconOnly />
                 <Help/>
                 <Info/>
