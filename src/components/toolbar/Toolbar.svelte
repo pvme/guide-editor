@@ -7,7 +7,6 @@
     import EmbedGuide from "./EmbedGuide.svelte";
 
     import Help from "./Help.svelte";
-    import Info from "./Info.svelte";
     import Settings from "./Settings.svelte";
     import DraftsMenu from "./DraftsMenu.svelte";
     import ExportToTxt from "./ExportToTxt.svelte";
@@ -47,25 +46,24 @@
             </div>
 
             <div class="flex justify-start lg:flex-1 lg:justify-center" role="group">
-                <div class="inline-flex">
+                <div class="inline-flex items-center gap-3">
                     <SubmitPr
                         corner="rounded"
                         on:loadGuide={() => dispatch("openGuideSearch")}
                         on:open={() => dispatch("openSubmitPr")}
                     />
+                    <DraftsMenu
+                        on:newDraft={() => dispatch("newDraft")}
+                        on:renameDraft={(e) => dispatch("renameDraft", e.detail)}
+                        on:deleteDraft={(e) => dispatch("deleteDraft", e.detail)}
+                    />
+                    <ExportToTxt label="Export" />
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-3 lg:flex-none lg:justify-end">
                 <Settings {showView} on:toggleView={() => dispatch("toggleView")} />
-                <DraftsMenu
-                    on:newDraft={() => dispatch("newDraft")}
-                    on:renameDraft={(e) => dispatch("renameDraft", e.detail)}
-                    on:deleteDraft={(e) => dispatch("deleteDraft", e.detail)}
-                />
-                <ExportToTxt iconOnly />
                 <Help/>
-                <Info/>
             </div>
         </div>
 </header>

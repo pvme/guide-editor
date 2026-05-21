@@ -47,7 +47,7 @@
     {:else}
       <Search />
     {/if}
-    <span class="font-medium">{label}</span>
+    <span>{label}</span>
     {#if hasLoadedGuide}
       <ToolbarTooltip text={detailTitle}>
         <span class="submit-guide-file hidden 2xl:inline max-w-40 rounded bg-black/20 px-1.5 py-0.5 text-xs text-blue-100">

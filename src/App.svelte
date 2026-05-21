@@ -108,7 +108,7 @@
   // Load guide from ?id=xxxx
   // ------------------------------------------------
   async function loadGuide(paramID) {
-    pendingGuide = await findGuideFromParam(paramID);
+    pendingGuide = withExistingLocalDraft(await findGuideFromParam(paramID));
     showGuideModal = !!pendingGuide;
   }
 
@@ -135,6 +135,27 @@
     // Remove ?id from URL
     window.history.replaceState({}, document.title, "/guide-editor/");
     
+    pendingGuide = null;
+    showGuideModal = false;
+    guideLoadStatus = "idle";
+  }
+
+  async function openAnotherLocalGuideDraft() {
+    if (!pendingGuide) return;
+
+    pendingGuide = {
+      ...pendingGuide,
+      localDraft: null
+    };
+
+    await confirmLoadGuide();
+  }
+
+  function continueLocalGuideDraft() {
+    const draftId = pendingGuide?.localDraft?.id;
+    if (!draftId) return;
+
+    drafts.switchTo(draftId);
     pendingGuide = null;
     showGuideModal = false;
     guideLoadStatus = "idle";
@@ -176,8 +197,10 @@
       originalText: guideText
     };
 
+    const draftName = getNextLoadedGuideDraftName(guide);
+
     drafts.create({
-      name: guide.name || guide.path?.split("/").pop() || "Loaded guide",
+      name: draftName,
       content: guideText,
       loadedGuide: guide
     });
@@ -189,6 +212,51 @@
     if (guideLoadStatus !== "idle") return;
     pendingGuide = null;
     showGuideModal = false;
+  }
+
+  function withExistingLocalDraft(guide) {
+    if (!guide?.path) return guide;
+
+    const state = get(drafts);
+    const localDraft = [...state.drafts]
+      .filter(draft => draft.loadedGuide?.path === guide.path)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+
+    return localDraft
+      ? { ...guide, localDraft }
+      : guide;
+  }
+
+  function getNextLoadedGuideDraftName(guide) {
+    const baseName = guide.name || guide.path?.split("/").pop() || "Loaded guide";
+    if (!guide.path) return baseName;
+
+    const sameOriginDrafts = get(drafts).drafts
+      .filter(draft => draft.loadedGuide?.path === guide.path);
+
+    if (sameOriginDrafts.length === 0) {
+      return baseName;
+    }
+
+    const escapedBaseName = baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const numberedName = new RegExp(`^${escapedBaseName} \\((\\d+)\\)$`);
+    const usedNumbers = new Set();
+
+    for (const draft of sameOriginDrafts) {
+      const match = draft.name?.match(numberedName);
+      if (match) {
+        usedNumbers.add(Number(match[1]));
+      } else if (draft.name === baseName) {
+        usedNumbers.add(1);
+      }
+    }
+
+    let nextNumber = 1;
+    while (usedNumbers.has(nextNumber)) {
+      nextNumber += 1;
+    }
+
+    return `${baseName} (${nextNumber})`;
   }
 
   function lineHasTrailingWhitespace(doc, lineNumber) {
@@ -460,7 +528,7 @@
   }
 
   function handleGuideSearchSelect(guide) {
-    pendingGuide = guide;
+    pendingGuide = withExistingLocalDraft(guide);
     showGuideSearch = false;
     showGuideModal = true;
   }
@@ -538,7 +606,51 @@
     drafts.delete(draftToDelete.id);
     draftToDelete = null;
   }
+
+  function handleDraftModalKeydown(e) {
+    const isButtonTarget = e.target instanceof Element && e.target.closest("button");
+
+    if (showNewDraftConfirm) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        showNewDraftConfirm = false;
+      }
+
+      if (e.key === "Enter" && !isButtonTarget) {
+        e.preventDefault();
+        createNewDraft();
+      }
+      return;
+    }
+
+    if (draftToRename) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        draftToRename = null;
+      }
+
+      if (e.key === "Enter" && !isButtonTarget) {
+        e.preventDefault();
+        confirmRenameDraft();
+      }
+      return;
+    }
+
+    if (draftToDelete) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        draftToDelete = null;
+      }
+
+      if (e.key === "Enter" && !isButtonTarget) {
+        e.preventDefault();
+        confirmDeleteDraft();
+      }
+    }
+  }
 </script>
+
+<svelte:window on:keydown={handleDraftModalKeydown} />
 
 <main>
   <div class="flex flex-col h-screen bg-slate-900">
@@ -610,6 +722,8 @@
     guide={pendingGuide}
     loadingAction={guideLoadStatus}
     on:confirm={confirmLoadGuide}
+    on:continueLocalDraft={continueLocalGuideDraft}
+    on:openAnotherDraft={openAnotherLocalGuideDraft}
     on:loadReview={loadExistingReviewGuide}
     on:loadLive={loadLiveGuideReplacingReview}
     on:cancel={cancelLoadGuide}
@@ -633,7 +747,11 @@
 
   {#if showNewDraftConfirm}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div class="w-full max-w-md rounded border border-slate-700 bg-slate-800 p-5 text-white shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+      <div
+        class="w-full max-w-md rounded border border-slate-700 bg-slate-800 p-5 text-white shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+        role="dialog"
+        aria-modal="true"
+      >
         <h2 class="text-lg font-semibold">Create New Draft</h2>
         <p class="mt-3 text-sm text-slate-300">
           This draft is saved in Local drafts. Creating a new draft will only clear the editor window.
@@ -656,37 +774,44 @@
 
   {#if draftToRename}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <form
+      <div
         class="w-full max-w-md rounded border border-slate-700 bg-slate-800 p-5 text-white shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
-        on:submit|preventDefault={confirmRenameDraft}
+        role="dialog"
+        aria-modal="true"
       >
-        <h2 class="text-lg font-semibold">Rename Draft</h2>
-        <label class="mt-4 block text-sm text-slate-300" for="draft-name">Draft name</label>
-        <input
-          id="draft-name"
-          class="mt-2 w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
-          bind:value={renameDraftValue}
-        />
-        <div class="mt-5 flex justify-end gap-2">
-          <button
-            class="rounded border border-slate-600 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700"
-            type="button"
-            on:click={() => (draftToRename = null)}
-          >
-            Cancel
-          </button>
-          <button class="toolbar-btn rounded font-medium" type="submit">
-            Rename
-          </button>
-        </div>
-      </form>
+        <form on:submit|preventDefault={confirmRenameDraft}>
+          <h2 class="text-lg font-semibold">Rename Draft</h2>
+          <label class="mt-4 block text-sm text-slate-300" for="draft-name">Draft name</label>
+          <input
+            id="draft-name"
+            class="mt-2 w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
+            bind:value={renameDraftValue}
+          />
+          <div class="mt-5 flex justify-end gap-2">
+            <button
+              class="rounded border border-slate-600 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700"
+              type="button"
+              on:click={() => (draftToRename = null)}
+            >
+              Cancel
+            </button>
+            <button class="toolbar-btn rounded font-medium" type="submit">
+              Rename
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   {/if}
 
   {#if draftToDelete}
     {@const isOnlyDraft = $drafts.drafts.length <= 1}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div class="w-full max-w-md rounded border border-slate-700 bg-slate-800 p-5 text-white shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+      <div
+        class="w-full max-w-md rounded border border-slate-700 bg-slate-800 p-5 text-white shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+        role="dialog"
+        aria-modal="true"
+      >
         <h2 class="text-lg font-semibold">Discard Draft</h2>
         <p class="mt-3 text-sm text-slate-300">
           {#if isOnlyDraft}

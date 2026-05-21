@@ -23,7 +23,7 @@
 
 <ToolbarTooltip text="Editor settings" align="right">
     <button
-        class="toolbar-btn rounded"
+        class="toolbar-utility-btn rounded"
         type="button"
         on:click={() => (open = true)}
     >

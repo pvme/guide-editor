@@ -1,5 +1,6 @@
 <script>
     import QuestionCircle from "svelte-bootstrap-icons/lib/QuestionCircle.svelte";
+    import FileEarmarkArrowDown from "svelte-bootstrap-icons/lib/FileEarmarkArrowDown.svelte";
     import Modal from "./Modal.svelte";
     import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
@@ -8,7 +9,7 @@
 
 <ToolbarTooltip text="Help" align="right">
     <button
-        class="toolbar-btn rounded"
+        class="toolbar-utility-btn rounded"
         type="button"
         on:click={() => (open = true)}
     >
@@ -20,10 +21,38 @@
 <Modal {open} close={() => (open = false)}>
 
     <!-- USING THE EDITOR -->
-    <h2 class="text-2xl font-semibold mb-4">Using the Guide Editor</h2>
+    <h2 class="text-2xl font-semibold mb-4">Guide Editor Help</h2>
     <p>
-        The editor is designed to make writing PVME guides fast, consistent, and easy.
+        The editor is used to create and update PVME guides.
         As you type, the preview updates instantly and reflects how your guide will look in Discord.
+    </p>
+
+    <!-- TOOLBAR -->
+    <h3 class="text-xl font-semibold mt-8 mb-2">Toolbar</h3>
+    <ul class="list-disc ml-6 mt-3">
+        <li><strong>Format</strong> applies common markdown such as bold, headings, lists, quotes, code, and wiki links.</li>
+        <li><strong>Templates</strong> inserts guide templates, snippets, commands, embeds, and generated tables of contents.</li>
+        <li><strong>Style Guide</strong> opens PVME writing guidance inside the editor.</li>
+        <li><strong>JSON Assistant</strong> helps build Discord embed JSON with fields, images, colours, author, and footer options.</li>
+        <li><strong>Load a guide</strong> opens guide search from the centre toolbar. Search by guide name or file path, use arrow keys to move through results, then press <code>Enter</code>.</li>
+        <li><strong>Submit update</strong> sends a changed PVME guide draft for review after login, notes, and checker validation.</li>
+        <li><strong>Settings</strong> toggles editor preferences such as the live preview.</li>
+        <li><strong>Open drafts</strong> switches between saved local drafts, creates new drafts, and discards drafts you no longer need.</li>
+        <li><strong>Help</strong> explains the editor, shortcuts, syntax, checker, support links, and guide workflows.</li>
+        <li><strong>Export</strong> downloads the current editor contents as a <code>.txt</code> file.</li>
+    </ul>
+
+    <p class="mt-3">
+        Drafts are saved in this browser. Opening a guide starts a local draft and keeps your current draft saved.
+        PVME guide drafts use the guide filename; local-only drafts can be renamed.
+    </p>
+
+    <!-- SUBMITTING -->
+    <h3 class="text-xl font-semibold mt-8 mb-2">Submitting Updates</h3>
+    <p>
+        After opening a PVME guide and making changes, use <strong>Submit update</strong>
+        to send your draft for review. The submit flow checks that you are logged in,
+        have changed the guide, described the update, and reviewed any checker issues.
     </p>
 
     <!-- AUTO FORMATTING -->
@@ -173,6 +202,11 @@
                 <td>Toggle strikethrough formatting</td>
             </tr>
 
+            <tr>
+                <td><code>Ctrl + Space</code></td>
+                <td>Open guide search</td>
+            </tr>
+
             <!-- Headings -->
             <tr>
                 <td><code>Ctrl + Alt + 1</code></td>
@@ -244,10 +278,30 @@
         />
     </p>
 
-    <!-- HELP -->
-    <h3 class="text-xl font-semibold mt-10 mb-2">Need Help?</h3>
+    <!-- TESTING IN DISCORD -->
+    <h3 class="text-xl font-semibold mt-10 mb-2">Testing in Discord</h3>
     <p>
-        Ask anytime in
+        Discord may render some messages slightly differently to the browser preview.
+        To test the final Discord output:
+    </p>
+
+    <ul class="mt-2 list-disc list-outside pl-6">
+        <li>Use the top-right <FileEarmarkArrowDown class="inline" /> button to download your guide as a <code>.txt</code> file.</li>
+        <li>
+            Open
+            <a href="https://discord.com/channels/534508796639182860/689575078698287152"
+                target="_blank"
+                rel="noreferrer"
+                class="text-blue-400 visited:text-purple-400">#bot-test</a>
+            in Discord.
+        </li>
+        <li>Send <code>pvme$txtpost</code> with your <code>.txt</code> file attached.</li>
+    </ul>
+
+    <!-- SUPPORT -->
+    <h3 class="text-xl font-semibold mt-10 mb-2">Support and Links</h3>
+    <p>
+        Ask questions in
         <strong>
             <a
                 href="https://discord.com/channels/534508796639182860/724129126314803230"
@@ -255,7 +309,17 @@
                 target="_blank"
                 rel="noreferrer"
             >#editors-chat</a>
-        </strong>.
+        </strong>
+        and tag x222 or Rcm37.
     </p>
+
+    <ul class="mt-3 list-disc list-outside pl-6">
+        <li><a href="https://github.com/pvme/guide-editor" target="_blank" rel="noreferrer"
+               class="text-blue-400 visited:text-purple-400">Guide editor GitHub</a></li>
+        <li><a href="https://github.com/pvme/pvme-guides" target="_blank" rel="noreferrer"
+               class="text-blue-400 visited:text-purple-400">PVME guides GitHub</a></li>
+        <li><a href="https://pvme.github.io/rotation-builder/" target="_blank" rel="noreferrer"
+               class="text-blue-400 visited:text-purple-400">Rotation builder</a></li>
+    </ul>
 
 </Modal>

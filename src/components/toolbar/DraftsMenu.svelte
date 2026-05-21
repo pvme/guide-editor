@@ -51,9 +51,10 @@
     if (!draft?.loadedGuide?.path) return "Local draft";
 
     const title = getDraftTitle(draft);
+    const baseTitle = title.replace(/ \(\d+\)$/, "");
     const path = draft.loadedGuide.path;
     const source = getGuideSourceContext(draft.loadedGuide);
-    const shouldShowPath = title !== path && title !== path.split("/").pop();
+    const shouldShowPath = baseTitle !== path && baseTitle !== path.split("/").pop();
 
     if (!shouldShowPath) {
       return source;
@@ -61,10 +62,12 @@
 
     return source ? `${path} · ${source}` : path;
   }
+
+  $: sortedDrafts = [...$drafts.drafts].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 </script>
 
 <div class="relative">
-  <ToolbarTooltip text="Local drafts" align="right">
+  <ToolbarTooltip text="Local drafts">
     <button
       bind:this={triggerEl}
       class="toolbar-btn rounded px-3"
@@ -73,7 +76,7 @@
       aria-expanded={open}
       on:click={() => (open = !open)}
     >
-      <span>Drafts</span>
+      <span>Open drafts</span>
       <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-900 px-1.5 text-xs font-semibold text-blue-100">
         {$drafts.drafts.length}
       </span>
@@ -97,10 +100,11 @@
         </button>
       </div>
 
-      <div class="min-h-0 overflow-y-auto p-2" role="list">
-        {#each $drafts.drafts as draft (draft.id)}
+      <div class="max-h-[17rem] min-h-0 overflow-y-auto p-2" role="list">
+        {#each sortedDrafts as draft (draft.id)}
           {@const isActive = draft.id === $drafts.activeDraftId}
           {@const canRename = !draft.loadedGuide?.path}
+          {@const displayTitle = getDraftTitle(draft)}
           <div
             class="group flex items-center gap-2 rounded border px-3 py-2 {isActive ? 'border-blue-500/40 bg-blue-900/55' : 'border-transparent hover:bg-slate-600/55'}"
             role="listitem"
@@ -111,12 +115,18 @@
               on:click={() => switchDraft(draft.id)}
             >
               <div class="flex min-w-0 items-center gap-2">
-                <div class="truncate text-sm font-medium {isActive ? 'text-white' : 'text-slate-100'}">
-                  {getDraftTitle(draft)}
-                </div>
+                <span class="group/title-popover relative min-w-0">
+                  <span class="block truncate text-sm font-medium {isActive ? 'text-white' : 'text-slate-100'}">
+                    {displayTitle}
+                  </span>
+                  <span class="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden max-w-80 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs text-slate-200 shadow-lg group-hover/title-popover:block group-focus-within/title-popover:block">
+                    {displayTitle}
+                    <span class="absolute -top-[5px] left-3 h-2.5 w-2.5 rotate-45 border-l border-t border-slate-600 bg-slate-950"></span>
+                  </span>
+                </span>
                 {#if isActive}
                   <span class="shrink-0 rounded-full bg-blue-500/25 px-2 py-0.5 text-[0.68rem] font-semibold uppercase tracking-wide text-blue-100">
-                    Editing
+                    Current file
                   </span>
                 {/if}
               </div>
