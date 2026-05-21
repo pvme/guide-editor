@@ -22,7 +22,7 @@ function hasInvalidSymbolSpacing(line) {
 
 		const before = maskedLine[index - 1] || "";
 		const after = maskedLine[index + 1] || "";
-		const hasValidBefore = index === 0 || /\s/.test(before);
+		const hasValidBefore = index === 0 || /\s/.test(before) || before === "(";
 		const hasValidAfter = index === maskedLine.length - 1 || /\s/.test(after);
 
 		if (!hasValidBefore || !hasValidAfter) {
