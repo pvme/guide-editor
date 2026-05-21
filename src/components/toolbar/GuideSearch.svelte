@@ -48,12 +48,7 @@
     loadError = "";
 
     try {
-      guides = await loadGuidesFromChannels();
-
-      if (guides.length === 0) {
-        guides = await loadGuidesFromGithubTree();
-      }
-
+      guides = await loadGuides();
       loaded = true;
     } catch (err) {
       loadError = err?.message || "Guide list could not be loaded.";
@@ -62,16 +57,37 @@
     }
   }
 
-  async function loadGuidesFromChannels() {
-    const res = await fetch(
-      "https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json"
-    );
+  async function loadGuides() {
+    const [githubResult, channelResult] = await Promise.allSettled([
+      loadGuidesFromGithubTree(),
+      loadGuidesFromChannels()
+    ]);
+    const githubGuides = githubResult.status === "fulfilled" ? githubResult.value : [];
+    const channelGuides = channelResult.status === "fulfilled" ? channelResult.value : [];
 
-    if (!res.ok) {
+    if (githubGuides.length === 0 && channelGuides.length === 0) {
       throw new Error("Guide list could not be loaded.");
     }
 
-    const channels = await res.json();
+    if (githubGuides.length === 0) return channelGuides;
+
+    const channelNamesByPath = new Map(
+      channelGuides.map(guide => [guide.path, guide.name])
+    );
+
+    return githubGuides
+      .map(guide => ({
+        ...guide,
+        name: channelNamesByPath.get(guide.path) || guide.name
+      }))
+      .sort((a, b) => a.path.localeCompare(b.path));
+  }
+
+  async function loadGuidesFromChannels() {
+    const channels = await fetchJson(
+      "https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json"
+    );
+
     const seen = new Set();
 
     return (Array.isArray(channels) ? channels : [])
@@ -90,15 +106,9 @@
   }
 
   async function loadGuidesFromGithubTree() {
-    const res = await fetch(
+    const data = await fetchJson(
       "https://api.github.com/repos/pvme/pvme-guides/git/trees/master?recursive=1"
     );
-
-    if (!res.ok) {
-      throw new Error("Guide list could not be loaded.");
-    }
-
-    const data = await res.json();
     const tree = Array.isArray(data.tree) ? data.tree : [];
 
     return tree
@@ -108,6 +118,17 @@
         path: f.path,
         url: `https://raw.githubusercontent.com/pvme/pvme-guides/master/${f.path}`
       }));
+  }
+
+  async function fetchJson(url) {
+    const cacheBustedUrl = `${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`;
+    const res = await fetch(cacheBustedUrl, { cache: "no-store" });
+
+    if (!res.ok) {
+      throw new Error("Guide list could not be loaded.");
+    }
+
+    return await res.json();
   }
 
   onMount(loadGuideIndex);
