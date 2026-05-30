@@ -13,7 +13,7 @@ const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:5173,https
 const trustedOrigin = process.env.TRUSTED_ORIGIN || "https://pvme.io";
 const privateKeySecret = process.env.GITHUB_APP_PRIVATE_KEY_SECRET || "github-guide-editor-private-key";
 const discordClientSecretName = process.env.DISCORD_CLIENT_SECRET_SECRET;
-const authCookieSecretName = process.env.AUTH_COOKIE_SECRET_SECRET;
+const authCookieSecretName = process.env.AUTH_COOKIE_SECRET_SECRET || "guide-editor-auth-cookie-secret";
 const dryRun = process.env.DRY_RUN;
 const submitSecret = process.env.PVME_SUBMIT_SECRET;
 
