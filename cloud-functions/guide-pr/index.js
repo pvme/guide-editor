@@ -840,7 +840,11 @@ function createCommitMessage(payload, user) {
     lines.push("", payload.notes);
   }
 
-  lines.push("", `Discord: ${userDisplayName(user)} (${user.discordId})`);
+  lines.push(
+    "",
+    `Submitted by Discord user: ${userDisplayName(user)} (${user.discordId})`,
+    "Submitted via: https://pvme.io/guide-editor/",
+  );
 
   return lines.join("\n");
 }
