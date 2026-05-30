@@ -1059,7 +1059,13 @@ function getDiscordRedirectUri(req) {
 
   const proto = req.get("x-forwarded-proto") || req.protocol || "https";
   const host = req.get("x-forwarded-host") || req.get("host");
-  return `${proto}://${host}/submitGuideUpdate/auth/discord/callback`;
+  const path = new URL(req.url, "https://guide-editor.local").pathname || "";
+
+  if (path.endsWith("/auth/discord/start")) {
+    return `${proto}://${host}${path.replace(/\/auth\/discord\/start$/, "/auth/discord/callback")}`;
+  }
+
+  return `${proto}://${host}/auth/discord/callback`;
 }
 
 function getProxyOrigin(req) {
