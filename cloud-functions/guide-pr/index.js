@@ -1237,14 +1237,34 @@ function setSessionCookie(res, session) {
 function clearSessionCookie(res) {
   res.set(
     "Set-Cookie",
-    serializeCookie(SESSION_COOKIE, "", {
+    createClearCookieHeaders(SESSION_COOKIE, {
       httpOnly: true,
       secure: isCookieSecure(),
       sameSite: getCookieSameSite(),
-      path: "/",
-      maxAge: 0,
     }),
   );
+}
+
+function createClearCookieHeaders(name, options) {
+  const base = {
+    ...options,
+    maxAge: 0,
+  };
+  const headers = [
+    serializeCookie(name, "", { ...base, path: "/" }),
+    serializeCookie(name, "", { ...base, path: "/submitGuideUpdate" }),
+  ];
+  const configuredDomain = getCookieDomain();
+  const domains = [configuredDomain, "pvme.io"]
+    .filter(Boolean)
+    .filter((domain, index, values) => values.indexOf(domain) === index);
+
+  for (const domain of domains) {
+    headers.push(serializeCookie(name, "", { ...base, path: "/", domain }));
+    headers.push(serializeCookie(name, "", { ...base, path: "/submitGuideUpdate", domain }));
+  }
+
+  return headers;
 }
 
 function serializeCookie(name, value, options) {
@@ -1255,7 +1275,7 @@ function serializeCookie(name, value, options) {
     `SameSite=${options.sameSite || "Lax"}`,
   ];
 
-  const domain = getCookieDomain();
+  const domain = options.domain !== undefined ? options.domain : getCookieDomain();
   if (domain) parts.push(`Domain=${domain}`);
   if (options.httpOnly) parts.push("HttpOnly");
   if (options.secure) parts.push("Secure");
