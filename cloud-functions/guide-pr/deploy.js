@@ -3,6 +3,8 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
+loadLocalEnvFiles();
+
 const appId = process.env.GITHUB_APP_ID || "3553040";
 const installationId = process.env.GITHUB_INSTALLATION_ID;
 const project = process.env.GCLOUD_PROJECT_ID || "pvmebackend";
@@ -87,6 +89,62 @@ const result = spawnSync("gcloud", args, {
 });
 
 process.exit(result.status ?? 1);
+
+function loadLocalEnvFiles() {
+  const root = path.resolve(__dirname, "../..");
+  const files = [
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.production.local",
+    ".env.development",
+    ".env.development.local"
+  ];
+  const loaded = {};
+
+  for (const file of files) {
+    const fullPath = path.join(root, file);
+    if (!fs.existsSync(fullPath)) continue;
+
+    Object.assign(loaded, parseEnvFile(fs.readFileSync(fullPath, "utf8")));
+  }
+
+  for (const [name, value] of Object.entries(loaded)) {
+    if (process.env[name] === undefined) {
+      process.env[name] = value;
+    }
+  }
+}
+
+function parseEnvFile(contents) {
+  const values = {};
+
+  for (const rawLine of contents.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const match = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!match) continue;
+
+    values[match[1]] = parseEnvValue(match[2]);
+  }
+
+  return values;
+}
+
+function parseEnvValue(value) {
+  const trimmed = value.trim();
+  const quote = trimmed[0];
+
+  if ((quote === "\"" || quote === "'" || quote === "`") && trimmed.endsWith(quote)) {
+    const unquoted = trimmed.slice(1, -1);
+    return quote === "\""
+      ? unquoted.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
+      : unquoted;
+  }
+
+  return trimmed.replace(/\s+#.*$/, "");
+}
 
 function addOptionalEnv(name) {
   if (process.env[name]) {
