@@ -13,11 +13,24 @@ const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:5173,https
 const trustedOrigin = process.env.TRUSTED_ORIGIN || "https://pvme.io";
 const privateKeySecret = process.env.GITHUB_APP_PRIVATE_KEY_SECRET || "github-guide-editor-private-key";
 const discordClientSecretName = process.env.DISCORD_CLIENT_SECRET_SECRET || "discord-client-secret";
+const guideEditorGithubOAuthClientIdSecretName =
+  process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID === "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID"
+    ? "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID"
+    : "";
+const guideEditorGithubOAuthRedirectUriSecretName =
+  process.env.GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI === "GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI"
+    ? "GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI"
+    : "";
 const guideEditorGithubOAuthClientSecretName =
-  process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET ||
+  process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET === "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET"
+    ? "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET"
+    : getSecretName(
+      process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET,
+      "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET",
+    ) ||
   process.env.GITHUB_OAUTH_CLIENT_SECRET_SECRET ||
   (getEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_ID")
-    ? "guide-editor-github-oauth-client-secret"
+    ? "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET"
     : "");
 const authCookieSecretName = process.env.AUTH_COOKIE_SECRET_SECRET || "guide-editor-auth-cookie-secret";
 const dryRun = process.env.DRY_RUN;
@@ -49,8 +62,17 @@ if (dryRun) {
 
 addOptionalEnv("DISCORD_CLIENT_ID");
 addOptionalEnv("DISCORD_REDIRECT_URI");
-addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_ID");
-addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI", "GITHUB_OAUTH_REDIRECT_URI");
+if (guideEditorGithubOAuthClientIdSecretName) {
+  secretBindings.push(`GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID=${guideEditorGithubOAuthClientIdSecretName}:latest`);
+} else {
+  addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_ID");
+}
+
+if (guideEditorGithubOAuthRedirectUriSecretName) {
+  secretBindings.push(`GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI=${guideEditorGithubOAuthRedirectUriSecretName}:latest`);
+} else {
+  addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI", "GITHUB_OAUTH_REDIRECT_URI");
+}
 addOptionalEnv("FRONTEND_ORIGIN");
 addOptionalEnv("AUTH_COOKIE_SAMESITE");
 addOptionalEnv("AUTH_COOKIE_SECURE");
@@ -170,6 +192,12 @@ function addOptionalEnv(name, fallbackName) {
 
 function getEnv(name, fallbackName) {
   return process.env[name] || (fallbackName ? process.env[fallbackName] : "");
+}
+
+function getSecretName(value, defaultName) {
+  if (!value) return "";
+  if (/^[a-f0-9]{40}$/i.test(value)) return defaultName;
+  return value;
 }
 
 function createEnvVarsFile(values) {
