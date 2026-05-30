@@ -209,7 +209,7 @@ async function handleSubmitGuideUpdate(req, res) {
 
   if (!branchRef) {
     const baseRef = await github(
-      `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`,
+      `/repos/${writeRepo.owner}/${writeRepo.repo}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`,
     );
 
     await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs`, {
@@ -883,10 +883,11 @@ async function getSubmissionWriteRepo(github, user, owner, repo) {
 }
 
 async function ensureGithubFork(github, owner, repo, login) {
-  const path = `/repos/${encodeURIComponent(login)}/${repo}`;
+  const repoPath = `/repos/${encodeURIComponent(login)}/${repo}`;
+  const branchPath = `/repos/${encodeURIComponent(login)}/${repo}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`;
 
   try {
-    await github(path);
+    await github(branchPath);
     return;
   } catch (err) {
     if (err.status !== 404) throw err;
@@ -898,7 +899,7 @@ async function ensureGithubFork(github, owner, repo, login) {
     await sleep(1500);
 
     try {
-      await github(path);
+      await github(branchPath);
       return;
     } catch (err) {
       if (err.status !== 404) throw err;
@@ -996,6 +997,7 @@ function createGithubClient(token) {
     if (!res.ok) {
       const message =
         data.message || `GitHub request failed with status ${res.status}.`;
+      console.warn("GitHub request failed:", options.method || "GET", path, res.status, message);
       throw httpError(res.status, message);
     }
 
