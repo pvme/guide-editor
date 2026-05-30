@@ -13,6 +13,12 @@ const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:5173,https
 const trustedOrigin = process.env.TRUSTED_ORIGIN || "https://pvme.io";
 const privateKeySecret = process.env.GITHUB_APP_PRIVATE_KEY_SECRET || "github-guide-editor-private-key";
 const discordClientSecretName = process.env.DISCORD_CLIENT_SECRET_SECRET || "discord-client-secret";
+const guideEditorGithubOAuthClientSecretName =
+  process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET ||
+  process.env.GITHUB_OAUTH_CLIENT_SECRET_SECRET ||
+  (getEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_ID")
+    ? "guide-editor-github-oauth-client-secret"
+    : "");
 const authCookieSecretName = process.env.AUTH_COOKIE_SECRET_SECRET || "guide-editor-auth-cookie-secret";
 const dryRun = process.env.DRY_RUN;
 const submitSecret = process.env.PVME_SUBMIT_SECRET;
@@ -43,6 +49,8 @@ if (dryRun) {
 
 addOptionalEnv("DISCORD_CLIENT_ID");
 addOptionalEnv("DISCORD_REDIRECT_URI");
+addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_ID");
+addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI", "GITHUB_OAUTH_REDIRECT_URI");
 addOptionalEnv("FRONTEND_ORIGIN");
 addOptionalEnv("AUTH_COOKIE_SAMESITE");
 addOptionalEnv("AUTH_COOKIE_SECURE");
@@ -52,6 +60,12 @@ if (discordClientSecretName) {
   secretBindings.push(`DISCORD_CLIENT_SECRET=${discordClientSecretName}:latest`);
 } else {
   addOptionalEnv("DISCORD_CLIENT_SECRET");
+}
+
+if (guideEditorGithubOAuthClientSecretName) {
+  secretBindings.push(`GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET=${guideEditorGithubOAuthClientSecretName}:latest`);
+} else {
+  addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET", "GITHUB_OAUTH_CLIENT_SECRET");
 }
 
 if (authCookieSecretName) {
@@ -146,10 +160,16 @@ function parseEnvValue(value) {
   return trimmed.replace(/\s+#.*$/, "");
 }
 
-function addOptionalEnv(name) {
-  if (process.env[name]) {
-    envVars.push([name, process.env[name]]);
+function addOptionalEnv(name, fallbackName) {
+  const value = getEnv(name, fallbackName);
+
+  if (value) {
+    envVars.push([name, value]);
   }
+}
+
+function getEnv(name, fallbackName) {
+  return process.env[name] || (fallbackName ? process.env[fallbackName] : "");
 }
 
 function createEnvVarsFile(values) {

@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 
 const DISCORD_API = "https://discord.com/api";
 const DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize";
+const GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize";
 const GITHUB_API = "https://api.github.com";
 const REPO = "pvme/pvme-guides";
 const BASE_BRANCH = "master";
@@ -12,6 +13,7 @@ const MAX_PR_BODY_CHARS = 9000;
 const MAX_PR_SUMMARIES = 5;
 const PVME_GUILD_ID = "534508796639182860";
 const DISCORD_OAUTH_SCOPE = "identify guilds.members.read";
+const GITHUB_OAUTH_SCOPE = "public_repo read:user";
 const DEFAULT_TRUSTED_ORIGIN = "https://pvme.io";
 const DEFAULT_ALLOWED_ORIGIN = "http://localhost:5173,https://pvme.io";
 const SESSION_COOKIE = "pvme_guide_session";
@@ -44,6 +46,11 @@ exports.submitGuideUpdate = async (req, res) => {
       return;
     }
 
+    if (route === "/auth/github/callback") {
+      await handleGithubCallback(req, res);
+      return;
+    }
+
     if (route === "/" && req.method === "GET") {
       sendJson(res, 200, {
         ok: true,
@@ -57,6 +64,9 @@ exports.submitGuideUpdate = async (req, res) => {
         discordConfigured: Boolean(
           process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET,
         ),
+        githubOAuthConfigured: Boolean(
+          getGithubOAuthClientId() && getGithubOAuthClientSecret(),
+        ),
         submitSecretConfigured: Boolean(process.env.PVME_SUBMIT_SECRET),
         trustedOrigins: getTrustedOrigins(),
       });
@@ -66,6 +76,12 @@ exports.submitGuideUpdate = async (req, res) => {
     if (route === "/auth/discord/start" && req.method === "GET") {
       enforceRateLimit(req, "auth:start", 10, 10 * 60);
       handleDiscordStart(req, res);
+      return;
+    }
+
+    if (route === "/auth/github/start" && req.method === "GET") {
+      enforceRateLimit(req, "auth:start", 10, 10 * 60);
+      handleGithubStart(req, res);
       return;
     }
 
@@ -115,7 +131,7 @@ async function handleSubmitGuideUpdate(req, res) {
   validatePayload(payload);
 
   const [owner, repo] = REPO.split("/");
-  const reviewBranch = createReviewBranchName(user.discordId, payload.path);
+  const reviewBranch = createReviewBranchNameForUser(user, payload.path);
   validateSubmissionSource(payload, reviewBranch);
 
   if (isDryRun()) {
@@ -135,10 +151,14 @@ async function handleSubmitGuideUpdate(req, res) {
     return;
   }
 
-  const github = await createGithubAppInstallationClient(owner, repo);
-  const branchRef = await getBranchRef(github, owner, repo, reviewBranch);
+  const github = await createSubmitGithubClient(user, owner, repo);
+  const writeRepo = await getSubmissionWriteRepo(github, user, owner, repo);
+  const head = writeRepo.owner === owner
+    ? reviewBranch
+    : `${writeRepo.owner}:${reviewBranch}`;
+  const branchRef = await getBranchRef(github, writeRepo.owner, writeRepo.repo, reviewBranch);
   const existingPr = branchRef
-    ? await getOpenPullRequest(github, owner, repo, reviewBranch)
+    ? await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner)
     : null;
 
   if (payload.source === "master") {
@@ -173,8 +193,8 @@ async function handleSubmitGuideUpdate(req, res) {
 
     const currentReviewFile = await getFile(
       github,
-      owner,
-      repo,
+      writeRepo.owner,
+      writeRepo.repo,
       payload.path,
       reviewBranch,
     );
@@ -192,7 +212,7 @@ async function handleSubmitGuideUpdate(req, res) {
       `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`,
     );
 
-    await github(`/repos/${owner}/${repo}/git/refs`, {
+    await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs`, {
       method: "POST",
       body: {
         ref: `refs/heads/${reviewBranch}`,
@@ -203,25 +223,30 @@ async function handleSubmitGuideUpdate(req, res) {
 
   const currentBranchFile = await getFile(
     github,
-    owner,
-    repo,
+    writeRepo.owner,
+    writeRepo.repo,
     payload.path,
     reviewBranch,
   );
 
-  await github(`/repos/${owner}/${repo}/contents/${encodePath(payload.path)}`, {
+  const contentsBody = {
+    message: createCommitMessage(payload, user),
+    content: Buffer.from(payload.content, "utf8").toString("base64"),
+    sha: currentBranchFile.sha,
+    branch: reviewBranch,
+  };
+  const commitAuthor = createCommitAuthor(user);
+  if (commitAuthor) {
+    contentsBody.author = commitAuthor;
+  }
+
+  await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/contents/${encodePath(payload.path)}`, {
     method: "PUT",
-    body: {
-      message: createCommitMessage(payload, user),
-      author: createCommitAuthor(user),
-      content: Buffer.from(payload.content, "utf8").toString("base64"),
-      sha: currentBranchFile.sha,
-      branch: reviewBranch,
-    },
+    body: contentsBody,
   });
 
   const openPr =
-    existingPr || (await getOpenPullRequest(github, owner, repo, reviewBranch));
+    existingPr || (await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner));
   const prTitle = payload.title || `Update ${payload.path}`;
   const prBody = createPullRequestBody(payload, user, openPr?.body || "");
   const pr = openPr
@@ -236,7 +261,7 @@ async function handleSubmitGuideUpdate(req, res) {
         method: "POST",
         body: {
           title: prTitle,
-          head: reviewBranch,
+          head,
           base: BASE_BRANCH,
           body: prBody,
         },
@@ -288,19 +313,23 @@ async function handleLoadGuide(req, res) {
   }
 
   const [owner, repo] = REPO.split("/");
-  const github = await createGithubAppInstallationClient(owner, repo);
+  const github = user?.provider === "github"
+    ? createGithubClient(user.githubToken)
+    : await createGithubAppInstallationClient(owner, repo);
   let existingReview = null;
 
   if (user) {
-    const reviewBranch = createReviewBranchName(user.discordId, path);
-    const branchRef = await getBranchRef(github, owner, repo, reviewBranch);
+    const reviewBranch = createReviewBranchNameForUser(user, path);
+    const writeRepo = getReviewWriteRepo(user, owner, repo);
+    const branchRef = await getBranchRef(github, writeRepo.owner, writeRepo.repo, reviewBranch);
     const openPr = branchRef
-      ? await getOpenPullRequest(github, owner, repo, reviewBranch)
+      ? await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner)
       : null;
 
     if (branchRef && openPr) {
       existingReview = {
         reviewBranch,
+        writeRepo,
         prUrl: openPr.html_url,
       };
     }
@@ -327,8 +356,8 @@ async function handleLoadGuide(req, res) {
 
     const reviewFile = await getFile(
       github,
-      owner,
-      repo,
+      existingReview.writeRepo.owner,
+      existingReview.writeRepo.repo,
       path,
       existingReview.reviewBranch,
     );
@@ -459,6 +488,7 @@ async function handleDiscordCallback(req, res) {
   }
 
   setSessionCookie(res, {
+    provider: "discord",
     discordId: String(discordUser.id),
     username: String(discordUser.username || ""),
     globalName: discordUser.global_name ? String(discordUser.global_name) : "",
@@ -466,6 +496,101 @@ async function handleDiscordCallback(req, res) {
     pvmeMember: true,
     pvmeGuildId: PVME_GUILD_ID,
     pvmeRoles: getSessionRoles(guildMember.member),
+    exp: nowSeconds() + SESSION_MAX_AGE_SECONDS,
+  });
+
+  res.redirect(state.returnTo || getFrontendOrigin(req));
+}
+
+function handleGithubStart(req, res) {
+  requireGithubOAuthConfig();
+
+  const redirectUri = getGithubRedirectUri(req);
+  const returnTo = getSafeReturnTo(req);
+  const state = signJson({
+    exp: nowSeconds() + OAUTH_STATE_MAX_AGE_SECONDS,
+    returnTo,
+    redirectUri,
+  });
+
+  const params = new URLSearchParams({
+    client_id: getGithubOAuthClientId(),
+    redirect_uri: redirectUri,
+    scope: GITHUB_OAUTH_SCOPE,
+    state,
+  });
+
+  res.redirect(`${GITHUB_AUTHORIZE_URL}?${params}`);
+}
+
+async function handleGithubCallback(req, res) {
+  requireGithubOAuthConfig();
+  enforceRateLimit(req, "auth:callback", 20, 10 * 60);
+
+  if (req.query.error) {
+    redirectAuthFailure(
+      req,
+      res,
+      "GitHub login was cancelled. You must log in to submit a guide update.",
+    );
+    return;
+  }
+
+  const code = String(req.query.code || "");
+  const state = verifySignedJson(String(req.query.state || ""));
+
+  if (!code || !state || state.exp < nowSeconds() || !state.redirectUri) {
+    redirectAuthFailure(req, res, "GitHub login could not be verified.");
+    return;
+  }
+
+  const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      client_id: getGithubOAuthClientId(),
+      client_secret: getGithubOAuthClientSecret(),
+      code,
+      redirect_uri: state.redirectUri,
+    }),
+  });
+  const tokenData = await tokenRes.json().catch(() => ({}));
+
+  if (!tokenRes.ok || !tokenData.access_token) {
+    console.warn(
+      "GitHub OAuth token exchange failed:",
+      tokenData.error || tokenRes.status,
+    );
+    redirectAuthFailure(req, res, "GitHub login could not be verified.");
+    return;
+  }
+
+  const githubUserRes = await fetch(`${GITHUB_API}/user`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${tokenData.access_token}`,
+      "User-Agent": "pvme-guide-editor",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  const githubUser = await githubUserRes.json().catch(() => ({}));
+
+  if (!githubUserRes.ok || !githubUser.id || !githubUser.login) {
+    redirectAuthFailure(req, res, "GitHub login could not be verified.");
+    return;
+  }
+
+  setSessionCookie(res, {
+    provider: "github",
+    githubId: String(githubUser.id),
+    githubLogin: String(githubUser.login || ""),
+    username: String(githubUser.login || ""),
+    globalName: githubUser.name ? String(githubUser.name) : "",
+    avatar: githubUser.avatar_url ? String(githubUser.avatar_url) : "",
+    githubToken: String(tokenData.access_token),
     exp: nowSeconds() + SESSION_MAX_AGE_SECONDS,
   });
 
@@ -712,15 +837,75 @@ async function getBranchRef(github, owner, repo, branch) {
   }
 }
 
-async function getOpenPullRequest(github, owner, repo, branch) {
+async function getOpenPullRequest(github, owner, repo, branch, headOwner = owner) {
   const params = new URLSearchParams({
     state: "open",
-    head: `${owner}:${branch}`,
+    head: `${headOwner}:${branch}`,
     base: BASE_BRANCH,
   });
   const prs = await github(`/repos/${owner}/${repo}/pulls?${params}`);
 
   return Array.isArray(prs) && prs.length > 0 ? prs[0] : null;
+}
+
+async function createSubmitGithubClient(user, owner, repo) {
+  if (user.provider === "github") {
+    if (!user.githubToken) {
+      throw httpError(401, "Please log in with GitHub again to submit a guide update.");
+    }
+
+    return createGithubClient(user.githubToken);
+  }
+
+  return createGithubAppInstallationClient(owner, repo);
+}
+
+function getReviewWriteRepo(user, owner, repo) {
+  if (user.provider === "github") {
+    return {
+      owner: user.githubLogin,
+      repo,
+    };
+  }
+
+  return { owner, repo };
+}
+
+async function getSubmissionWriteRepo(github, user, owner, repo) {
+  const writeRepo = getReviewWriteRepo(user, owner, repo);
+
+  if (user.provider !== "github") {
+    return writeRepo;
+  }
+
+  await ensureGithubFork(github, owner, repo, user.githubLogin);
+  return writeRepo;
+}
+
+async function ensureGithubFork(github, owner, repo, login) {
+  const path = `/repos/${encodeURIComponent(login)}/${repo}`;
+
+  try {
+    await github(path);
+    return;
+  } catch (err) {
+    if (err.status !== 404) throw err;
+  }
+
+  await github(`/repos/${owner}/${repo}/forks`, { method: "POST" });
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await sleep(1500);
+
+    try {
+      await github(path);
+      return;
+    } catch (err) {
+      if (err.status !== 404) throw err;
+    }
+  }
+
+  throw httpError(409, "Your GitHub fork is still being created. Please try submitting again in a moment.");
 }
 
 async function createGithubAppInstallationClient(owner, repo) {
@@ -818,8 +1003,12 @@ function createGithubClient(token) {
   };
 }
 
-function createReviewBranchName(discordId, path) {
-  return `guide-editor/discord-${discordId}/${createFileSlug(path)}`;
+function createReviewBranchNameForUser(user, path) {
+  if (user.provider === "github") {
+    return `guide-editor/github-${user.githubId}/${createFileSlug(path)}`;
+  }
+
+  return `guide-editor/discord-${user.discordId}/${createFileSlug(path)}`;
 }
 
 function createFileSlug(path) {
@@ -842,7 +1031,7 @@ function createCommitMessage(payload, user) {
 
   lines.push(
     "",
-    `Submitted by Discord user: ${userDisplayName(user)} (${user.discordId})`,
+    createSubmittedByLine(user),
     "Submitted via: https://pvme.io/guide-editor/",
   );
 
@@ -850,6 +1039,10 @@ function createCommitMessage(payload, user) {
 }
 
 function createCommitAuthor(user) {
+  if (user.provider === "github") {
+    return null;
+  }
+
   const name = user.username || user.globalName;
 
   if (!name) {
@@ -865,6 +1058,14 @@ function createCommitAuthor(user) {
   };
 }
 
+function createSubmittedByLine(user) {
+  if (user.provider === "github") {
+    return `Submitted by GitHub user: ${user.githubLogin} (${user.githubId})`;
+  }
+
+  return `Submitted by Discord user: ${userDisplayName(user)} (${user.discordId})`;
+}
+
 function createPullRequestBody(payload, user, existingBody = "") {
   const summaries = getExistingUpdateSummaries(existingBody);
   if (payload.notes) {
@@ -877,7 +1078,9 @@ function createPullRequestBody(payload, user, existingBody = "") {
     "",
     `Guide file: \`${payload.path}\``,
     `Submitted by: ${userDisplayName(user)}`,
-    `Discord user ID: \`${user.discordId}\``,
+    user.provider === "github"
+      ? `GitHub user: \`${user.githubLogin}\` (${user.githubId})`
+      : `Discord user ID: \`${user.discordId}\``,
   ];
 
   if (visibleSummaries.length > 0) {
@@ -1036,6 +1239,16 @@ function requireDiscordConfig() {
   }
 }
 
+function requireGithubOAuthConfig() {
+  if (!getGithubOAuthClientId() || !getGithubOAuthClientSecret()) {
+    throw httpError(500, "GitHub OAuth is not configured.");
+  }
+
+  if (!process.env.AUTH_COOKIE_SECRET) {
+    throw httpError(500, "AUTH_COOKIE_SECRET is not configured.");
+  }
+}
+
 function getDiscordClientId() {
   return String(process.env.DISCORD_CLIENT_ID || "").trim();
 }
@@ -1044,32 +1257,52 @@ function getDiscordClientSecret() {
   return String(process.env.DISCORD_CLIENT_SECRET || "").trim();
 }
 
+function getGithubOAuthClientId() {
+  return String(process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID || process.env.GITHUB_OAUTH_CLIENT_ID || "").trim();
+}
+
+function getGithubOAuthClientSecret() {
+  return String(process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET || process.env.GITHUB_OAUTH_CLIENT_SECRET || "").trim();
+}
+
 function getDiscordRedirectUri(req) {
+  return getOAuthRedirectUri(req, "discord", process.env.DISCORD_REDIRECT_URI);
+}
+
+function getGithubRedirectUri(req) {
+  return getOAuthRedirectUri(
+    req,
+    "github",
+    process.env.GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI || process.env.GITHUB_OAUTH_REDIRECT_URI,
+  );
+}
+
+function getOAuthRedirectUri(req, provider, configuredRedirectUri) {
   const proxyOrigin = getProxyOrigin(req);
 
   if (proxyOrigin) {
-    return `${proxyOrigin}/api/guide-pr/auth/discord/callback`;
+    return `${proxyOrigin}/api/guide-pr/auth/${provider}/callback`;
   }
 
   const localReturnOrigin = getLocalReturnOrigin(req);
 
   if (localReturnOrigin) {
-    return `${localReturnOrigin}/api/guide-pr/auth/discord/callback`;
+    return `${localReturnOrigin}/api/guide-pr/auth/${provider}/callback`;
   }
 
-  if (process.env.DISCORD_REDIRECT_URI) {
-    return process.env.DISCORD_REDIRECT_URI;
+  if (configuredRedirectUri) {
+    return configuredRedirectUri;
   }
 
   const proto = req.get("x-forwarded-proto") || req.protocol || "https";
   const host = req.get("x-forwarded-host") || req.get("host");
   const path = new URL(req.url, "https://guide-editor.local").pathname || "";
 
-  if (path.endsWith("/auth/discord/start")) {
-    return `${proto}://${host}${path.replace(/\/auth\/discord\/start$/, "/auth/discord/callback")}`;
+  if (path.endsWith(`/auth/${provider}/start`)) {
+    return `${proto}://${host}${path.replace(new RegExp(`/auth/${provider}/start$`), `/auth/${provider}/callback`)}`;
   }
 
-  return `${proto}://${host}/auth/discord/callback`;
+  return `${proto}://${host}/auth/${provider}/callback`;
 }
 
 function getProxyOrigin(req) {
@@ -1135,12 +1368,34 @@ function getSessionUser(req) {
   const cookie = parseCookies(req.get("cookie") || "")[SESSION_COOKIE];
   if (!cookie) return null;
 
-  const session = verifySignedJson(cookie);
-  if (!session || session.exp < nowSeconds() || !session.discordId) {
+  const session = verifySessionCookie(cookie);
+  if (!session || session.exp < nowSeconds()) {
+    return null;
+  }
+
+  if (session.provider === "github") {
+    if (!session.githubId || !session.githubLogin || !session.githubToken) {
+      return null;
+    }
+
+    return {
+      provider: "github",
+      githubId: String(session.githubId),
+      githubLogin: String(session.githubLogin),
+      username: String(session.username || session.githubLogin || ""),
+      globalName: String(session.globalName || ""),
+      avatar: String(session.avatar || ""),
+      githubToken: String(session.githubToken),
+      exp: Number(session.exp),
+    };
+  }
+
+  if (!session.discordId) {
     return null;
   }
 
   return {
+    provider: "discord",
     discordId: String(session.discordId),
     username: String(session.username || ""),
     globalName: String(session.globalName || ""),
@@ -1160,7 +1415,7 @@ function requireSession(req) {
   if (!user) {
     throw httpError(
       401,
-      "You must log in with Discord to submit a guide update.",
+      "You must log in to submit a guide update.",
     );
   }
 
@@ -1170,10 +1425,14 @@ function requireSession(req) {
 function requirePvmeMemberSession(req) {
   const user = requireSession(req);
 
+  if (user.provider === "github") {
+    return user;
+  }
+
   if (user.pvmeMember !== true || user.pvmeGuildId !== PVME_GUILD_ID) {
     throw httpError(
       403,
-      "You must be a member of the PvME Discord server to submit guide changes.",
+      "You must be a member of the PvME Discord server or log in with GitHub to submit guide changes.",
     );
   }
 
@@ -1228,7 +1487,7 @@ function setAnonymousGuideUsage(res, usage) {
 function setSessionCookie(res, session) {
   res.set(
     "Set-Cookie",
-    serializeCookie(SESSION_COOKIE, signJson(session), {
+    serializeCookie(SESSION_COOKIE, sealJson(session), {
       httpOnly: true,
       secure: isCookieSecure(),
       sameSite: getCookieSameSite(),
@@ -1316,6 +1575,56 @@ function signJson(value) {
   return `${payload}.${signature}`;
 }
 
+function sealJson(value) {
+  const key = getCookieEncryptionKey();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(JSON.stringify(value), "utf8"),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+
+  return [
+    "v2",
+    iv.toString("base64url"),
+    tag.toString("base64url"),
+    encrypted.toString("base64url"),
+  ].join(".");
+}
+
+function verifySessionCookie(value) {
+  return openJson(value) || verifySignedJson(value);
+}
+
+function openJson(value) {
+  if (!process.env.AUTH_COOKIE_SECRET) {
+    return null;
+  }
+
+  const [version, iv, tag, encrypted] = String(value || "").split(".");
+  if (version !== "v2" || !iv || !tag || !encrypted) {
+    return null;
+  }
+
+  try {
+    const decipher = crypto.createDecipheriv(
+      "aes-256-gcm",
+      getCookieEncryptionKey(),
+      Buffer.from(iv, "base64url"),
+    );
+    decipher.setAuthTag(Buffer.from(tag, "base64url"));
+    const decrypted = Buffer.concat([
+      decipher.update(Buffer.from(encrypted, "base64url")),
+      decipher.final(),
+    ]);
+
+    return JSON.parse(decrypted.toString("utf8"));
+  } catch {
+    return null;
+  }
+}
+
 function verifySignedJson(value) {
   if (!process.env.AUTH_COOKIE_SECRET) {
     return null;
@@ -1345,9 +1654,29 @@ function createSignature(payload) {
     .digest("base64url");
 }
 
+function getCookieEncryptionKey() {
+  return crypto
+    .createHash("sha256")
+    .update(process.env.AUTH_COOKIE_SECRET || "")
+    .digest();
+}
+
 function publicUser(user) {
   if (!user) return null;
+  if (user.provider === "github") {
+    return {
+      provider: "github",
+      githubId: user.githubId,
+      githubLogin: user.githubLogin,
+      username: user.username,
+      globalName: user.globalName,
+      avatar: user.avatar,
+      displayName: userDisplayName(user),
+    };
+  }
+
   return {
+    provider: "discord",
     discordId: user.discordId,
     username: user.username,
     globalName: user.globalName,
@@ -1414,11 +1743,19 @@ function getDiscordOAuthError(data) {
 }
 
 function userDisplayName(user) {
+  if (user.provider === "github") {
+    return user.globalName || user.githubLogin || user.username || `GitHub user ${user.githubId}`;
+  }
+
   return user.globalName || user.username || `Discord user ${user.discordId}`;
 }
 
 function nowSeconds() {
   return Math.floor(Date.now() / 1000);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function isDryRun() {

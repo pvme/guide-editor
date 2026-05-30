@@ -10,6 +10,14 @@ export function getGuidePrApiBase() {
 }
 
 export function getDiscordLoginUrl() {
+  return getLoginUrl("discord");
+}
+
+export function getGithubLoginUrl() {
+  return getLoginUrl("github");
+}
+
+function getLoginUrl(provider) {
   const returnUrl = new URL(window.location.href);
   returnUrl.searchParams.set("submit", "1");
 
@@ -17,7 +25,7 @@ export function getDiscordLoginUrl() {
     returnTo: returnUrl.toString()
   });
 
-  return `${getGuidePrApiBase()}/auth/discord/start?${params}`;
+  return `${getGuidePrApiBase()}/auth/${provider}/start?${params}`;
 }
 
 export async function getAuthenticatedUser() {

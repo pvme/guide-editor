@@ -61,6 +61,7 @@ Required Google Secret Manager secrets:
 ```text
 github-guide-editor-private-key
 discord-client-secret
+guide-editor-github-oauth-client-secret
 guide-editor-auth-cookie-secret
 ```
 
@@ -69,16 +70,30 @@ From repo root:
 ```powershell
 $env:PVME_SUBMIT_SECRET = "..."
 $env:DISCORD_CLIENT_ID = "..."
+$env:GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID = "..."
 $env:DISCORD_REDIRECT_URI = "https://guide-api.pvme.io/auth/discord/callback"
+$env:GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI = "https://guide-api.pvme.io/auth/github/callback"
 $env:FRONTEND_ORIGIN = "https://pvme.io/guide-editor/"
 $env:GITHUB_INSTALLATION_ID = "128427383"
 
 $env:GITHUB_APP_PRIVATE_KEY_SECRET = "github-guide-editor-private-key"
 $env:DISCORD_CLIENT_SECRET_SECRET = "discord-client-secret"
+$env:GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET = "guide-editor-github-oauth-client-secret"
 $env:AUTH_COOKIE_SECRET_SECRET = "guide-editor-auth-cookie-secret"
 
 npm run deploy:guide-pr
 ```
+
+GitHub OAuth setup:
+
+Create a GitHub OAuth app for the guide editor with:
+
+```text
+Homepage URL: https://pvme.io/guide-editor/
+Authorization callback URL: https://guide-api.pvme.io/auth/github/callback
+```
+
+Store its client secret in Secret Manager as `guide-editor-github-oauth-client-secret`, then deploy with `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID` set to the app's client ID. GitHub-authenticated submissions use the user's OAuth token to create/update a branch in the user's `pvme-guides` fork and open the PR against `pvme/pvme-guides`, so GitHub shows the PR and commit activity as the signed-in GitHub user.
 
 Dry-run deploy:
 

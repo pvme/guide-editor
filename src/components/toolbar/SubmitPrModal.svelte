@@ -7,6 +7,7 @@
   import {
     getAuthenticatedUser,
     getDiscordLoginUrl,
+    getGithubLoginUrl,
     logoutDiscord,
     submitGuideUpdate
   } from "../../guidePrApi";
@@ -35,7 +36,7 @@
   $: errorCount = issues.filter((issue) => issue.type === "error").length;
   $: warningCount = issues.length - errorCount;
   $: hasIssues = issues.length > 0;
-  $: isAuthenticated = Boolean($authUser?.discordId);
+  $: isAuthenticated = Boolean($authUser?.discordId || $authUser?.githubId);
   $: hasNotes = notes.trim().length > 0;
   $: replacesExistingReview = $loadedGuide?.source === "master" && Boolean($loadedGuide?.existingReviewBranch);
   $: canSubmit = hasChanges
@@ -110,8 +111,8 @@
       },
       {
         done: isAuthenticated,
-        label: "Log in with Discord",
-        error: "You must log in with Discord to submit a guide update."
+        label: "Log in",
+        error: "You must log in with Discord or GitHub to submit a guide update."
       },
       {
         done: hasGuideText && hasChanges,
@@ -214,6 +215,10 @@
     window.location.href = getDiscordLoginUrl();
   }
 
+  function loginWithGithub() {
+    window.location.href = getGithubLoginUrl();
+  }
+
   function reviewCheckerIssues() {
     dispatch("reviewIssues");
   }
@@ -233,7 +238,7 @@
     const text = err?.message || "";
 
     if (!text) return "Submit failed. Try again in a moment.";
-    if (text.includes("log in with Discord") || text.includes("Log in with Discord")) return "You must log in with Discord to submit a guide update.";
+    if (text.includes("log in") || text.includes("Log in")) return "You must log in to submit a guide update.";
     if (text.includes("No guide changes") || text.includes("make a guide change")) return "You must make a guide change to submit a guide update.";
     if (text.includes("summary of what changed") || text.includes("describe what changed")) return "You must describe what changed to submit a guide update.";
     if (text.includes("changed since it was loaded")) return text;
@@ -280,14 +285,19 @@
         {#if !isAuthenticated}
           <div class="pr-auth-gate">
             <div>
-              <div class="text-sm font-semibold text-slate-100">Discord login required</div>
+              <div class="text-sm font-semibold text-slate-100">Login required</div>
               <p class="mt-1 text-sm leading-5 text-slate-400">
-                You must log in with Discord to submit a guide update.
+                Log in with GitHub to submit from your GitHub account, or use Discord to submit through the PvME bot.
               </p>
             </div>
-            <button class="toolbar-btn rounded font-medium" type="button" on:click={loginWithDiscord}>
-              {authStatus === "loading" ? "Logging in..." : "Log in"}
-            </button>
+            <div class="flex shrink-0 flex-wrap gap-2">
+              <button class="toolbar-btn rounded font-medium" type="button" on:click={loginWithGithub}>
+                GitHub
+              </button>
+              <button class="toolbar-secondary-btn" type="button" on:click={loginWithDiscord}>
+                Discord
+              </button>
+            </div>
           </div>
         {:else}
           <div class="pr-form-group">
@@ -295,7 +305,9 @@
             <div class="mt-2 flex items-center justify-between gap-3 rounded border border-slate-700 bg-slate-950/50 px-3 py-2">
               <div class="min-w-0">
                 <div class="truncate text-sm text-slate-100">Submitting as {displayName}</div>
-                <div class="truncate text-xs text-slate-500">Verified with Discord</div>
+                <div class="truncate text-xs text-slate-500">
+                  Verified with {$authUser?.provider === "github" ? "GitHub" : "Discord"}
+                </div>
               </div>
               <button class="toolbar-secondary-btn" type="button" on:click={logout}>
                 Log out

@@ -96,7 +96,7 @@ function getLocalAuthFailureRedirect(url) {
     ? parsed.pathname.slice(DEV_API_PROXY_PREFIX.length) || "/"
     : parsed.pathname || "/";
 
-  if (path !== "/auth/discord/callback" || !parsed.searchParams.has("error")) {
+  if (!["/auth/discord/callback", "/auth/github/callback"].includes(path) || !parsed.searchParams.has("error")) {
     return "";
   }
 
@@ -117,7 +117,9 @@ function getLocalAuthFailureRedirect(url) {
   redirectUrl.searchParams.set("submit", "1");
   redirectUrl.searchParams.set(
     "authError",
-    "Discord login was cancelled. You must log in with Discord to submit a guide update."
+    path.includes("/github/")
+      ? "GitHub login was cancelled. You must log in to submit a guide update."
+      : "Discord login was cancelled. You must log in with Discord to submit a guide update."
   );
 
   return redirectUrl.toString();
