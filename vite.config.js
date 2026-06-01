@@ -21,7 +21,7 @@ function guideSubmitProxy(env) {
     name: "pvme-guide-submit-proxy",
     configureServer(server) {
       server.middlewares.use(DEV_API_PROXY_PREFIX, async (req, res) => {
-        if (!["GET", "POST"].includes(req.method || "")) {
+        if (!["GET", "POST", "PUT"].includes(req.method || "")) {
           res.statusCode = 405;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "Only GET and POST requests are supported." }));
@@ -64,7 +64,7 @@ function guideSubmitProxy(env) {
             const response = await fetch(`${endpoint.replace(/\/$/, "")}${upstreamPath}`, {
               method: req.method,
               headers: createProxyHeaders(env, req),
-              body: req.method === "POST" ? body : undefined,
+              body: ["POST", "PUT"].includes(req.method || "") ? body : undefined,
               redirect: "manual"
             });
             const responseBody = await response.text();
@@ -164,6 +164,10 @@ function createProxyHeaders(env, req) {
 
   if (req.headers.cookie) {
     headers.Cookie = req.headers.cookie;
+  }
+
+  if (req.headers["x-pvme-csrf-token"]) {
+    headers["X-PVME-CSRF-Token"] = req.headers["x-pvme-csrf-token"];
   }
 
   return headers;

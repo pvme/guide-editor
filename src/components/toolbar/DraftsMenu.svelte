@@ -1,11 +1,12 @@
 <script>
   import { createEventDispatcher } from "svelte";
+  import FileEarmarkArrowDown from "svelte-bootstrap-icons/lib/FileEarmarkArrowDown.svelte";
   import FileEarmarkPlus from "svelte-bootstrap-icons/lib/FileEarmarkPlus.svelte";
   import Pencil from "svelte-bootstrap-icons/lib/Pencil.svelte";
   import Trash from "svelte-bootstrap-icons/lib/Trash.svelte";
   import DropdownPanel from "./DropdownPanel.svelte";
   import ToolbarTooltip from "./ToolbarTooltip.svelte";
-  import { drafts, getDraftTitle, getGuideSourceContext } from "../../stores";
+  import { drafts, getDraftTitle, getGuideSourceContext, loadedGuide } from "../../stores";
 
   const dispatch = createEventDispatcher();
   let open = false;
@@ -33,6 +34,30 @@
   function deleteDraft(draft) {
     close();
     dispatch("deleteDraft", draft);
+  }
+
+  function downloadDraft(draft) {
+    const title = getDraftTitle(draft);
+    const fileName = getDownloadFileName(draft, title);
+    const file = new File([draft.content || ""], fileName, {
+      type: "text/plain"
+    });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(file);
+
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  function getDownloadFileName(draft, title) {
+    const sourceName = draft?.loadedGuide?.path?.split("/").pop() || title || "GuideEditorExport";
+    const name = sourceName.endsWith(".txt") ? sourceName : `${sourceName}.txt`;
+    return name.replace(/[<>:"/\\|?*\x00-\x1F]/g, "_");
   }
 
   function formatUpdatedAt(value) {
@@ -64,19 +89,20 @@
   }
 
   $: sortedDrafts = [...$drafts.drafts].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  $: isReviewingPr = $loadedGuide?.source === "review-pr";
 </script>
 
 <div class="relative">
-  <ToolbarTooltip text="Local drafts">
+  <ToolbarTooltip text="My files">
     <button
       bind:this={triggerEl}
       class="toolbar-btn rounded px-3"
       type="button"
-      aria-label="Local drafts"
+      aria-label="My files"
       aria-expanded={open}
       on:click={() => (open = !open)}
     >
-      <span>Open drafts</span>
+      <span>My files</span>
       <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-900 px-1.5 text-xs font-semibold text-blue-100">
         {$drafts.drafts.length}
       </span>
@@ -87,8 +113,8 @@
     <div class="flex max-h-[70vh] w-full flex-col overflow-hidden">
       <div class="flex items-center justify-between gap-3 border-b border-slate-600 px-3 py-3">
         <div class="min-w-0">
-          <div class="text-sm font-semibold text-white">Local Drafts</div>
-          <div class="text-xs text-slate-300">Switch or create saved editor drafts</div>
+          <div class="text-sm font-semibold text-white">My files</div>
+          <div class="text-xs text-slate-300">Files are saved in realtime and stored in your browser</div>
         </div>
         <button
           class="toolbar-btn h-9 rounded px-2.5"
@@ -102,7 +128,7 @@
 
       <div class="max-h-[17rem] min-h-0 overflow-y-auto p-2" role="list">
         {#each sortedDrafts as draft (draft.id)}
-          {@const isActive = draft.id === $drafts.activeDraftId}
+          {@const isActive = !isReviewingPr && draft.id === $drafts.activeDraftId}
           {@const canRename = !draft.loadedGuide?.path}
           {@const displayTitle = getDraftTitle(draft)}
           <div
@@ -150,6 +176,20 @@
               </button>
               <span class="pointer-events-none absolute right-9 top-1/2 z-30 hidden -translate-y-1/2 whitespace-nowrap rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs text-slate-200 shadow-lg group-hover/rename-action:inline-flex group-focus-within/rename-action:inline-flex">
                 {canRename ? "Rename draft" : "You can't rename a PvME guide"}
+                <span class="absolute -right-[5px] top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 border-r border-t border-slate-600 bg-slate-950"></span>
+              </span>
+            </span>
+            <span class="group/download-action relative inline-flex">
+              <button
+                class="inline-flex h-8 w-8 items-center justify-center rounded border border-transparent text-slate-300 hover:border-slate-500 hover:bg-slate-700 hover:text-white"
+                type="button"
+                aria-label="Download file"
+                on:click={() => downloadDraft(draft)}
+              >
+                <FileEarmarkArrowDown />
+              </button>
+              <span class="pointer-events-none absolute right-9 top-1/2 z-30 hidden -translate-y-1/2 whitespace-nowrap rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs text-slate-200 shadow-lg group-hover/download-action:inline-flex group-focus-within/download-action:inline-flex">
+                Download .txt
                 <span class="absolute -right-[5px] top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 border-r border-t border-slate-600 bg-slate-950"></span>
               </span>
             </span>

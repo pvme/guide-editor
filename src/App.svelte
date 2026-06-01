@@ -8,14 +8,15 @@
   import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
 
-  import { activeDraft, authUser, drafts, getDraftTitle, loadedGuide, text, editorSettings, normalizeEditorSettings } from "./stores";
+  import { activeDraft, authUser, drafts, getDraftTitle, loadedGuide, reviewSession, text, editorSettings, normalizeEditorSettings } from "./stores";
   import { populateConstants } from "./pvmeSettings";
   import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
-  import { getAuthenticatedUser } from "./guidePrApi";
+  import { completeGithubDevLogin, getAuthenticatedUser } from "./guidePrApi";
   import findStyleErrors from "./syntax/style";
   import findSyntaxErrors from "./syntax/syntax";
   import GuideLoadModal from "./components/GuideLoadModal.svelte";
   import GuideSearch from "./components/toolbar/GuideSearch.svelte";
+  import ReviewPrModal from "./components/toolbar/ReviewPrModal.svelte";
   import SubmitPrModal from "./components/toolbar/SubmitPrModal.svelte";
   import { setEditorIssuesEffect } from "./codemirror/errorGutter.js";
   import {
@@ -49,6 +50,10 @@
   let pendingGuide = null;
   let showGuideSearch = false;
   let showSubmitPrModal = false;
+  let showReviewPrModal = false;
+  let loginRequestId = 0;
+  let loginSubmitAfter = false;
+  let pendingSubmitAfterAuth = false;
   let submitAuthError = "";
   let errorViewFlashKey = 0;
   let guideLoadStatus = "idle";
@@ -66,6 +71,7 @@
   let removeLoadedGuideSubscription = null;
   let currentEditorSettings = normalizeEditorSettings();
   let activeDraftId = null;
+  let lastSyncSwitchCount = -1;
   let syncingDraftToStores = false;
 
   $: ignoredTrailingWhitespaceLine = confirmedTrailingWhitespaceLines.has(activeEditorLine)
@@ -134,7 +140,7 @@
 
     // Remove ?id from URL
     window.history.replaceState({}, document.title, "/guide-editor/");
-    
+
     pendingGuide = null;
     showGuideModal = false;
     guideLoadStatus = "idle";
@@ -327,7 +333,7 @@
     });
   }
 
-  initialDoc = get(activeDraft)?.content || initialDoc;
+  initialDoc = get(activeDraft)?.draft?.content || initialDoc;
 
   onMount(() => {
     removeEditorSettingsSubscription = editorSettings.subscribe(settings => {
@@ -340,10 +346,6 @@
         });
       }
     });
-
-    getAuthenticatedUser()
-      .then((user) => authUser.set(user))
-      .catch(() => authUser.set(null));
 
     if (initialDoc.trim().length === 0) {
       loadedGuide.set(null);
@@ -390,18 +392,29 @@
     syncEngine = editor.state.facet(SyncEngineFacet)[0];
     confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
 
-    removeActiveDraftSubscription = activeDraft.subscribe(draft => {
-      if (!draft || !editor || draft.id === activeDraftId) return;
+    removeActiveDraftSubscription = activeDraft.subscribe(({ draft, switchCount, isDeletionSwitch }) => {
+      if (!draft || !editor) return;
 
+      // Only sync if this is a new switch action or a different draft
+      if (switchCount === lastSyncSwitchCount && draft.id === activeDraftId) return;
+
+      lastSyncSwitchCount = switchCount;
       activeDraftId = draft.id;
       syncingDraftToStores = true;
       guideNotice = "";
 
-      loadedGuide.set(draft.loadedGuide || null);
-      text.set(draft.content || "");
+      // If reviewing a PR and this switch was due to deletion, don't override the PR
+      const currentLoadedGuide = get(loadedGuide);
+      const isReviewingPr = currentLoadedGuide?.source === "review-pr";
+      const skipLoadDueToReview = isReviewingPr && isDeletionSwitch;
+
+      if (!skipLoadDueToReview) {
+        loadedGuide.set(draft.loadedGuide || null);
+        text.set(draft.content || "");
+      }
 
       const cur = editor.state.doc.toString();
-      const next = draft.content || "";
+      const next = skipLoadDueToReview ? cur : (draft.content || "");
       if (cur !== next) {
         editor.dispatch({
           changes: { from: 0, to: cur.length, insert: next }
@@ -414,14 +427,32 @@
 
     // --- Load guide from URL ---
     const params = new URLSearchParams(window.location.search);
-    if (params.get("authError")) {
-      submitAuthError = params.get("authError");
+    let handledGithubDevSession = false;
+    if (params.get("githubSession")) {
+      handledGithubDevSession = true;
+      completeGithubDevLogin(params.get("githubSession"))
+        .then(handleAuthenticatedUser)
+        .catch(err => {
+          submitAuthError = err?.message || "GitHub login could not be verified.";
+          guideNotice = submitAuthError;
+        });
+      params.delete("githubSession");
+      const nextUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, document.title, nextUrl);
     }
 
-    if (params.get("submit") === "1" || submitAuthError) {
-      showSubmitPrModal = true;
-      params.delete("submit");
+    if (params.get("authError")) {
+      submitAuthError = params.get("authError");
+      guideNotice = submitAuthError;
       params.delete("authError");
+      params.delete("submit");
+      const nextUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, document.title, nextUrl);
+    }
+
+    if (params.get("submit") === "1") {
+      pendingSubmitAfterAuth = true;
+      params.delete("submit");
       const nextUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
       window.history.replaceState({}, document.title, nextUrl);
     }
@@ -430,17 +461,35 @@
       loadGuide(params.get("id"));
     }
 
+    if (!handledGithubDevSession) {
+      getAuthenticatedUser()
+        .then(handleAuthenticatedUser)
+        .catch(() => {
+          authUser.set(null);
+          if (pendingSubmitAfterAuth) {
+            pendingSubmitAfterAuth = false;
+            requestLoginForSubmit();
+          }
+        });
+    }
+
     editor.focus();
 
     // Sync store → editor
     removeTextSubscription = text.subscribe(v => {
       validText = v;
 
-      if (!syncingDraftToStores && activeDraftId) {
+      const isReviewPr = get(loadedGuide)?.source === "review-pr";
+
+      if (!syncingDraftToStores && activeDraftId && !isReviewPr) {
         drafts.updateActive({ content: v });
       }
 
-      if (!syncingDraftToStores && v.trim().length === 0) {
+      if (isReviewPr) {
+        clearReviewPersistence();
+      }
+
+      if (!syncingDraftToStores && !isReviewPr && v.trim().length === 0) {
         loadedGuide.set(null);
       }
 
@@ -455,9 +504,25 @@
 
     removeLoadedGuideSubscription = loadedGuide.subscribe(v => {
       if (syncingDraftToStores || !activeDraftId) return;
+      if (v?.source === "review-pr") {
+        clearReviewPersistence();
+        return;
+      }
       drafts.updateActive({ loadedGuide: v });
     });
   });
+
+  function handleAuthenticatedUser(user) {
+    authUser.set(user);
+    if (!pendingSubmitAfterAuth) return;
+
+    pendingSubmitAfterAuth = false;
+    if (isSignedIn(user)) {
+      showSubmitPrModal = true;
+    } else {
+      requestLoginForSubmit();
+    }
+  }
 
   onDestroy(() => {
     removeGlobalKeydown?.();
@@ -557,6 +622,81 @@
   function handleReviewCheckerIssues() {
     showSubmitPrModal = false;
     errorViewFlashKey += 1;
+  }
+
+  function isSignedIn(user) {
+    return Boolean(user?.discordId || user?.githubId);
+  }
+
+  function requestLoginForSubmit() {
+    loginSubmitAfter = true;
+    loginRequestId += 1;
+    showSubmitPrModal = false;
+  }
+
+  function handleOpenSubmitPr() {
+    if (isSignedIn(get(authUser))) {
+      showSubmitPrModal = true;
+      return;
+    }
+
+    requestLoginForSubmit();
+  }
+
+  function clearReviewPersistence() {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem("text");
+    window.localStorage.removeItem("loadedGuide");
+  }
+
+  function handleReviewFileLoad(e) {
+    const { pr, file, content } = e.detail;
+
+    reviewSession.set({ pr, file });
+    loadedGuide.set({
+      path: file.path,
+      name: file.path.split("/").pop(),
+      repo: "pvme/pvme-guides",
+      source: "review-pr",
+      branch: pr.headBranch,
+      baseBranch: "master",
+      prUrl: pr.url,
+      prNumber: pr.number,
+      originalText: file.headContent || ""
+    });
+    text.set(content || "");
+    clearReviewPersistence();
+    guideNotice = `Reviewing PR #${pr.number}: ${file.path}`;
+  }
+
+  function handleReviewMerged(e) {
+    const pr = e.detail?.pr;
+    const draft = get(activeDraft)?.draft;
+
+    reviewSession.set(null);
+    syncingDraftToStores = true;
+    text.set(draft?.content || "");
+    loadedGuide.set(draft?.loadedGuide || null);
+    syncingDraftToStores = false;
+    clearReviewPersistence();
+    guideNotice = pr?.number
+      ? `Merged PR #${pr.number}.`
+      : "Pull request merged.";
+  }
+
+  function handleReviewClosed(e) {
+    const pr = e.detail?.pr;
+    const draft = get(activeDraft)?.draft;
+
+    reviewSession.set(null);
+    syncingDraftToStores = true;
+    text.set(draft?.content || "");
+    loadedGuide.set(draft?.loadedGuide || null);
+    syncingDraftToStores = false;
+    clearReviewPersistence();
+    guideNotice = pr?.number
+      ? `Closed PR #${pr.number}.`
+      : "Pull request closed.";
   }
 
   function togglePreviewVisibility() {
@@ -660,11 +800,14 @@
       {getEditorCursorPosition}
       {replaceEditorText}
       {showView}
+      {loginRequestId}
+      {loginSubmitAfter}
       on:command={(e) => runCommand(e.detail)}
       on:toggleView={togglePreviewVisibility}
       on:loadGuide={(e) => handleGuideSearchSelect(e.detail)}
       on:openGuideSearch={() => (showGuideSearch = true)}
-      on:openSubmitPr={() => (showSubmitPrModal = true)}
+      on:openSubmitPr={handleOpenSubmitPr}
+      on:openReviewPr={() => (showReviewPrModal = true)}
       on:newDraft={requestNewDraft}
       on:renameDraft={(e) => openRenameDraftModal(e.detail)}
       on:deleteDraft={(e) => openDeleteDraftModal(e.detail)}
@@ -745,6 +888,17 @@
     }}
   />
 
+  <ReviewPrModal
+    open={showReviewPrModal}
+    currentText={$text}
+    on:loadFile={handleReviewFileLoad}
+    on:merged={handleReviewMerged}
+    on:closed={handleReviewClosed}
+    close={() => {
+      showReviewPrModal = false;
+    }}
+  />
+
   {#if showNewDraftConfirm}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
       <div
@@ -754,7 +908,7 @@
       >
         <h2 class="text-lg font-semibold">Create New Draft</h2>
         <p class="mt-3 text-sm text-slate-300">
-          This draft is saved in Local drafts. Creating a new draft will only clear the editor window.
+          This draft is saved in My files. Creating a new draft will only clear the editor window.
         </p>
         <div class="mt-5 flex justify-end gap-2">
           <button

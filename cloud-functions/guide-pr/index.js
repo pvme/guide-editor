@@ -4,6 +4,7 @@ const DISCORD_API = "https://discord.com/api";
 const DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize";
 const GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize";
 const GITHUB_API = "https://api.github.com";
+const GITHUB_GRAPHQL_API = "https://api.github.com/graphql";
 const REPO = "pvme/pvme-guides";
 const BASE_BRANCH = "master";
 const MAX_CONTENT_BYTES = 2 * 1024 * 1024;
@@ -11,9 +12,11 @@ const MAX_TITLE_CHARS = 120;
 const MAX_NOTES_CHARS = 2000;
 const MAX_PR_BODY_CHARS = 9000;
 const MAX_PR_SUMMARIES = 5;
+const MAX_REVIEW_PRS = 50;
+const MAX_REVIEW_COMMIT_MESSAGE_CHARS = 160;
 const PVME_GUILD_ID = "534508796639182860";
 const DISCORD_OAUTH_SCOPE = "identify guilds.members.read";
-const GITHUB_OAUTH_SCOPE = "public_repo read:user";
+const GITHUB_OAUTH_SCOPE = "repo read:user";
 const DEFAULT_TRUSTED_ORIGIN = "https://pvme.io";
 const DEFAULT_ALLOWED_ORIGIN = "http://localhost:5173,https://pvme.io";
 const SESSION_COOKIE = "pvme_guide_session";
@@ -48,6 +51,11 @@ exports.submitGuideUpdate = async (req, res) => {
 
     if (route === "/auth/github/callback") {
       await handleGithubCallback(req, res);
+      return;
+    }
+
+    if (route === "/auth/dev-session" && req.method === "POST") {
+      handleDevSession(req, res);
       return;
     }
 
@@ -103,6 +111,11 @@ exports.submitGuideUpdate = async (req, res) => {
       return;
     }
 
+    if (route.startsWith("/reviews/pulls")) {
+      await handleReviewRoute(req, res, route);
+      return;
+    }
+
     if (
       (route === "/" || route === "/submit-guide-update") &&
       req.method === "POST"
@@ -127,6 +140,7 @@ exports.submitGuideUpdate = async (req, res) => {
 
 async function handleSubmitGuideUpdate(req, res) {
   const user = requirePvmeMemberSession(req);
+  validateCsrfToken(req, user, { allowTrustedOriginFallback: true });
   const payload = normalizePayload(req.body);
   validatePayload(payload);
 
@@ -392,6 +406,125 @@ async function handleLoadGuide(req, res) {
   sendJson(res, 200, loadedGuide);
 }
 
+async function handleReviewRoute(req, res, route) {
+  const user = requireReviewerSession(req);
+  enforceRateLimit(req, `review:${user.githubId}`, 120, 60);
+  if (["POST", "PUT"].includes(req.method)) {
+    validateCsrfToken(req, user);
+  }
+  const github = createGithubClient(user.githubToken);
+  const [owner, repo] = REPO.split("/");
+  const match = route.match(/^\/reviews\/pulls(?:\/(\d+))?(?:\/([^/]+))?$/);
+
+  if (!match) {
+    throw httpError(404, "Review route not found.");
+  }
+
+  const prNumber = match[1] ? Number(match[1]) : null;
+  const action = match[2] || "";
+
+  if (!prNumber && !action && req.method === "GET") {
+    sendJson(res, 200, {
+      pulls: await listReviewPulls(github, owner, repo),
+    });
+    return;
+  }
+
+  if (!prNumber) {
+    throw httpError(404, "Review pull request not found.");
+  }
+
+  if (!action && req.method === "GET") {
+    sendJson(res, 200, await getReviewPullDetail(github, owner, repo, prNumber));
+    return;
+  }
+
+  if (action === "checks" && req.method === "GET") {
+    sendJson(res, 200, await getReviewPullChecks(github, owner, repo, prNumber));
+    return;
+  }
+
+  if (action === "comment" && req.method === "POST") {
+    const body = normalizeReviewText(req.body, "Comment");
+    const comment = await github(`/repos/${owner}/${repo}/issues/${prNumber}/comments`, {
+      method: "POST",
+      body: { body },
+    });
+    sendJson(res, 201, { url: comment.html_url });
+    return;
+  }
+
+  if (action === "review" && req.method === "POST") {
+    const event = String(req.body?.event || "").toUpperCase();
+    if (!["APPROVE", "COMMENT", "REQUEST_CHANGES"].includes(event)) {
+      throw httpError(400, "Review action is invalid.");
+    }
+
+    const body = normalizeReviewText(
+      req.body,
+      event === "APPROVE" ? "Review note" : "Review comment",
+      event === "APPROVE",
+    );
+    const review = await github(`/repos/${owner}/${repo}/pulls/${prNumber}/reviews`, {
+      method: "POST",
+      body: { event, body },
+    });
+    sendJson(res, 201, { url: review.html_url });
+    return;
+  }
+
+  if (action === "file" && req.method === "PUT") {
+    sendJson(res, 200, await updateReviewPullFile(github, user, owner, repo, prNumber, req.body));
+    return;
+  }
+
+  if (action === "merge" && req.method === "POST") {
+    const pr = await getReviewPull(github, owner, repo, prNumber);
+    await validateReviewPullCanMerge(github, pr);
+    const mergeGithub = await createGithubAppInstallationClient(owner, repo);
+    const merge = await mergeGithub(`/repos/${owner}/${repo}/pulls/${prNumber}/merge`, {
+      method: "PUT",
+      body: {
+        sha: pr.head.sha,
+        merge_method: "squash",
+      },
+    });
+    sendJson(res, 200, {
+      merged: merge.merged === true,
+      message: merge.message || "",
+      sha: merge.sha || "",
+    });
+    return;
+  }
+
+  if (action === "close" && req.method === "POST") {
+    const reason = normalizeReviewText(req.body, "Close reason");
+    const pr = await getReviewPull(github, owner, repo, prNumber);
+    const closeGithub = await createGithubAppInstallationClient(owner, repo);
+    const comment = await closeGithub(`/repos/${owner}/${repo}/issues/${prNumber}/comments`, {
+      method: "POST",
+      body: {
+        body: createReviewCloseComment(user, reason),
+      },
+    });
+    const closed = await closeGithub(`/repos/${owner}/${repo}/pulls/${prNumber}`, {
+      method: "PATCH",
+      body: {
+        state: "closed",
+      },
+    });
+    sendJson(res, 200, {
+      closed: closed.state === "closed",
+      number: pr.number,
+      url: closed.html_url || pr.html_url || "",
+      commentUrl: comment.html_url || "",
+    });
+    return;
+  }
+
+  throw httpError(404, "Review route not found.");
+}
+
 function handleDiscordStart(req, res) {
   requireDiscordConfig();
 
@@ -489,6 +622,7 @@ async function handleDiscordCallback(req, res) {
 
   setSessionCookie(res, {
     provider: "discord",
+    csrfToken: createSessionCsrfToken(),
     discordId: String(discordUser.id),
     username: String(discordUser.username || ""),
     globalName: discordUser.global_name ? String(discordUser.global_name) : "",
@@ -583,18 +717,45 @@ async function handleGithubCallback(req, res) {
     return;
   }
 
-  setSessionCookie(res, {
+  const session = {
     provider: "github",
+    csrfToken: createSessionCsrfToken(),
     githubId: String(githubUser.id),
     githubLogin: String(githubUser.login || ""),
     username: String(githubUser.login || ""),
     globalName: githubUser.name ? String(githubUser.name) : "",
     avatar: githubUser.avatar_url ? String(githubUser.avatar_url) : "",
     githubToken: String(tokenData.access_token),
+    githubScopes: parseGithubOAuthScopes(tokenData.scope),
     exp: nowSeconds() + SESSION_MAX_AGE_SECONDS,
-  });
+  };
+  session.canReviewPrs = isReviewerUser(session);
+
+  if (isLocalReturnTo(state.returnTo)) {
+    const returnUrl = new URL(state.returnTo);
+    returnUrl.searchParams.set("githubSession", createDevSessionToken(session));
+    res.redirect(returnUrl.toString());
+    return;
+  }
+
+  setSessionCookie(res, session);
 
   res.redirect(state.returnTo || getFrontendOrigin(req));
+}
+
+function handleDevSession(req, res) {
+  const token = String(req.body?.token || "");
+  const session = verifyDevSessionToken(token);
+
+  if (!session) {
+    throw httpError(400, "GitHub login could not be verified.");
+  }
+
+  setSessionCookie(res, {
+    ...session,
+    exp: nowSeconds() + SESSION_MAX_AGE_SECONDS,
+  });
+  sendJson(res, 200, { user: publicUser(getSessionUser(req) || session) });
 }
 
 async function fetchPvmeGuildMember(accessToken) {
@@ -777,6 +938,370 @@ function validateSubmissionSource(payload, reviewBranch) {
   }
 
   throw httpError(400, "The loaded guide source is invalid.");
+}
+
+async function listReviewPulls(github, owner, repo) {
+  const params = new URLSearchParams({
+    state: "open",
+    base: BASE_BRANCH,
+    per_page: String(MAX_REVIEW_PRS),
+    sort: "updated",
+    direction: "desc",
+  });
+  const pulls = await github(`/repos/${owner}/${repo}/pulls?${params}`);
+  const results = [];
+
+  for (const pr of Array.isArray(pulls) ? pulls : []) {
+    const files = await github(`/repos/${owner}/${repo}/pulls/${pr.number}/files?per_page=100`);
+    const guideFiles = files
+      .filter((file) => isSafeGuidePath(file.filename || ""))
+      .map((file) => summarizeReviewFile(file));
+
+    if (guideFiles.length === 0) continue;
+
+    results.push({
+      number: pr.number,
+      title: pr.title || "",
+      url: pr.html_url || "",
+      author: pr.user?.login || "",
+      draft: pr.draft === true,
+      updatedAt: pr.updated_at || "",
+      headOwner: pr.head?.repo?.owner?.login || pr.head?.user?.login || "",
+      headRepo: pr.head?.repo?.name || "",
+      headBranch: pr.head?.ref || "",
+      headSha: pr.head?.sha || "",
+      guideFiles,
+      otherFilesCount: files.length - guideFiles.length,
+    });
+  }
+
+  return results;
+}
+
+async function getReviewPullDetail(github, owner, repo, prNumber) {
+  const pr = await getReviewPull(github, owner, repo, prNumber);
+  const files = await github(`/repos/${owner}/${repo}/pulls/${prNumber}/files?per_page=100`);
+  const guideFiles = [];
+  const otherFiles = [];
+
+  for (const file of files) {
+    if (!isSafeGuidePath(file.filename || "")) {
+      otherFiles.push(summarizeReviewFile(file));
+      continue;
+    }
+
+    const status = String(file.status || "");
+    const basePath = status === "renamed" && file.previous_filename
+      ? file.previous_filename
+      : file.filename;
+    const headContent = status === "removed"
+      ? ""
+      : await getFileTextIfExists(github, pr.head.repo.owner.login, pr.head.repo.name, file.filename, pr.head.ref);
+    const baseContent = status === "added"
+      ? ""
+      : await getFileTextIfExists(github, owner, repo, basePath, BASE_BRANCH);
+
+    guideFiles.push({
+      ...summarizeReviewFile(file),
+      previousPath: file.previous_filename || "",
+      baseContent,
+      headContent,
+      editable: status !== "removed",
+    });
+  }
+
+  const checks = await getReviewPullChecksForPr(github, pr);
+
+  return {
+    pr: summarizeReviewPull(pr),
+    files: guideFiles,
+    otherFiles,
+    checks,
+  };
+}
+
+async function getReviewPullChecks(github, owner, repo, prNumber) {
+  return {
+    checks: await getReviewPullChecksForPr(github, await getReviewPull(github, owner, repo, prNumber)),
+  };
+}
+
+async function getReviewPullChecksForPr(github, pr) {
+  const baseRepoPath = `/repos/${REPO}`;
+  const headRepoPath = `/repos/${pr.head.repo.owner.login}/${pr.head.repo.name}`;
+  const statusPath = getGithubApiPath(pr.statuses_url)
+    || `${baseRepoPath}/commits/${pr.head.sha}/status`;
+  const [statuses, checkRuns] = await Promise.all([
+    github(statusPath)
+      .catch(() => github(`${headRepoPath}/commits/${pr.head.sha}/status`))
+      .catch(() => ({ state: "unknown", statuses: [] })),
+    github(`${baseRepoPath}/commits/${pr.head.sha}/check-runs`)
+      .catch(() => github(`${headRepoPath}/commits/${pr.head.sha}/check-runs`))
+      .catch(() => ({ check_runs: [] })),
+  ]);
+  const runs = Array.isArray(checkRuns.check_runs) ? checkRuns.check_runs : [];
+  const statusItems = Array.isArray(statuses.statuses) ? statuses.statuses : [];
+  const failingRun = runs.some((run) => ["failure", "cancelled", "timed_out", "action_required"].includes(run.conclusion));
+  const pendingRun = runs.some((run) => run.status !== "completed");
+  const failingStatus = statusItems.some((status) => ["failure", "error"].includes(status.state));
+  const pendingStatus = statusItems.some((status) => ["pending"].includes(status.state));
+  let state = "passing";
+
+  if (failingRun || failingStatus) {
+    state = "failing";
+  } else if (pendingRun || pendingStatus) {
+    state = "pending";
+  } else if (runs.length === 0 && statusItems.length === 0) {
+    state = "unknown";
+  }
+
+  return {
+    state,
+    headSha: pr.head.sha,
+    statuses: statusItems.map((status) => ({
+      context: status.context || "",
+      state: status.state || "",
+      description: status.description || "",
+      url: status.target_url || "",
+    })),
+    checkRuns: runs.map((run) => ({
+      name: run.name || "",
+      status: run.status || "",
+      conclusion: run.conclusion || "",
+      url: run.html_url || "",
+    })),
+  };
+}
+
+function getGithubApiPath(url) {
+  try {
+    const parsed = new URL(String(url || ""));
+    const api = new URL(GITHUB_API);
+    if (parsed.origin !== api.origin || !parsed.pathname.startsWith(api.pathname)) {
+      return "";
+    }
+
+    return `${parsed.pathname.slice(api.pathname.length - 1)}${parsed.search}`;
+  } catch {
+    return "";
+  }
+}
+
+async function updateReviewPullFile(github, user, owner, repo, prNumber, body) {
+  const pr = await getReviewPull(github, owner, repo, prNumber);
+  const path = String(body?.path || "");
+  const content = typeof body?.content === "string" ? body.content : null;
+  const commitMessage = normalizeReviewCommitMessage(body);
+
+  if (!isSafeGuidePath(path)) {
+    throw httpError(400, "Review file path is invalid.");
+  }
+
+  if (content === null) {
+    throw httpError(400, "Review file content is missing.");
+  }
+
+  if (Buffer.byteLength(content, "utf8") > MAX_CONTENT_BYTES) {
+    throw httpError(413, "Review file content is too large.");
+  }
+
+  const files = await github(`/repos/${owner}/${repo}/pulls/${prNumber}/files?per_page=100`);
+  const file = files.find((item) => item.filename === path && isSafeGuidePath(item.filename || ""));
+
+  if (!file || file.status === "removed") {
+    throw httpError(400, "This pull request file cannot be edited.");
+  }
+
+  const headOwner = pr.head.repo.owner.login;
+  const headRepo = pr.head.repo.name;
+  const fileSha = file.sha || "";
+  const updatePath = `/repos/${headOwner}/${headRepo}/contents/${encodePath(path)}`;
+  const updateBody = {
+    message: createReviewCommitMessage(commitMessage),
+    content: Buffer.from(content, "utf8").toString("base64"),
+    ...(fileSha ? { sha: fileSha } : {}),
+    branch: pr.head.ref,
+  };
+  const update = await updateReviewPullFileContent(github, updatePath, updateBody)
+    .catch(async (err) => {
+      if (err.status === 404 && pr.head?.repo?.full_name !== pr.base?.repo?.full_name) {
+        return commitReviewPullFileWithGraphql(user, pr, path, content, commitMessage)
+          .catch((graphqlErr) => {
+            throw httpError(403, createForkPrUpdateError(user, graphqlErr));
+          });
+      }
+      throw err;
+    });
+
+  return {
+    path,
+    sha: update.commit?.sha || "",
+  };
+}
+
+async function commitReviewPullFileWithGraphql(user, pr, path, content, commitMessage) {
+  const mutation = `
+    mutation UpdatePullRequestBranchFile($input: CreateCommitOnBranchInput!) {
+      createCommitOnBranch(input: $input) {
+        commit {
+          oid
+          url
+        }
+      }
+    }
+  `;
+
+  const data = await githubGraphql(user.githubToken, mutation, {
+    input: {
+      branch: {
+        repositoryNameWithOwner: pr.head.repo.full_name,
+        branchName: pr.head.ref,
+      },
+      expectedHeadOid: pr.head.sha,
+      message: {
+        headline: commitMessage,
+        body: "Reviewer edit via https://pvme.io/guide-editor/",
+      },
+      fileChanges: {
+        additions: [{
+          path,
+          contents: Buffer.from(content, "utf8").toString("base64"),
+        }],
+      },
+    },
+  });
+
+  return {
+    commit: {
+      sha: data.createCommitOnBranch?.commit?.oid || "",
+    },
+  };
+}
+
+function normalizeReviewCommitMessage(body) {
+  const message = String(body?.commitMessage || "").trim().replace(/\s+/g, " ");
+
+  if (!message) {
+    throw httpError(400, "Describe what changed before committing to the PR.");
+  }
+
+  if (message.length > MAX_REVIEW_COMMIT_MESSAGE_CHARS) {
+    throw httpError(400, `Commit message must be ${MAX_REVIEW_COMMIT_MESSAGE_CHARS} characters or fewer.`);
+  }
+
+  return message;
+}
+
+function createReviewCommitMessage(commitMessage) {
+  return `${commitMessage}\n\nReviewer edit via https://pvme.io/guide-editor/`;
+}
+
+async function updateReviewPullFileContent(github, path, body) {
+  return github(path, {
+    method: "PUT",
+    body,
+  });
+}
+
+function createForkPrUpdateError(user, err) {
+  const scopes = new Set(user.githubScopes || []);
+  if (!scopes.has("repo")) {
+    return "Your GitHub login needs the repo OAuth permission for reviewer edits. Log out, log in with GitHub again, and approve repository access.";
+  }
+
+  const detail = err?.message ? ` GitHub said: ${err.message}` : "";
+  return `GitHub would not allow the guide editor to update this contributor fork branch, even though the PR says maintainers can edit it.${detail}`;
+}
+
+async function validateReviewPullCanMerge(github, pr) {
+  if (pr.draft === true) {
+    throw httpError(409, "Draft pull requests cannot be merged from the guide editor.");
+  }
+
+  if (pr.mergeable === false || pr.mergeable_state === "dirty") {
+    throw httpError(409, "This pull request has merge conflicts.");
+  }
+
+  const files = await github(`/repos/${REPO}/pulls/${pr.number}/files?per_page=100`);
+  const otherFiles = files.filter((file) => !isSafeGuidePath(file.filename || ""));
+
+  if (otherFiles.length > 0) {
+    throw httpError(409, "This pull request changes non-guide files and must be merged on GitHub.");
+  }
+
+  const checks = await getReviewPullChecksForPr(github, pr);
+  if (!["passing", "unknown"].includes(checks.state)) {
+    throw httpError(409, `Checks are ${checks.state}. Merge from GitHub after checks pass.`);
+  }
+}
+
+async function getReviewPull(github, owner, repo, prNumber) {
+  const pr = await github(`/repos/${owner}/${repo}/pulls/${prNumber}`);
+
+  if (pr.base?.repo?.full_name !== REPO || pr.base?.ref !== BASE_BRANCH || pr.state !== "open") {
+    throw httpError(404, "Review pull request was not found.");
+  }
+
+  return pr;
+}
+
+function summarizeReviewPull(pr) {
+  return {
+    number: pr.number,
+    title: pr.title || "",
+    url: pr.html_url || "",
+    author: pr.user?.login || "",
+    draft: pr.draft === true,
+    mergeable: pr.mergeable,
+    mergeableState: pr.mergeable_state || "",
+    updatedAt: pr.updated_at || "",
+    headOwner: pr.head?.repo?.owner?.login || pr.head?.user?.login || "",
+    headRepo: pr.head?.repo?.name || "",
+    headBranch: pr.head?.ref || "",
+    headSha: pr.head?.sha || "",
+  };
+}
+
+function summarizeReviewFile(file) {
+  return {
+    path: file.filename || "",
+    status: file.status || "",
+    additions: Number(file.additions) || 0,
+    deletions: Number(file.deletions) || 0,
+    changes: Number(file.changes) || 0,
+    patch: file.patch || "",
+  };
+}
+
+async function getFileTextIfExists(github, owner, repo, path, ref) {
+  try {
+    return (await getFile(github, owner, repo, path, ref)).text;
+  } catch (err) {
+    if (err.status === 404) return "";
+    throw err;
+  }
+}
+
+function normalizeReviewText(body, label, allowEmpty = false) {
+  const text = String(body?.body ?? body?.reason ?? "").trim();
+
+  if (!text && !allowEmpty) {
+    throw httpError(400, `${label} is required.`);
+  }
+
+  return text;
+}
+
+function createReviewCloseComment(user, reason) {
+  const reviewer = user?.githubLogin
+    ? `@${user.githubLogin}`
+    : userDisplayName(user);
+
+  return [
+    `Closed by ${reviewer} from https://pvme.io/guide-editor/.`,
+    "",
+    reason,
+  ].join("\n");
 }
 
 function isSafeGuidePath(path) {
@@ -1005,6 +1530,31 @@ function createGithubClient(token) {
   };
 }
 
+async function githubGraphql(token, query, variables = {}) {
+  const res = await fetch(GITHUB_GRAPHQL_API, {
+    method: "POST",
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "User-Agent": "pvme-guide-editor",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok || Array.isArray(data.errors)) {
+    const message = Array.isArray(data.errors) && data.errors.length > 0
+      ? data.errors.map((error) => error.message || "Unknown GraphQL error.").join("; ")
+      : data.message || `GitHub GraphQL request failed with status ${res.status}.`;
+    console.warn("GitHub GraphQL request failed:", res.status, message);
+    throw httpError(res.status || 502, message);
+  }
+
+  return data.data || {};
+}
+
 function createReviewBranchNameForUser(user, path) {
   if (user.provider === "github") {
     return `guide-editor/github-${user.githubId}/${createFileSlug(path)}`;
@@ -1183,8 +1733,8 @@ function setCorsHeaders(req, res) {
   }
 
   res.set("Vary", "Origin");
-  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, X-PVME-Submit-Secret");
+  res.set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, X-PVME-Submit-Secret, X-PVME-CSRF-Token");
   res.set("Access-Control-Max-Age", "3600");
   return true;
 }
@@ -1280,6 +1830,10 @@ function getGithubRedirectUri(req) {
 }
 
 function getOAuthRedirectUri(req, provider, configuredRedirectUri) {
+  if (provider === "github" && configuredRedirectUri) {
+    return configuredRedirectUri;
+  }
+
   const proxyOrigin = getProxyOrigin(req);
 
   if (proxyOrigin) {
@@ -1388,6 +1942,11 @@ function getSessionUser(req) {
       globalName: String(session.globalName || ""),
       avatar: String(session.avatar || ""),
       githubToken: String(session.githubToken),
+      githubScopes: Array.isArray(session.githubScopes)
+        ? session.githubScopes.map(String)
+        : parseGithubOAuthScopes(session.githubScopes),
+      csrfToken: String(session.csrfToken || ""),
+      canReviewPrs: session.canReviewPrs === true,
       exp: Number(session.exp),
     };
   }
@@ -1407,8 +1966,17 @@ function getSessionUser(req) {
     pvmeRoles: Array.isArray(session.pvmeRoles)
       ? session.pvmeRoles.map(String)
       : [],
+    csrfToken: String(session.csrfToken || ""),
     exp: Number(session.exp),
   };
+}
+
+function isLocalReturnTo(value) {
+  try {
+    return new URL(value).origin.startsWith("http://localhost:");
+  } catch {
+    return false;
+  }
 }
 
 function requireSession(req) {
@@ -1439,6 +2007,56 @@ function requirePvmeMemberSession(req) {
   }
 
   return user;
+}
+
+function requireReviewerSession(req) {
+  const user = requireSession(req);
+
+  if (!isReviewerUser(user)) {
+    throw httpError(403, "You must log in with an authorized GitHub reviewer account.");
+  }
+
+  return user;
+}
+
+function isReviewerUser(user) {
+  if (user?.provider !== "github" || !user.githubLogin) {
+    return false;
+  }
+
+  const logins = getReviewerGithubLogins();
+  if (logins.includes(user.githubLogin.toLowerCase())) {
+    return true;
+  }
+
+  return user.canReviewPrs === true;
+}
+
+function getReviewerGithubLogins() {
+  return String(process.env.GUIDE_EDITOR_REVIEWER_GITHUB_LOGINS || "")
+    .split(",")
+    .map((login) => login.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function parseGithubOAuthScopes(value) {
+  return String(value || "")
+    .split(/[,\s]+/)
+    .map((scope) => scope.trim())
+    .filter(Boolean);
+}
+
+function validateCsrfToken(req, user, { allowTrustedOriginFallback = false } = {}) {
+  const expected = user.csrfToken || "";
+  const actual = req.get("x-pvme-csrf-token") || "";
+
+  if (!expected || !secureCompare(actual, expected)) {
+    if (allowTrustedOriginFallback && !actual && isTrustedOrigin(req)) {
+      return;
+    }
+
+    throw httpError(403, "Your login session could not be verified. Refresh the page and try again.");
+  }
 }
 
 function enforceAnonymousGuideLoadLimit(req, res) {
@@ -1599,6 +2217,25 @@ function verifySessionCookie(value) {
   return openJson(value) || verifySignedJson(value);
 }
 
+function createDevSessionToken(session) {
+  return sealJson({
+    ...session,
+    devSession: true,
+    exp: nowSeconds() + 2 * 60,
+  });
+}
+
+function verifyDevSessionToken(value) {
+  const session = openJson(value);
+
+  if (!session || session.devSession !== true || session.exp < nowSeconds()) {
+    return null;
+  }
+
+  delete session.devSession;
+  return session;
+}
+
 function openJson(value) {
   if (!process.env.AUTH_COOKIE_SECRET) {
     return null;
@@ -1656,6 +2293,10 @@ function createSignature(payload) {
     .digest("base64url");
 }
 
+function createSessionCsrfToken() {
+  return crypto.randomBytes(32).toString("base64url");
+}
+
 function getCookieEncryptionKey() {
   return crypto
     .createHash("sha256")
@@ -1673,6 +2314,8 @@ function publicUser(user) {
       username: user.username,
       globalName: user.globalName,
       avatar: user.avatar,
+      csrfToken: user.csrfToken,
+      canReviewPrs: isReviewerUser(user),
       displayName: userDisplayName(user),
     };
   }
@@ -1684,6 +2327,8 @@ function publicUser(user) {
     globalName: user.globalName,
     avatar: user.avatar,
     pvmeMember: user.pvmeMember === true,
+    csrfToken: user.csrfToken,
+    canReviewPrs: false,
     displayName: userDisplayName(user),
   };
 }

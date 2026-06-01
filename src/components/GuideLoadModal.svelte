@@ -68,6 +68,7 @@
           <button
             on:click={continueLocalDraft}
             disabled={isLoading}
+            data-disabled-reason={isLoading ? "Loading" : ""}
             class="toolbar-btn rounded-md font-medium"
           >
             Continue draft
@@ -107,6 +108,7 @@
           <button
             on:click={loadReview}
             disabled={isLoading}
+            data-disabled-reason={isLoading ? "Loading" : ""}
             class="toolbar-btn rounded-md font-medium"
           >
             {#if loadingAction === "review"}
@@ -160,6 +162,7 @@
           <button
             on:click={confirm}
             disabled={isLoading}
+            data-disabled-reason={isLoading ? "Opening file" : ""}
             class="toolbar-btn rounded-md font-medium"
           >
             {#if loadingAction === "confirm"}

@@ -77,6 +77,7 @@ addOptionalEnv("FRONTEND_ORIGIN");
 addOptionalEnv("AUTH_COOKIE_SAMESITE");
 addOptionalEnv("AUTH_COOKIE_SECURE");
 addOptionalEnv("AUTH_COOKIE_DOMAIN");
+addOptionalEnv("GUIDE_EDITOR_REVIEWER_GITHUB_LOGINS");
 
 if (discordClientSecretName) {
   secretBindings.push(`DISCORD_CLIENT_SECRET=${discordClientSecretName}:latest`);

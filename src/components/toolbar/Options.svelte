@@ -21,19 +21,19 @@
     }
 </script>
 
-<ToolbarTooltip text="Editor settings" align="right">
+<ToolbarTooltip text="Editor options" align="right">
     <button
         class="toolbar-utility-btn rounded"
         type="button"
         on:click={() => (open = true)}
     >
         <Gear />
-        Settings
+        Options
     </button>
 </ToolbarTooltip>
 
 <Modal {open} close={() => (open = false)} panelClass="max-w-xl">
-    <h2 class="text-2xl font-semibold mb-5">Editor settings</h2>
+    <h2 class="text-2xl font-semibold mb-5">Editor options</h2>
 
     <div class="space-y-4">
         <label class="flex items-start justify-between gap-4 rounded-lg border border-slate-700 bg-slate-900/40 p-4">

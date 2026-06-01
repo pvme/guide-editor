@@ -6,9 +6,6 @@
   import findSyntaxErrors from "../../syntax/syntax";
   import {
     getAuthenticatedUser,
-    getDiscordLoginUrl,
-    getGithubLoginUrl,
-    logoutDiscord,
     submitGuideUpdate
   } from "../../guidePrApi";
 
@@ -48,7 +45,6 @@
     ? `Update ${$loadedGuide.name}`
     : "Update guide";
 
-  $: displayName = $authUser?.displayName || $authUser?.globalName || $authUser?.username || "";
   $: sourceContext = getGuideSourceContext($loadedGuide);
   $: validationItems = getValidationItems($loadedGuide);
   $: blockingItems = validationItems.filter((item) => !item.done);
@@ -155,6 +151,15 @@
     message = "";
     prUrl = "";
 
+    try {
+      authUser.set(await getAuthenticatedUser());
+    } catch {
+      authUser.set(null);
+      status = "error";
+      message = "Your login session has expired. Please log in again and retry.";
+      return;
+    }
+
     const payload = {
       type: "update",
       repo: "pvme/pvme-guides",
@@ -211,14 +216,6 @@
     }
   }
 
-  function loginWithDiscord() {
-    window.location.href = getDiscordLoginUrl();
-  }
-
-  function loginWithGithub() {
-    window.location.href = getGithubLoginUrl();
-  }
-
   function reviewCheckerIssues() {
     dispatch("reviewIssues");
   }
@@ -227,11 +224,6 @@
     focusedNotesForOpen = true;
     await tick();
     notesEl?.focus();
-  }
-
-  async function logout() {
-    await logoutDiscord();
-    authUser.set(null);
   }
 
   function normalizeSubmitError(err) {
@@ -267,7 +259,7 @@
       {/if}
 
       <div class="pt-4">
-        <button class="toolbar-secondary-btn" on:click={close}>
+        <button class="toolbar-btn toolbar-btn--secondary" on:click={close}>
           Close
         </button>
       </div>
@@ -285,36 +277,13 @@
         {#if !isAuthenticated}
           <div class="pr-auth-gate">
             <div>
-              <div class="text-sm font-semibold text-slate-100">Login required</div>
+              <div class="text-sm font-semibold text-slate-100">Log in from the toolbar</div>
               <p class="mt-1 text-sm leading-5 text-slate-400">
-                Log in with GitHub to submit from your GitHub account, or use Discord to submit through the PvME bot.
+                Use the Log in button in the top toolbar, then return here to submit this guide update.
               </p>
-            </div>
-            <div class="flex shrink-0 flex-wrap gap-2">
-              <button class="toolbar-btn rounded font-medium" type="button" on:click={loginWithGithub}>
-                GitHub
-              </button>
-              <button class="toolbar-secondary-btn" type="button" on:click={loginWithDiscord}>
-                Discord
-              </button>
             </div>
           </div>
         {:else}
-          <div class="pr-form-group">
-            <div class="text-sm font-medium text-slate-200">Discord identity</div>
-            <div class="mt-2 flex items-center justify-between gap-3 rounded border border-slate-700 bg-slate-950/50 px-3 py-2">
-              <div class="min-w-0">
-                <div class="truncate text-sm text-slate-100">Submitting as {displayName}</div>
-                <div class="truncate text-xs text-slate-500">
-                  Verified with {$authUser?.provider === "github" ? "GitHub" : "Discord"}
-                </div>
-              </div>
-              <button class="toolbar-secondary-btn" type="button" on:click={logout}>
-                Log out
-              </button>
-            </div>
-          </div>
-
           <div class="pr-form-group">
             <div class="flex items-center justify-between gap-3">
               <div class="text-sm font-medium text-slate-200">File being updated</div>
@@ -384,7 +353,7 @@
               </span>
             </label>
             <button
-              class="toolbar-secondary-btn shrink-0"
+              class="toolbar-btn toolbar-btn--secondary shrink-0"
               type="button"
               on:click={reviewCheckerIssues}
             >
@@ -412,7 +381,7 @@
       <div class="flex justify-end gap-3 border-t border-slate-700/70 bg-slate-900/45 px-6 py-3">
         <button
           on:click={close}
-          class="toolbar-secondary-btn"
+          class="toolbar-btn toolbar-btn--secondary"
           type="button"
         >
           Close
@@ -421,6 +390,7 @@
         {#if isAuthenticated && canSubmit}
           <button
             disabled={status === "submitting"}
+            data-disabled-reason={status === "submitting" ? "Submitting update" : ""}
             class="toolbar-btn rounded font-medium"
             type="submit"
           >

@@ -1,6 +1,5 @@
 <script>
     import QuestionCircle from "svelte-bootstrap-icons/lib/QuestionCircle.svelte";
-    import FileEarmarkArrowDown from "svelte-bootstrap-icons/lib/FileEarmarkArrowDown.svelte";
     import Modal from "./Modal.svelte";
     import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
@@ -36,10 +35,9 @@
         <li><strong>JSON Assistant</strong> helps build Discord embed JSON with fields, images, colours, author, and footer options.</li>
         <li><strong>Load a guide</strong> opens guide search from the centre toolbar. Search by guide name or file path, use arrow keys to move through results, then press <code>Enter</code>.</li>
         <li><strong>Submit update</strong> sends a changed PVME guide draft for review after login, notes, and checker validation.</li>
-        <li><strong>Settings</strong> toggles editor preferences such as the live preview.</li>
-        <li><strong>Open drafts</strong> switches between saved local drafts, creates new drafts, and discards drafts you no longer need.</li>
+        <li><strong>Options</strong> toggles editor preferences such as the live preview.</li>
+        <li><strong>My files</strong> switches between saved local drafts, creates new drafts, downloads <code>.txt</code> files, and discards drafts you no longer need.</li>
         <li><strong>Help</strong> explains the editor, shortcuts, syntax, checker, support links, and guide workflows.</li>
-        <li><strong>Export</strong> downloads the current editor contents as a <code>.txt</code> file.</li>
     </ul>
 
     <p class="mt-3">
@@ -286,7 +284,7 @@
     </p>
 
     <ul class="mt-2 list-disc list-outside pl-6">
-        <li>Use the top-right <FileEarmarkArrowDown class="inline" /> button to download your guide as a <code>.txt</code> file.</li>
+        <li>Use the download button beside a file in <strong>My files</strong> to save your guide as a <code>.txt</code> file.</li>
         <li>
             Open
             <a href="https://discord.com/channels/534508796639182860/689575078698287152"

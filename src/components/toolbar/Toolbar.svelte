@@ -6,10 +6,10 @@
     import StyleGuideMenu from "./StyleGuideMenu.svelte";
     import EmbedGuide from "./EmbedGuide.svelte";
 
+    import AccountMenu from "./AccountMenu.svelte";
     import Help from "./Help.svelte";
-    import Settings from "./Settings.svelte";
+    import Options from "./Options.svelte";
     import DraftsMenu from "./DraftsMenu.svelte";
-    import ExportToTxt from "./ExportToTxt.svelte";
     import SubmitPr from "./SubmitPr.svelte";
     import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
@@ -17,6 +17,8 @@
     export let getEditorCursorPosition;
     export let replaceEditorText;
     export let showView = true;
+    export let loginRequestId = 0;
+    export let loginSubmitAfter = false;
 
     const dispatch = createEventDispatcher();
 </script>
@@ -51,18 +53,23 @@
                         corner="rounded"
                         on:loadGuide={() => dispatch("openGuideSearch")}
                         on:open={() => dispatch("openSubmitPr")}
+                        on:openReviewPr={() => dispatch("openReviewPr")}
                     />
                     <DraftsMenu
                         on:newDraft={() => dispatch("newDraft")}
                         on:renameDraft={(e) => dispatch("renameDraft", e.detail)}
                         on:deleteDraft={(e) => dispatch("deleteDraft", e.detail)}
                     />
-                    <ExportToTxt label="Export" />
                 </div>
             </div>
 
             <div class="toolbar-section toolbar-utility">
-                <Settings {showView} on:toggleView={() => dispatch("toggleView")} />
+                <AccountMenu
+                    {loginRequestId}
+                    submitAfterLogin={loginSubmitAfter}
+                    on:openReviewPr={() => dispatch("openReviewPr")}
+                />
+                <Options {showView} on:toggleView={() => dispatch("toggleView")} />
                 <Help/>
             </div>
         </div>

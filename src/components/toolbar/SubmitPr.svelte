@@ -10,12 +10,15 @@
   const dispatch = createEventDispatcher();
 
   $: hasLoadedGuide = Boolean($loadedGuide?.path);
+  $: isReviewPr = $loadedGuide?.source === "review-pr";
   $: hasText = $text.trim().length > 0;
   $: hasChanges = hasLoadedGuide && $text !== ($loadedGuide.originalText || "");
-  $: canSubmit = hasLoadedGuide && hasText && hasChanges;
-  $: canInteract = canSubmit || !hasLoadedGuide;
+  $: canSubmit = hasLoadedGuide && hasText && hasChanges && !isReviewPr;
+  $: canInteract = canSubmit || !hasLoadedGuide || isReviewPr;
   $: title = !hasLoadedGuide
     ? "Search and load a guide"
+    : isReviewPr
+      ? "Use the Review PRs panel to save or review this pull request"
     : !hasText
       ? "You must add guide text to submit a guide update"
       : !hasChanges
@@ -23,6 +26,8 @@
         : "Submit this guide update for review";
   $: label = !hasLoadedGuide
     ? "Load a guide"
+    : isReviewPr
+      ? "Review mode"
     : !hasText
       ? "Editor empty"
       : !hasChanges
@@ -36,8 +41,9 @@
 
 <div class="submit-guide-group inline-flex items-center">
   <button
-    on:click={() => canSubmit ? dispatch("open") : dispatch("loadGuide")}
+    on:click={() => isReviewPr ? dispatch("openReviewPr") : canSubmit ? dispatch("open") : dispatch("loadGuide")}
     disabled={!canInteract}
+    data-disabled-reason={!canInteract ? title : ""}
     class="{hasLoadedGuide ? 'rounded-l' : corner} toolbar-btn px-2 submit-guide-main"
     aria-describedby="submit-guide-help"
     type="button"
