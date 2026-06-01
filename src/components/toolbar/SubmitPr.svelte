@@ -43,7 +43,6 @@
   <button
     on:click={() => isReviewPr ? dispatch("openReviewPr") : canSubmit ? dispatch("open") : dispatch("loadGuide")}
     disabled={!canInteract}
-    data-disabled-reason={!canInteract ? title : ""}
     class="{hasLoadedGuide ? 'rounded-l' : corner} toolbar-btn px-2 submit-guide-main"
     aria-describedby="submit-guide-help"
     type="button"
