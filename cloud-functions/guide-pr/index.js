@@ -481,18 +481,17 @@ async function handleReviewRoute(req, res, route) {
   if (action === "merge" && req.method === "POST") {
     const pr = await getReviewPull(github, owner, repo, prNumber);
     await validateReviewPullCanMerge(github, pr);
-    const mergeGithub = await createGithubAppInstallationClient(owner, repo);
-    const merge = await mergeGithub(`/repos/${owner}/${repo}/pulls/${prNumber}/merge`, {
-      method: "PUT",
-      body: {
-        sha: pr.head.sha,
-        merge_method: "squash",
-      },
-    });
+    const { result: merge, actor } = await mergeReviewPullWithFallback(
+      github,
+      owner,
+      repo,
+      pr,
+    );
     sendJson(res, 200, {
       merged: merge.merged === true,
       message: merge.message || "",
       sha: merge.sha || "",
+      actor,
     });
     return;
   }
@@ -500,24 +499,20 @@ async function handleReviewRoute(req, res, route) {
   if (action === "close" && req.method === "POST") {
     const reason = normalizeReviewText(req.body, "Close reason");
     const pr = await getReviewPull(github, owner, repo, prNumber);
-    const closeGithub = await createGithubAppInstallationClient(owner, repo);
-    const comment = await closeGithub(`/repos/${owner}/${repo}/issues/${prNumber}/comments`, {
-      method: "POST",
-      body: {
-        body: createReviewCloseComment(user, reason),
-      },
-    });
-    const closed = await closeGithub(`/repos/${owner}/${repo}/pulls/${prNumber}`, {
-      method: "PATCH",
-      body: {
-        state: "closed",
-      },
-    });
+    const { comment, closed, actor } = await closeReviewPullWithFallback(
+      github,
+      user,
+      owner,
+      repo,
+      pr,
+      reason,
+    );
     sendJson(res, 200, {
       closed: closed.state === "closed",
       number: pr.number,
       url: closed.html_url || pr.html_url || "",
       commentUrl: comment.html_url || "",
+      actor,
     });
     return;
   }
@@ -956,8 +951,9 @@ async function listReviewPulls(github, owner, repo) {
     const guideFiles = files
       .filter((file) => isSafeGuidePath(file.filename || ""))
       .map((file) => summarizeReviewFile(file));
+    const fallbackGuideFile = getGuidePathFromPullBody(pr);
 
-    if (guideFiles.length === 0) continue;
+    if (guideFiles.length === 0 && !fallbackGuideFile) continue;
 
     results.push({
       number: pr.number,
@@ -970,7 +966,16 @@ async function listReviewPulls(github, owner, repo) {
       headRepo: pr.head?.repo?.name || "",
       headBranch: pr.head?.ref || "",
       headSha: pr.head?.sha || "",
-      guideFiles,
+      guideFiles: guideFiles.length > 0
+        ? guideFiles
+        : [{
+          path: fallbackGuideFile,
+          status: "unchanged",
+          additions: 0,
+          deletions: 0,
+          changes: 0,
+          patch: "",
+        }],
       otherFilesCount: files.length - guideFiles.length,
     });
   }
@@ -983,6 +988,7 @@ async function getReviewPullDetail(github, owner, repo, prNumber) {
   const files = await github(`/repos/${owner}/${repo}/pulls/${prNumber}/files?per_page=100`);
   const guideFiles = [];
   const otherFiles = [];
+  const fallbackGuideFile = getGuidePathFromPullBody(pr);
 
   for (const file of files) {
     if (!isSafeGuidePath(file.filename || "")) {
@@ -1007,6 +1013,36 @@ async function getReviewPullDetail(github, owner, repo, prNumber) {
       baseContent,
       headContent,
       editable: status !== "removed",
+    });
+  }
+
+  if (guideFiles.length === 0 && fallbackGuideFile) {
+    const headContent = await getFileTextIfExists(
+      github,
+      pr.head.repo.owner.login,
+      pr.head.repo.name,
+      fallbackGuideFile,
+      pr.head.ref,
+    );
+    const baseContent = await getFileTextIfExists(
+      github,
+      owner,
+      repo,
+      fallbackGuideFile,
+      BASE_BRANCH,
+    );
+
+    guideFiles.push({
+      path: fallbackGuideFile,
+      status: "unchanged",
+      additions: 0,
+      deletions: 0,
+      changes: 0,
+      patch: "",
+      previousPath: "",
+      baseContent,
+      headContent,
+      editable: true,
     });
   }
 
@@ -1137,6 +1173,103 @@ async function updateReviewPullFile(github, user, owner, repo, prNumber, body) {
     path,
     sha: update.commit?.sha || "",
   };
+}
+
+async function mergeReviewPullWithFallback(github, owner, repo, pr) {
+  try {
+    return {
+      result: await mergeReviewPullWithGithub(github, owner, repo, pr),
+      actor: "user",
+    };
+  } catch (err) {
+    if (!shouldFallbackToGithubApp(err)) {
+      throw err;
+    }
+
+    console.warn("Reviewer OAuth merge failed; falling back to GitHub App:", err.status || "", err.message || err);
+    const appGithub = await createGithubAppInstallationClient(owner, repo);
+    return {
+      result: await mergeReviewPullWithGithub(appGithub, owner, repo, pr),
+      actor: "bot",
+    };
+  }
+}
+
+async function mergeReviewPullWithGithub(github, owner, repo, pr) {
+  return github(`/repos/${owner}/${repo}/pulls/${pr.number}/merge`, {
+    method: "PUT",
+    body: {
+      sha: pr.head.sha,
+      merge_method: "squash",
+    },
+  });
+}
+
+async function closeReviewPullWithFallback(github, user, owner, repo, pr, reason) {
+  let comment;
+
+  try {
+    comment = await commentReviewCloseWithGithub(github, user, owner, repo, pr, reason);
+  } catch (err) {
+    if (!shouldFallbackToGithubApp(err)) {
+      throw err;
+    }
+
+    console.warn("Reviewer OAuth close comment failed; falling back to GitHub App:", err.status || "", err.message || err);
+    const appGithub = await createGithubAppInstallationClient(owner, repo);
+    comment = await commentReviewCloseWithGithub(appGithub, user, owner, repo, pr, reason);
+    return {
+      comment,
+      closed: await closeReviewPullWithGithub(appGithub, owner, repo, pr),
+      actor: "bot",
+    };
+  }
+
+  try {
+    return {
+      comment,
+      closed: await closeReviewPullWithGithub(github, owner, repo, pr),
+      actor: "user",
+    };
+  } catch (err) {
+    if (!shouldFallbackToGithubApp(err)) {
+      throw err;
+    }
+
+    console.warn("Reviewer OAuth close failed; falling back to GitHub App:", err.status || "", err.message || err);
+    const appGithub = await createGithubAppInstallationClient(owner, repo);
+    return {
+      comment,
+      closed: await closeReviewPullWithGithub(appGithub, owner, repo, pr),
+      actor: "bot",
+    };
+  }
+}
+
+async function commentReviewCloseWithGithub(github, user, owner, repo, pr, reason) {
+  return github(`/repos/${owner}/${repo}/issues/${pr.number}/comments`, {
+    method: "POST",
+    body: {
+      body: createReviewCloseComment(user, reason),
+    },
+  });
+}
+
+async function closeReviewPullWithGithub(github, owner, repo, pr) {
+  return github(`/repos/${owner}/${repo}/pulls/${pr.number}`, {
+    method: "PATCH",
+    body: {
+      state: "closed",
+    },
+  });
+}
+
+function shouldFallbackToGithubApp(err) {
+  const message = String(err?.message || "");
+  return (
+    [401, 403, 404].includes(Number(err?.status)) ||
+    /OAuth App access restrictions|Resource not accessible|not accessible by integration|must grant/i.test(message)
+  );
 }
 
 async function commitReviewPullFileWithGraphql(user, pr, path, content, commitMessage) {
@@ -1271,6 +1404,12 @@ function summarizeReviewFile(file) {
     changes: Number(file.changes) || 0,
     patch: file.patch || "",
   };
+}
+
+function getGuidePathFromPullBody(pr) {
+  const match = String(pr?.body || "").match(/Guide file:\s*`([^`]+)`/i);
+  const path = match?.[1] || "";
+  return isSafeGuidePath(path) ? path : "";
 }
 
 async function getFileTextIfExists(github, owner, repo, path, ref) {
