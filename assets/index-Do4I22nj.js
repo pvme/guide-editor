@@ -320,15 +320,11 @@ Example kill - [Youtube Link](<#>)
     "fields": [
       {
         "name": "__Header 1__",
-        "value": "⬥ Header 1 subpoint..."
+        "value": "⬥ Header 1.1 subpoint..."
       },
       {
         "name": "__Header 2__",
-        "value": "⬥ Header 2 subpoint..."
-      },
-      {
-        "name": "__Header 3__",
-        "value": "⬥ Header 3 subpoint with hyperlink..."
+        "value": "⬥ Header 2.1 subpoint\\n\\u00a0\\u00a0\\u00a0\\u00a0• Header 2.1.1 sub-subpoint"
       }
     ]
   }
