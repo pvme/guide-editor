@@ -73,6 +73,16 @@
                 <td><code>→</code></td>
                 <td>Arrows in rotations or explanations</td>
             </tr>
+            <tr>
+                <td><code>;b1;</code>, <code>;b2;</code>, <code>;b3;</code></td>
+                <td><code>⬥ </code>, <code>    • </code>, <code>        ⬩ </code></td>
+                <td>Guide bullets and nested bullets</td>
+            </tr>
+            <tr>
+                <td><code>;eb1;</code>, <code>;eb2;</code>, <code>;eb3;</code></td>
+                <td><code>⬥ </code>, <code>\u00A0\u00A0\u00A0\u00A0• </code>, <code>\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0⬩ </code></td>
+                <td>Embed bullets with non-breaking-space indentation</td>
+            </tr>
         </tbody>
     </table>
 

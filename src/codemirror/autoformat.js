@@ -26,11 +26,15 @@ const ROTATION_WORD = /([a-zA-Z0-9_-]+)[ \t]$/;
 const PRESET_MAKER_URL = /(https:\/\/pvme\.io\/preset-maker\/#\/([^\s)\]>]+))(?:([)\]>\s]))?$/;
 const PRESET_MAKER_URL_GLOBAL = /https:\/\/pvme\.io\/preset-maker\/#\/([^\s)\]>]+)/g;
 const ROTATION_EMOJI_MODIFIER = /[rs_]/;
+const EMBED_BULLET_INDENT = "\\u00A0\\u00A0\\u00A0\\u00A0";
 
 const special = {
   b1: "⬥ ",
   b2: "    • ",
   b3: "        ⬩ ",
+  eb1: "⬥ ",
+  eb2: `${EMBED_BULLET_INDENT}• `,
+  eb3: `${EMBED_BULLET_INDENT}${EMBED_BULLET_INDENT}⬩ `,
   u1: "⬥ ",
   u2: "    • ",
   u3: "        ⬩ ",
@@ -261,11 +265,14 @@ export function autoformatOnUpdate() {
       trySuffix(tr.startState, newDoc, cursor, CHANNEL, m => `<#${channelsFormat[m[1].toLowerCase()]}>`) ||
       trySuffix(tr.startState, newDoc, cursor, SEMICOLON_TOKEN, (m, state, doc, pos) => {
         const key = m[1].toLowerCase();
+        const specialReplacement = special[key];
+        if (specialReplacement) return specialReplacement;
+
         const emoji = emojisFormat[key];
         if (emoji) {
           return withEmojiTrailingInsert(state, emoji, doc, pos);
         }
-        return special[key];
+        return null;
       }) ||
       trySuffix(tr.startState, newDoc, cursor, COLON_EMOJI, (m, state, doc, pos) => {
         const emoji = emojisFormat[m[1].toLowerCase()];

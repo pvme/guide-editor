@@ -14,7 +14,6 @@
     import TypeH1 from "svelte-bootstrap-icons/lib/TypeH1.svelte";
     import TypeH2 from "svelte-bootstrap-icons/lib/TypeH2.svelte";
     import TypeH3 from "svelte-bootstrap-icons/lib/TypeH3.svelte";
-    import ListUl from "svelte-bootstrap-icons/lib/ListUl.svelte";
     import ListOl from "svelte-bootstrap-icons/lib/ListOl.svelte";
     import Link45deg from "svelte-bootstrap-icons/lib/Link45deg.svelte";
 
@@ -41,7 +40,7 @@
         },
         {
             buttons: [
-                { cmd: "unorderedList", icon: ListUl, title: "Unordered List" },
+                { cmd: "unorderedList", glyph: "⬥", title: "Unordered List" },
                 { cmd: "orderedList",   icon: ListOl, title: "Ordered List" }
             ]
         },
@@ -95,7 +94,11 @@
                             open = false;
                         }}
                     >
-                        <svelte:component this={b.icon} />
+                        {#if b.glyph}
+                            <span class="format-glyph-icon">{b.glyph}</span>
+                        {:else}
+                            <svelte:component this={b.icon} />
+                        {/if}
                         <span class="flex-1">{b.title}</span>
                     </button>
                 {/each}
@@ -103,3 +106,15 @@
         </div>
     </DropdownPanel>
 </div>
+
+<style>
+    .format-glyph-icon {
+        display: inline-flex;
+        width: 1em;
+        height: 1em;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        line-height: 1;
+    }
+</style>
