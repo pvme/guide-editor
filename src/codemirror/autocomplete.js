@@ -5,6 +5,7 @@ import { editorSettingsFacet } from "./editorSettings.js";
 
 const DEBUG = false;
 const log = (...args) => DEBUG && console.log("[AUTOFORMAT]", ...args);
+const ROTATION_EMOJI_MODIFIER = /[rs_]/;
 
 export function autocompletionSource(context) {
   const pos = context.pos;
@@ -45,6 +46,54 @@ export function autocompletionSource(context) {
         filter: false
       };
     }
+  }
+
+  const settings = context.state.facet(editorSettingsFacet);
+  const rotationMatch = settings.rotationBuilderMode
+    ? getRotationBuilderCompletionMatch(line, pos)
+    : null;
+  if (rotationMatch) {
+    const exactKey = rotationMatch.word.toLowerCase();
+    const activeMatch = emojisFormat[exactKey]
+      ? {
+          ...rotationMatch,
+          query: exactKey,
+          queryFrom: rotationMatch.wordFrom,
+          before: "",
+          after: ""
+        }
+      : rotationMatch;
+    const { query, queryFrom, wordFrom, before, after } = activeMatch;
+    const raw = getEmojiCompletions(context.state, doc, pos, query);
+
+    if (raw.length === 0) return null;
+
+    return {
+      from: queryFrom,
+      to: pos,
+      options: raw.map(item => ({
+        label: item.label,
+        type: "emoji",
+        emojiId: item.emojiId,
+        text: `${before}${item.insertText}${after}`,
+        detail: "",
+        info: "",
+        applyText: item.insertText,
+
+        apply(view, completion, from, toPos) {
+          const insert = `${before}${withEmojiTrailingInsert(view.state, item.format, view.state.doc, toPos)}${after}`;
+
+          view.dispatch({
+            changes: {
+              from: wordFrom,
+              to: toPos,
+              insert
+            }
+          });
+        }
+      })),
+      filter: false
+    };
   }
 
   // MATCHES:
@@ -90,23 +139,7 @@ export function autocompletionSource(context) {
 
   // EMOJIS ------------------------------------------------------
   else if (prefix === ":" || prefix === ";") {
-    raw = emojiSearch
-      .filter(e =>
-        e.id.includes(query) ||
-        e.search.some(term => term.includes(query))
-      )
-      .sort((a, b) => {
-        const aExact = a.id.startsWith(query);
-        const bExact = b.id.startsWith(query);
-        return bExact - aExact;
-      })
-      .slice(0, 25)
-      .map(e => ({
-        label: e.id,
-        insertText: withEmojiTrailingInsert(context.state, e.format, doc, pos),
-        emojiId: e.emojiId,
-        type: "emoji"
-      }));
+    raw = getEmojiCompletions(context.state, doc, pos, query);
   }
 
   if (raw.length === 0) return null;
@@ -158,6 +191,104 @@ export function autocompletionSource(context) {
     })),
     filter: false
   };
+}
+
+function getEmojiCompletions(state, doc, pos, query) {
+  return emojiSearch
+    .filter(e =>
+      e.id.includes(query) ||
+      e.search.some(term => term.includes(query))
+    )
+    .sort((a, b) => {
+      const aExactId = Number(a.id === query);
+      const bExactId = Number(b.id === query);
+      if (aExactId !== bExactId) return bExactId - aExactId;
+
+      const aStartsWith = Number(a.id.startsWith(query));
+      const bStartsWith = Number(b.id.startsWith(query));
+      return bStartsWith - aStartsWith;
+    })
+    .slice(0, 25)
+    .map(e => ({
+      label: e.id,
+      insertText: withEmojiTrailingInsert(state, e.format, doc, pos),
+      format: e.format,
+      emojiId: e.emojiId,
+      type: "emoji"
+    }));
+}
+
+function isInsideSquareBrackets(lineText, index) {
+  const before = lineText.slice(0, index);
+  return before.lastIndexOf("[") > before.lastIndexOf("]");
+}
+
+function getRotationBuilderCompletionMatch(line, pos) {
+  const cursorInLine = pos - line.from;
+  const text = line.text.slice(0, cursorInLine);
+  const match = text.match(/([a-zA-Z0-9_-]+)$/);
+  if (!match) return null;
+
+  const word = match[1];
+  const wordFrom = pos - word.length;
+  const wordStartInLine = wordFrom - line.from;
+  if (isInsideSquareBrackets(line.text, wordStartInLine)) return null;
+
+  const modifierMatch = getRotationBuilderModifierMatch(word);
+  const query = modifierMatch?.query || word.toLowerCase();
+  if (query.length < 2) return null;
+
+  const usingModifiers = Boolean(modifierMatch);
+  const start = modifierMatch?.start || 0;
+  const end = modifierMatch?.end || word.length;
+
+  return {
+    word,
+    query,
+    wordFrom,
+    queryFrom: usingModifiers ? wordFrom + start : wordFrom,
+    before: usingModifiers ? word.slice(0, start) : "",
+    after: usingModifiers ? word.slice(end) : ""
+  };
+}
+
+function getRotationBuilderModifierMatch(word) {
+  let leadingModifiers = 0;
+  let trailingModifiers = 0;
+
+  while (
+    leadingModifiers < word.length &&
+    ROTATION_EMOJI_MODIFIER.test(word[leadingModifiers])
+  ) {
+    leadingModifiers += 1;
+  }
+
+  while (
+    trailingModifiers < word.length - leadingModifiers &&
+    ROTATION_EMOJI_MODIFIER.test(word[word.length - trailingModifiers - 1])
+  ) {
+    trailingModifiers += 1;
+  }
+
+  for (let prefixLength = 1; prefixLength <= leadingModifiers; prefixLength += 1) {
+    for (let suffixLength = 0; suffixLength <= trailingModifiers; suffixLength += 1) {
+      const end = word.length - suffixLength;
+      const query = word.slice(prefixLength, end).toLowerCase();
+      if (query.length >= 2) {
+        return { start: prefixLength, end, query };
+      }
+    }
+  }
+
+  for (let suffixLength = 1; suffixLength <= trailingModifiers; suffixLength += 1) {
+    const end = word.length - suffixLength;
+    const query = word.slice(0, end).toLowerCase();
+    if (query.length >= 2) {
+      return { start: 0, end, query };
+    }
+  }
+
+  return null;
 }
 
 function withEmojiTrailingInsert(state, value, doc, pos) {

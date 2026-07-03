@@ -215,6 +215,7 @@ export const activeDraft = derived(drafts, ($drafts) => {
 
 export const defaultEditorSettings = {
   emojiTrailingInsert: "none",
+  rotationBuilderMode: false,
   showPreview: true,
 };
 
@@ -237,5 +238,6 @@ export function normalizeEditorSettings(settings) {
     ...defaultEditorSettings,
     ...rawSettings,
     emojiTrailingInsert,
+    rotationBuilderMode: Boolean(rawSettings.rotationBuilderMode),
   };
 }

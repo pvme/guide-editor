@@ -19,6 +19,13 @@
             emojiTrailingInsert: value
         }));
     }
+
+    function setRotationBuilderMode(value) {
+        editorSettings.update(current => ({
+            ...normalizeEditorSettings(current),
+            rotationBuilderMode: value
+        }));
+    }
 </script>
 
 <ToolbarTooltip text="Editor options" align="right">
@@ -74,6 +81,21 @@
                 <option value="space">space</option>
                 <option value="spaceArrowSpace">space → space</option>
             </select>
+        </label>
+
+        <label class="flex items-start justify-between gap-4 rounded-lg border border-slate-700 bg-slate-900/40 p-4">
+            <span>
+                <span class="font-semibold">Rotation builder mode</span>
+                <span class="mt-1 block text-sm text-slate-300">
+                    Complete and insert Discord emojis from bare words while typing rotations.
+                </span>
+            </span>
+            <input
+                class="mt-1 h-5 w-5 accent-blue-500"
+                type="checkbox"
+                checked={settings.rotationBuilderMode}
+                on:change={(e) => setRotationBuilderMode(e.currentTarget.checked)}
+            />
         </label>
     </div>
 </Modal>

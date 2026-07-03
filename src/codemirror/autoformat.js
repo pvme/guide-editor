@@ -22,8 +22,10 @@ const ROLE    = /;@&([^;]+);/;
 const CHANNEL = /;#([^;]+);/;
 const SEMICOLON_TOKEN = /;([a-zA-Z0-9_-]+);$/;
 const COLON_EMOJI = /:([a-zA-Z0-9_-]+):$/;
+const ROTATION_WORD = /([a-zA-Z0-9_-]+)[ \t]$/;
 const PRESET_MAKER_URL = /(https:\/\/pvme\.io\/preset-maker\/#\/([^\s)\]>]+))(?:([)\]>\s]))?$/;
 const PRESET_MAKER_URL_GLOBAL = /https:\/\/pvme\.io\/preset-maker\/#\/([^\s)\]>]+)/g;
+const ROTATION_EMOJI_MODIFIER = /[rs_]/;
 
 const special = {
   b1: "⬥ ",
@@ -84,6 +86,101 @@ function withEmojiTrailingInsert(state, value, doc, pos) {
   }
 
   return value;
+}
+
+function isInsideSquareBrackets(lineText, index) {
+  const before = lineText.slice(0, index);
+  return before.lastIndexOf("[") > before.lastIndexOf("]");
+}
+
+function findRotationEmojiMatch(word) {
+  const exact = emojisFormat[word.toLowerCase()];
+  if (exact) {
+    return {
+      before: "",
+      emoji: exact,
+      after: ""
+    };
+  }
+
+  let leadingModifiers = 0;
+  let trailingModifiers = 0;
+
+  while (
+    leadingModifiers < word.length &&
+    ROTATION_EMOJI_MODIFIER.test(word[leadingModifiers])
+  ) {
+    leadingModifiers += 1;
+  }
+
+  while (
+    trailingModifiers < word.length - leadingModifiers &&
+    ROTATION_EMOJI_MODIFIER.test(word[word.length - trailingModifiers - 1])
+  ) {
+    trailingModifiers += 1;
+  }
+
+  for (let prefixLength = 1; prefixLength <= leadingModifiers; prefixLength += 1) {
+    for (let suffixLength = 0; suffixLength <= trailingModifiers; suffixLength += 1) {
+      const end = word.length - suffixLength;
+      if (prefixLength >= end) continue;
+
+      const key = word.slice(prefixLength, end).toLowerCase();
+      const emoji = emojisFormat[key];
+      if (emoji) {
+        return {
+          before: word.slice(0, prefixLength),
+          emoji,
+          after: word.slice(end)
+        };
+      }
+    }
+  }
+
+  for (let suffixLength = 1; suffixLength <= trailingModifiers; suffixLength += 1) {
+    const end = word.length - suffixLength;
+    if (end <= 0) continue;
+
+    const key = word.slice(0, end).toLowerCase();
+    const emoji = emojisFormat[key];
+    if (emoji) {
+      return {
+        before: "",
+        emoji,
+        after: word.slice(end)
+      };
+    }
+  }
+
+  return null;
+}
+
+function tryRotationBuilderEmoji(state, doc, pos, typed) {
+  const settings = state.facet(editorSettingsFacet);
+  if (!settings.rotationBuilderMode || !/^[ \t]$/.test(typed)) return null;
+
+  const line = doc.lineAt(pos);
+  const lineTextToCursor = line.text.slice(0, pos - line.from);
+  const m = lineTextToCursor.match(ROTATION_WORD);
+  if (!m) return null;
+
+  const word = m[1];
+  const from = pos - typed.length - word.length;
+  const wordStartInLine = from - line.from;
+  if (isInsideSquareBrackets(line.text, wordStartInLine)) return null;
+
+  const match = findRotationEmojiMatch(word);
+  if (!match) return null;
+
+  const replacementEmoji = withEmojiTrailingInsert(state, match.emoji, doc, pos);
+  const token = `${match.before}${replacementEmoji}${match.after}`;
+  const needsTypedSpace = !/[ \t]$/.test(token);
+
+  return {
+    from,
+    to: pos,
+    insert: `${token}${needsTypedSpace ? typed : ""}`
+  };
 }
 
 function tryPresetMakerUrl(doc, pos, typed) {
@@ -157,6 +254,7 @@ export function autoformatOnUpdate() {
     // try matching on newDoc
     const match =
       tryPresetMakerUrl(newDoc, cursor, typed) ||
+      tryRotationBuilderEmoji(tr.startState, newDoc, cursor, typed) ||
       trySuffix(tr.startState, newDoc, cursor, ARROW, () => "→") ||
       trySuffix(tr.startState, newDoc, cursor, USER,  m => `<@${usersFormat[m[1].toLowerCase()]}>`) ||
       trySuffix(tr.startState, newDoc, cursor, ROLE,  m => `<@&${rolesFormat[m[1].toLowerCase()]}>`) ||
