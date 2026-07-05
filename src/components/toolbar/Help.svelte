@@ -4,6 +4,126 @@
     import ToolbarTooltip from "./ToolbarTooltip.svelte";
 
     let open = false;
+    let activeTab = "toolbar";
+
+    const tabs = [
+        { id: "toolbar", label: "Toolbar" },
+        { id: "workspace", label: "Workspace" },
+        { id: "submit", label: "Submit & review" },
+        { id: "reference", label: "Reference" },
+        { id: "support", label: "Support" }
+    ];
+
+    const authoringRows = [
+        ["Format", "Apply bold, italic, underline, strikethrough, headings, lists, quotes, code blocks, inline code, and wiki links."],
+        ["Templates", "Insert guide templates, reusable snippets, commands, embeds, .img, .tag, linkmsg, spreadsheet references, and table-of-contents embeds."],
+        ["Style Guide", "Open PvME writing guidance without leaving the editor."],
+        ["JSON Assistant", "Create a new Discord embed or update the embed under your cursor. Add properties, author, fields, images, footer, colours, or copy an example."]
+    ];
+
+    const workspaceRows = [
+        ["Load a guide", "Search PvME guides and open one as a browser-saved draft. Press Ctrl + Space to open search, use arrow keys to move, Enter to load, or Escape to close."],
+        ["Submit update", "Becomes available after a loaded PvME guide has real changes. The button explains what is missing when it is disabled."],
+        ["My files", "Switch drafts, create a local draft, rename local-only drafts, download any draft as .txt, or discard drafts."],
+        ["Account", "Log in with GitHub or Discord, log out, and open Review PRs when your account has reviewer access."],
+        ["Options", "Hide the Discord preview, choose what is inserted after emoji completion, and enable rotation builder mode."],
+        ["Help", "Open this popup."]
+    ];
+
+    const editorRows = [
+        ["Editor", "Write or paste guide text. The editor supports multiple selections, undo/redo, autocomplete, bracket matching, and line numbers."],
+        ["Discord preview", "Shows the rendered guide. Click a preview message to jump to the matching editor text."],
+        ["Editor to preview sync", "Move the cursor or double-click editor content to keep the preview aligned and highlighted."],
+        ["Checker", "The panel below the editor lists syntax and style issues. Click an issue to jump to it."],
+        ["Local saving", "Drafts save automatically in this browser, including the loaded guide source and original text used for submit checks."]
+    ];
+
+    const submitRows = [
+        ["Before submitting", "Load a PvME guide, make changes, fill in update notes, and review checker issues."],
+        ["Sign in", "GitHub sign-in submits through GitHub. Discord sign-in submits through the PvME guide bot."],
+        ["Existing updates", "If a submitted update already exists for the guide, continue that update or start again from the live guide and replace it intentionally."],
+        ["Review mode", "Loaded PR files are edited through Review PRs, not the normal submit button."],
+        ["Test in Discord", "Download the draft from My files, then post it in #bot-test with pvme$txtpost and the .txt file attached."]
+    ];
+
+    const reviewRows = [
+        ["Find PRs", "Reviewers can open Review PRs from the account area to load submitted guide updates."],
+        ["Check changes", "Review PRs shows guide metadata, changed files, checks, notes, and review status."],
+        ["Edit and save", "Load a submitted guide file, make reviewer edits, save them back to the PR, and refresh checks."],
+        ["Finish review", "Merge approved guide updates or close updates with a reason when they should not be merged."]
+    ];
+
+    const checkerRows = [
+        ["Message and command problems", "Invalid commands, bad attachments, invalid embed JSON, message limits, and empty-line issues."],
+        ["Formatting structure", "Heading placement, unsupported heading levels, redundant heading bolding, and list indentation."],
+        ["Discord reliability", "Emoji spacing, emojis inside links, Discord CDN images, raw PvME image links, and blocked hosts such as streamable.com."],
+        ["Cleanup", "Trailing whitespace, accidental double spaces, unspaced arrows, and spacer placeholders like _ _."],
+        ["Table of contents", ".tag names and $linkmsg_...$ references are checked both ways."]
+    ];
+
+    const shortcutRows = [
+        ["Ctrl + B", "Toggle bold"],
+        ["Ctrl + I", "Toggle italic"],
+        ["Ctrl + U", "Toggle underline"],
+        ["Ctrl + Alt + S", "Toggle strikethrough"],
+        ["Ctrl + Alt + 1 / 2 / 3", "Toggle H1, H2, or H3"],
+        ["Ctrl + Space", "Open guide search"],
+        ["Ctrl + D", "Add next occurrence of the selected word"],
+        ["Ctrl + Shift + D", "Select all occurrences of the selected word"],
+        ["Ctrl + Z / Ctrl + Y", "Undo / redo"]
+    ];
+
+    const autocompleteRows = [
+        [":emoji or ;emoji;", "Insert a Discord emoji. Example: :gbar or ;gbar;."],
+        [";@user; / ;@&role; / ;#channel;", "Insert Discord user, role, or channel mentions."],
+        ["Bare words in rotation builder mode", "When enabled, known ability words complete into emojis while typing rotations."],
+        ["Preset maker URLs", "pvme.io/preset-maker links are converted to presets.pvme.io links automatically."]
+    ];
+
+    const typingRows = [
+        ["->", "→", "Plain arrows"],
+        [";b1; / ;b2; / ;b3;", "⬥ /     • /         ⬩", "Guide bullets"],
+        [";eb1; / ;eb2; / ;eb3;", "⬥ / \\u00A0\\u00A0\\u00A0\\u00A0• / \\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0⬩", "Embed bullets"],
+        [";nl; or ;newline;", "new line", "Line breaks"],
+        [";empty;", "zero-width space", "Empty embed fields or spacing"],
+        [";space;", "non-breaking space", "Preserved spacing"]
+    ];
+
+    const tocRows = [
+        [".tag:section-name", "Marks a section so a table of contents can link to it."],
+        ["$linkmsg_section-name$", "Links to a matching tag. Templates can build compact or categorised ToC embeds from your tags."]
+    ];
+
+    const supportRows = [
+        ["Questions", "Ask in #editors-chat and tag x222 or Rcm37."],
+        ["Guide problems", "Include the guide name, what you changed, and any checker message you are unsure about."],
+        ["Submit issues", "Mention whether you used GitHub or Discord login and what the submit modal says is missing."],
+        ["Bug reports", "Share what you clicked, what happened, and what you expected to happen."]
+    ];
+
+    const supportLinks = [
+        ["#editors-chat on PvME Discord", "https://discord.com/channels/534508796639182860/724129126314803230"],
+        ["Guide editor on GitHub", "https://github.com/pvme/guide-editor"],
+        ["PvME guides on GitHub", "https://github.com/pvme/pvme-guides"]
+    ];
+
+    function selectTab(id) {
+        activeTab = id;
+    }
+
+    function handleTabKeydown(event, index) {
+        const lastIndex = tabs.length - 1;
+        let nextIndex = index;
+
+        if (event.key === "ArrowRight") nextIndex = index === lastIndex ? 0 : index + 1;
+        else if (event.key === "ArrowLeft") nextIndex = index === 0 ? lastIndex : index - 1;
+        else if (event.key === "Home") nextIndex = 0;
+        else if (event.key === "End") nextIndex = lastIndex;
+        else return;
+
+        event.preventDefault();
+        activeTab = tabs[nextIndex].id;
+    }
 </script>
 
 <ToolbarTooltip text="Help" align="right">
@@ -17,317 +137,460 @@
     </button>
 </ToolbarTooltip>
 
-<Modal {open} close={() => (open = false)}>
+<Modal {open} close={() => (open = false)} panelClass="max-w-5xl h-[82vh]">
+    <div class="help-modal">
+        <header class="help-header">
+            <h2>Guide Editor Help</h2>
+            <p>Find help by the part of the app you are using.</p>
+        </header>
 
-    <!-- USING THE EDITOR -->
-    <h2 class="text-2xl font-semibold mb-4">Guide Editor Help</h2>
-    <p>
-        The editor is used to create and update PVME guides.
-        As you type, the preview updates instantly and reflects how your guide will look in Discord.
-    </p>
+        <div class="help-tabs" role="tablist" aria-label="Help topics">
+            {#each tabs as tab, index}
+                <button
+                    id={`help-tab-${tab.id}`}
+                    class:active={activeTab === tab.id}
+                    role="tab"
+                    type="button"
+                    aria-selected={activeTab === tab.id}
+                    aria-controls={`help-panel-${tab.id}`}
+                    tabindex={activeTab === tab.id ? 0 : -1}
+                    on:click={() => selectTab(tab.id)}
+                    on:keydown={(event) => handleTabKeydown(event, index)}
+                >
+                    {tab.label}
+                </button>
+            {/each}
+        </div>
 
-    <!-- TOOLBAR -->
-    <h3 class="text-xl font-semibold mt-8 mb-2">Toolbar</h3>
-    <ul class="list-disc ml-6 mt-3">
-        <li><strong>Format</strong> applies common markdown such as bold, headings, lists, quotes, code, and wiki links.</li>
-        <li><strong>Templates</strong> inserts guide templates, snippets, commands, embeds, and generated tables of contents.</li>
-        <li><strong>Style Guide</strong> opens PVME writing guidance inside the editor.</li>
-        <li><strong>JSON Assistant</strong> helps build Discord embed JSON with fields, images, colours, author, and footer options.</li>
-        <li><strong>Load a guide</strong> opens guide search from the centre toolbar. Search by guide name or file path, use arrow keys to move through results, then press <code>Enter</code>.</li>
-        <li><strong>Submit update</strong> sends a changed PVME guide draft for review after login, notes, and checker validation.</li>
-        <li><strong>Options</strong> toggles editor preferences such as the live preview.</li>
-        <li><strong>My files</strong> switches between saved local drafts, creates new drafts, downloads <code>.txt</code> files, and discards drafts you no longer need.</li>
-        <li><strong>Help</strong> explains the editor, shortcuts, syntax, checker, support links, and guide workflows.</li>
-    </ul>
+        <div
+            id={`help-panel-${activeTab}`}
+            class="help-content"
+            role="tabpanel"
+            aria-labelledby={`help-tab-${activeTab}`}
+        >
+            {#if activeTab === "toolbar"}
+                <section class="help-section">
+                    <h3>Left side: authoring</h3>
+                    <p>Use these when you are adding structure, inserting common guide text, or working with embeds.</p>
+                    <dl class="help-grid">
+                        {#each authoringRows as row}
+                            <div>
+                                <dt>{row[0]}</dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
 
-    <p class="mt-3">
-        Drafts are saved in this browser. Opening a guide starts a local draft and keeps your current draft saved.
-        PVME guide drafts use the guide filename; local-only drafts can be renamed.
-    </p>
+                <section class="help-section">
+                    <h3>Middle and right side: file, account, settings</h3>
+                    <dl class="help-grid">
+                        {#each workspaceRows as row}
+                            <div>
+                                <dt>{row[0]}</dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
+            {:else if activeTab === "workspace"}
+                <section class="help-section">
+                    <h3>Main workspace</h3>
+                    <dl class="help-grid">
+                        {#each editorRows as row}
+                            <div>
+                                <dt>{row[0]}</dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
 
-    <!-- SUBMITTING -->
-    <h3 class="text-xl font-semibold mt-8 mb-2">Submitting Updates</h3>
-    <p>
-        After opening a PVME guide and making changes, use <strong>Submit update</strong>
-        to send your draft for review. The submit flow checks that you are logged in,
-        have changed the guide, described the update, and reviewed any checker issues.
-    </p>
+                <section class="help-section">
+                    <h3>Autocomplete and automatic formatting</h3>
+                    <dl class="help-grid">
+                        {#each autocompleteRows as row}
+                            <div>
+                                <dt><code>{row[0]}</code></dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
 
-    <!-- AUTO FORMATTING -->
-    <h3 class="text-xl font-semibold mt-8 mb-2">Automatic Formatting</h3>
-    <p>
-        The editor applies a small number of smart formatting rules for convenience.
-    </p>
+                <section class="help-section">
+                    <h3>Checker coverage</h3>
+                    <dl class="help-grid">
+                        {#each checkerRows as row}
+                            <div>
+                                <dt>{row[0]}</dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
+            {:else if activeTab === "submit"}
+                <section class="help-section">
+                    <h3>Submit a guide update</h3>
+                    <dl class="help-grid">
+                        {#each submitRows as row}
+                            <div>
+                                <dt>{row[0]}</dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
 
-    <table class="table-auto my-4">
-        <thead class="bg-slate-700">
-            <tr>
-                <th class="px-2 py-1">You type…</th>
-                <th class="px-2 py-1">It becomes…</th>
-                <th class="px-2 py-1">Use it for…</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><code>-></code></td>
-                <td><code>→</code></td>
-                <td>Arrows in rotations or explanations</td>
-            </tr>
-            <tr>
-                <td><code>;b1;</code>, <code>;b2;</code>, <code>;b3;</code></td>
-                <td><code>⬥ </code>, <code>    • </code>, <code>        ⬩ </code></td>
-                <td>Guide bullets and nested bullets</td>
-            </tr>
-            <tr>
-                <td><code>;eb1;</code>, <code>;eb2;</code>, <code>;eb3;</code></td>
-                <td><code>⬥ </code>, <code>\u00A0\u00A0\u00A0\u00A0• </code>, <code>\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0⬩ </code></td>
-                <td>Embed bullets with non-breaking-space indentation</td>
-            </tr>
-        </tbody>
-    </table>
+                <section class="help-section">
+                    <h3>Review PRs</h3>
+                    <p>Only accounts with reviewer access see this workflow.</p>
+                    <dl class="help-grid">
+                        {#each reviewRows as row}
+                            <div>
+                                <dt>{row[0]}</dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
+            {:else if activeTab === "reference"}
+                <section class="help-section">
+                    <h3>Keyboard shortcuts</h3>
+                    <dl class="help-grid compact">
+                        {#each shortcutRows as row}
+                            <div>
+                                <dt><code>{row[0]}</code></dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
 
-    <p class="mt-2 text-slate-300">
-        All other replacements (emojis, channels, users) now use the autocomplete system
-        instead of automatic conversion.
-    </p>
+                <section class="help-section">
+                    <h3>Typing replacements</h3>
+                    <div class="help-token-list" role="list">
+                        {#each typingRows as row}
+                            <div class="help-token-row" role="listitem">
+                                <div>
+                                    <span>You type</span>
+                                    <code>{row[0]}</code>
+                                </div>
+                                <div>
+                                    <span>Becomes</span>
+                                    <code>{row[1]}</code>
+                                </div>
+                                <p>{row[2]}</p>
+                            </div>
+                        {/each}
+                    </div>
+                </section>
 
-    <!-- AUTOCOMPLETE -->
-    <h3 class="text-xl font-semibold mt-8 mb-2">Autocomplete (Emojis, Channels, Users)</h3>
-    <p>
-        As you type <code>:</code>, <code>#</code>, or <code>@</code>,
-        the editor shows a dropdown of matching items from PVME settings.
-        Pick the one you want — no need to memorise names or search JSON.
-    </p>
+                <section class="help-section">
+                    <h3>Table of contents links</h3>
+                    <dl class="help-grid compact">
+                        {#each tocRows as row}
+                            <div>
+                                <dt><code>{row[0]}</code></dt>
+                                <dd>{row[1]}</dd>
+                            </div>
+                        {/each}
+                    </dl>
+                </section>
 
-    <ul class="list-disc ml-6 mt-1">
-        <li><strong>Emojis</strong> → type <code>:</code> (e.g. <code>:gbar</code>)</li>
-        <li><strong>Channels</strong> → type <code>#</code></li>
-        <li><strong>Users</strong> → type <code>@</code></li>
-    </ul>
+                <section class="help-section">
+                    <h3>Useful links</h3>
+                    <ul class="help-links">
+                        <li><a href="https://github.com/pvme/guide-editor" target="_blank" rel="noreferrer">Guide editor GitHub</a></li>
+                        <li><a href="https://github.com/pvme/pvme-guides" target="_blank" rel="noreferrer">PvME guides GitHub</a></li>
+                        <li><a href="https://pvme.github.io/rotation-builder/" target="_blank" rel="noreferrer">Rotation builder</a></li>
+                    </ul>
+                </section>
+            {:else if activeTab === "support"}
+                <section class="help-section support-section">
+                    <div class="support-callout">
+                        <h3>Need help?</h3>
+                        <p>
+                            The fastest route is
+                            <a href="https://discord.com/channels/534508796639182860/724129126314803230" target="_blank" rel="noreferrer">#editors-chat</a>.
+                            Tag x222 or Rcm37 and include enough context for someone to reproduce the issue.
+                        </p>
+                    </div>
+                </section>
 
-    <p class="mt-2">
-        The preview displays the correct Discord emoji or mention immediately.
-    </p>
+                <section class="help-section">
+                    <h3>Useful links</h3>
+                    <div class="support-links">
+                        {#each supportLinks as link}
+                            <a href={link[1]} target="_blank" rel="noreferrer">{link[0]}</a>
+                        {/each}
+                    </div>
+                </section>
+            {/if}
+        </div>
 
-    <!-- SYNTAX HELP -->
-    <h3 class="text-xl font-semibold mt-8 mb-2">Syntax Helper</h3>
-    <p>Useful formatting features supported by the editor:</p>
-
-    <ul class="list-disc ml-6 mt-1">
-
-        <li>
-            <strong>Headings</strong> — use <code>#</code>, <code>##</code>, <code>###</code>
-        </li>
-
-        <li>
-            <strong>Code</strong> — wrap code in backticks:
-            <ul class="list-disc ml-6 mt-1">
-                <li><strong>Inline</strong>: <code>`example`</code></li>
-                <li><strong>Blocks</strong>: triple backticks <code>```</code></li>
-            </ul>
-        </li>
-
-        <li>
-            <strong>Bolding</strong> — <code>**text**</code> or use the toolbar
-        </li>
-
-        <li>
-            <strong>Hide embeds</strong> — wrap a link in angle brackets:
-            <code>&lt;https://example.com&gt;</code>
-            (prevents Discord from creating an embed)
-        </li>
-
-        <li>
-            <strong>Images / embeds</strong> — paste a link or use the toolbar
-        </li>
-    </ul>
-
-    <!-- ERROR CHECKER -->
-    <h3 class="text-xl font-semibold mt-8 mb-2">Error Checker</h3>
-    <p>
-        The checker appears below the editor as you write. It looks for common issues that
-        can break publishing, preview badly in Discord, or make table-of-contents links fail.
-    </p>
-
-    <ul class="list-disc ml-6 mt-3">
-        <li>
-            <strong>Message and command problems</strong> — invalid commands, bad attachments,
-            invalid embed JSON, messages over Discord limits, and empty-line issues.
-        </li>
-        <li>
-            <strong>Formatting structure</strong> — heading placement, unsupported heading levels,
-            redundant heading bolding, and list indentation.
-        </li>
-        <li>
-            <strong>Discord reliability</strong> — emoji spacing, emojis inside links,
-            Discord CDN images, raw PVME image links, and blocked hosts such as <code>streamable.com</code>.
-        </li>
-        <li>
-            <strong>Cleanup</strong> — trailing whitespace, accidental double spaces,
-            unspaced arrows, and spacer placeholders like <code>_ _</code>.
-        </li>
-        <li>
-            <strong>Table of contents links</strong> — <code>.tag:</code> names and
-            <code>$linkmsg_...$</code> references are checked both ways so typos are easier to catch.
-        </li>
-    </ul>
-
-    <!-- KEYBINDS -->
-    <h3 class="text-xl font-semibold mt-8 mb-2">Keyboard Shortcuts</h3>
-
-    <p>
-        The editor supports several keyboard shortcuts to speed up formatting and editing.
-    </p>
-
-    <table class="table-auto my-4">
-        <thead class="bg-slate-700">
-            <tr>
-                <th class="px-2 py-1">Shortcut</th>
-                <th class="px-2 py-1">Action</th>
-            </tr>
-        </thead>
-
-        <tbody>
-
-            <!-- Formatting -->
-            <tr>
-                <td><code>Ctrl + B</code></td>
-                <td>Toggle bold formatting</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + I</code></td>
-                <td>Toggle italic formatting</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + U</code></td>
-                <td>Toggle underline formatting</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + Alt + S</code></td>
-                <td>Toggle strikethrough formatting</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + Space</code></td>
-                <td>Open guide search</td>
-            </tr>
-
-            <!-- Headings -->
-            <tr>
-                <td><code>Ctrl + Alt + 1</code></td>
-                <td>Toggle H1 heading</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + Alt + 2</code></td>
-                <td>Toggle H2 heading</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + Alt + 3</code></td>
-                <td>Toggle H3 heading</td>
-            </tr>
-
-            <!-- Editing -->
-            <tr>
-                <td><code>Ctrl + D</code></td>
-                <td>Add the next occurrence of the selected word (multi-cursor)</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + Shift + D</code></td>
-                <td>Select all occurrences of the selected word</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + Z</code></td>
-                <td>Undo</td>
-            </tr>
-
-            <tr>
-                <td><code>Ctrl + Y</code></td>
-                <td>Redo</td>
-            </tr>
-
-        </tbody>
-    </table>
-
-    <!-- CLICK-TO-SYNC -->
-    <h3 class="text-xl font-semibold mt-8 mb-2">Click-to-Sync (Editor ↔ Preview)</h3>
-    <p>
-        You can jump between the editor and preview instantly:
-    </p>
-
-    <ul class="list-disc ml-6 mt-1">
-        <li><strong>Click the preview</strong> → jumps to the matching line in the editor</li>
-        <li><strong>Double-click the editor</strong> → highlights & scrolls the matching message in the preview</li>
-    </ul>
-
-    <p class="mt-2">
-        This is especially helpful in long guides where scrolling manually is slow.
-    </p>
-
-    <!-- TABLE OF CONTENTS -->
-    <h3 class="text-xl font-semibold mt-10 mb-2">Table of Contents</h3>
-    <p>
-        Add a line like <code>.tag:section-name</code> anywhere in your guide.
-        Reference it with <code>$linkmsg_section-name$</code>, either by itself or inside a link.
-        The editor automatically creates a clickable table of contents based on these tags.
-    </p>
-
-    <p class="mt-3">
-        <img
-            src="https://i.gyazo.com/660bdd70da519834a2250e8523ae7455.gif"
-            alt="Table of contents example"
-            class="rounded border border-slate-700"
-        />
-    </p>
-
-    <!-- TESTING IN DISCORD -->
-    <h3 class="text-xl font-semibold mt-10 mb-2">Testing in Discord</h3>
-    <p>
-        Discord may render some messages slightly differently to the browser preview.
-        To test the final Discord output:
-    </p>
-
-    <ul class="mt-2 list-disc list-outside pl-6">
-        <li>Use the download button beside a file in <strong>My files</strong> to save your guide as a <code>.txt</code> file.</li>
-        <li>
-            Open
-            <a href="https://discord.com/channels/534508796639182860/689575078698287152"
-                target="_blank"
-                rel="noreferrer"
-                class="text-blue-400 visited:text-purple-400">#bot-test</a>
-            in Discord.
-        </li>
-        <li>Send <code>pvme$txtpost</code> with your <code>.txt</code> file attached.</li>
-    </ul>
-
-    <!-- SUPPORT -->
-    <h3 class="text-xl font-semibold mt-10 mb-2">Support and Links</h3>
-    <p>
-        Ask questions in
-        <strong>
-            <a
-                href="https://discord.com/channels/534508796639182860/724129126314803230"
-                class="text-blue-400 visited:text-purple-400"
-                target="_blank"
-                rel="noreferrer"
-            >#editors-chat</a>
-        </strong>
-        and tag x222 or Rcm37.
-    </p>
-
-    <ul class="mt-3 list-disc list-outside pl-6">
-        <li><a href="https://github.com/pvme/guide-editor" target="_blank" rel="noreferrer"
-               class="text-blue-400 visited:text-purple-400">Guide editor GitHub</a></li>
-        <li><a href="https://github.com/pvme/pvme-guides" target="_blank" rel="noreferrer"
-               class="text-blue-400 visited:text-purple-400">PVME guides GitHub</a></li>
-        <li><a href="https://pvme.github.io/rotation-builder/" target="_blank" rel="noreferrer"
-               class="text-blue-400 visited:text-purple-400">Rotation builder</a></li>
-    </ul>
-
+        <div class="help-credit">
+            Built with <span aria-label="love">💗</span> by x222
+        </div>
+    </div>
 </Modal>
+
+<style>
+    .help-modal {
+        display: flex;
+        height: 100%;
+        min-height: 0;
+        flex-direction: column;
+        gap: 0.9rem;
+    }
+
+    .help-header {
+        padding-right: 2rem;
+    }
+
+    .help-header h2 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 1.45rem;
+        font-weight: 700;
+    }
+
+    .help-header p {
+        margin: 0.25rem 0 0;
+        color: #cbd5e1;
+        font-size: 0.95rem;
+    }
+
+    .help-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        border-bottom: 1px solid #334155;
+        padding-bottom: 0.75rem;
+    }
+
+    .help-tabs button {
+        min-height: 2.25rem;
+        border-radius: 0.25rem;
+        padding: 0.45rem 0.75rem;
+        color: #cbd5e1;
+        font-size: 0.9rem;
+        transition: background-color 120ms ease, color 120ms ease;
+    }
+
+    .help-tabs button:hover,
+    .help-tabs button:focus-visible {
+        background: #1e293b;
+        color: #f8fafc;
+        outline: none;
+    }
+
+    .help-tabs button.active {
+        background: #2563eb;
+        color: white;
+    }
+
+    .help-content {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding-right: 0.35rem;
+    }
+
+    .help-section + .help-section {
+        margin-top: 1.25rem;
+        border-top: 1px solid #334155;
+        padding-top: 1rem;
+    }
+
+    .help-section h3 {
+        margin: 0 0 0.45rem;
+        color: #f8fafc;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+
+    .help-section p {
+        margin: 0.4rem 0 0;
+        color: #cbd5e1;
+    }
+
+    .help-grid {
+        display: grid;
+        gap: 0.45rem;
+        margin: 0.65rem 0 0;
+    }
+
+    .help-grid div {
+        display: grid;
+        grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr);
+        gap: 0.9rem;
+        align-items: start;
+        border: 1px solid rgb(51 65 85 / 0.7);
+        border-left: 3px solid rgb(59 130 246 / 0.75);
+        border-radius: 0.375rem;
+        background:
+            linear-gradient(90deg, rgb(30 41 59 / 0.78), rgb(30 41 59 / 0.34) 42%, rgb(15 23 42 / 0.18)),
+            rgb(15 23 42 / 0.24);
+        padding: 0.65rem 0.75rem;
+    }
+
+    .help-grid.compact div {
+        grid-template-columns: minmax(11rem, 15rem) minmax(0, 1fr);
+    }
+
+    .help-grid dt {
+        color: #bfdbfe;
+        font-weight: 600;
+    }
+
+    .help-grid dd {
+        margin: 0;
+        color: #cbd5e1;
+    }
+
+    .help-token-list {
+        display: grid;
+        gap: 0.45rem;
+        margin-top: 0.65rem;
+    }
+
+    .help-token-row {
+        display: grid;
+        grid-template-columns: minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(8rem, 0.9fr);
+        gap: 0.65rem;
+        align-items: center;
+        border: 1px solid rgb(51 65 85 / 0.7);
+        border-left: 3px solid rgb(59 130 246 / 0.75);
+        border-radius: 0.375rem;
+        background:
+            linear-gradient(90deg, rgb(30 41 59 / 0.78), rgb(30 41 59 / 0.34) 42%, rgb(15 23 42 / 0.18)),
+            rgb(15 23 42 / 0.24);
+        padding: 0.6rem 0.75rem;
+    }
+
+    .help-token-row div {
+        display: flex;
+        min-width: 0;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .help-token-row span {
+        color: #94a3b8;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .help-token-row p {
+        margin: 0;
+        color: #cbd5e1;
+    }
+
+    .help-section code {
+        border-radius: 0.25rem;
+        background: #0f172a;
+        box-shadow: inset 0 0 0 1px rgb(51 65 85 / 0.75);
+        padding: 0.08rem 0.32rem;
+        color: #e2e8f0;
+        font-size: 0.86em;
+    }
+
+    .help-section a {
+        color: #93c5fd;
+    }
+
+    .help-section a:visited {
+        color: #c4b5fd;
+    }
+
+    .help-links {
+        margin: 0.55rem 0 0;
+        padding-left: 1.2rem;
+        color: #cbd5e1;
+    }
+
+    .help-links li + li {
+        margin-top: 0.25rem;
+    }
+
+    .support-callout {
+        border: 1px solid rgb(59 130 246 / 0.35);
+        border-left: 3px solid rgb(96 165 250 / 0.8);
+        border-radius: 0.5rem;
+        background:
+            linear-gradient(135deg, rgb(30 64 175 / 0.3), rgb(15 23 42 / 0.2) 55%),
+            rgb(15 23 42 / 0.35);
+        padding: 1rem;
+    }
+
+    .support-callout h3 {
+        margin-bottom: 0.25rem;
+        font-size: 1.18rem;
+    }
+
+    .support-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.65rem;
+    }
+
+    .support-links a {
+        border: 1px solid rgb(51 65 85 / 0.85);
+        border-radius: 999px;
+        background: rgb(15 23 42 / 0.42);
+        padding: 0.4rem 0.65rem;
+        text-decoration: none;
+        transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
+    }
+
+    .support-links a:hover,
+    .support-links a:focus-visible {
+        border-color: rgb(96 165 250 / 0.8);
+        background: rgb(30 41 59 / 0.8);
+        color: #dbeafe;
+        outline: none;
+    }
+
+    .help-credit {
+        margin-top: auto;
+        color: #94a3b8;
+        font-size: 0.78rem;
+        line-height: 1;
+    }
+
+    .help-credit span {
+        color: #be5b7e;
+    }
+
+    @media (max-width: 720px) {
+        .help-tabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+
+        .help-tabs button {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .help-grid div,
+        .help-grid.compact div {
+            grid-template-columns: 1fr;
+            gap: 0.15rem;
+        }
+
+        .help-token-row {
+            grid-template-columns: 1fr;
+            align-items: start;
+        }
+
+        .help-token-row div {
+            align-items: flex-start;
+        }
+    }
+</style>
