@@ -1,9 +1,12 @@
 <!-- // components/toolbar/GuideSearch.svelte -->
 <script>
   import { createEventDispatcher, onMount, tick } from "svelte";
+  import ChatSquareText from "svelte-bootstrap-icons/lib/ChatSquareText.svelte";
+  import Hash from "svelte-bootstrap-icons/lib/Hash.svelte";
   import Search from "svelte-bootstrap-icons/lib/Search.svelte";
 
   const dispatch = createEventDispatcher();
+  const DISCORD_CHANNEL_TYPE_FORUM = 15;
 
   export let open = false;
 
@@ -71,15 +74,20 @@
 
     if (githubGuides.length === 0) return channelGuides;
 
-    const channelNamesByPath = new Map(
-      channelGuides.map(guide => [guide.path, guide.name])
+    const channelGuidesByPath = new Map(
+      channelGuides.map(guide => [guide.path, guide])
     );
 
     return githubGuides
-      .map(guide => ({
-        ...guide,
-        name: channelNamesByPath.get(guide.path) || guide.name
-      }))
+      .map(guide => {
+        const channelGuide = channelGuidesByPath.get(guide.path);
+
+        return {
+          ...guide,
+          ...channelGuide,
+          name: channelGuide?.name || guide.name
+        };
+      })
       .sort((a, b) => a.path.localeCompare(b.path));
   }
 
@@ -88,9 +96,10 @@
       "https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json"
     );
 
+    const channelList = Array.isArray(channels) ? channels : [];
     const seen = new Set();
 
-    return (Array.isArray(channels) ? channels : [])
+    return channelList
       .filter(channel => channel?.path?.endsWith(".txt"))
       .filter(channel => {
         if (seen.has(channel.path)) return false;
@@ -98,11 +107,19 @@
         return true;
       })
       .map(channel => ({
+        id: channel.id,
         name: channel.name || channel.path.split("/").pop(),
+        parent: channel.parent,
         path: channel.path,
+        type: channel.type,
+        isForum: isForumGuide(channel),
         url: `https://raw.githubusercontent.com/pvme/pvme-guides/master/${channel.path}`
       }))
       .sort((a, b) => a.path.localeCompare(b.path));
+  }
+
+  function isForumGuide(channel) {
+    return channel?.type === DISCORD_CHANNEL_TYPE_FORUM;
   }
 
   async function loadGuidesFromGithubTree() {
@@ -262,12 +279,21 @@
         {:else if filtered.length > 0}
           {#each filtered as guide, i}
             <button
-              class="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-slate-800 {i === activeIndex ? 'bg-slate-800' : ''}"
+              class="flex w-full items-start gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-slate-800 {i === activeIndex ? 'bg-slate-800' : ''}"
               on:mousedown={() => selectGuide(guide)}
             >
-              <div class="text-slate-100">{guide.name}</div>
-              <div class="text-xs text-slate-400 truncate">
-                {guide.path}
+              <div class="mt-0.5 shrink-0 text-slate-400" title={guide.isForum ? "Forum guide" : "Text channel guide"}>
+                {#if guide.isForum}
+                  <ChatSquareText aria-hidden="true" />
+                {:else}
+                  <Hash aria-hidden="true" />
+                {/if}
+              </div>
+              <div class="min-w-0">
+                <div class="truncate text-slate-100">{guide.name}</div>
+                <div class="truncate text-xs text-slate-400">
+                  {guide.path}
+                </div>
               </div>
             </button>
           {/each}

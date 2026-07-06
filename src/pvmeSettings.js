@@ -1,4 +1,5 @@
 export let channels = {};
+export let channelDetails = {};
 export let users = {};
 export let roles = {};
 
@@ -62,9 +63,12 @@ async function setPvmeSpreadsheet() {
 
 async function setChannels() {
     const channelsJSON = await rawGithubJSONRequest('https://raw.githubusercontent.com/pvme/pvme-settings/pvme-discord/channels.json');
-    channels = channelsFormat = {};
+    channels = {};
+    channelsFormat = {};
+    channelDetails = {};
     for (const channel of channelsJSON) {
         channels[channel.id] = channel.name;
+        channelDetails[channel.id] = channel;
         channelsFormat[channel.name.toLowerCase()] = channel.id;
     }
 }

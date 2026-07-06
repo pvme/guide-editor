@@ -12,9 +12,11 @@
 
 import { toHTML, rules, htmlTag } from "@riskymh/discord-markdown";
 import markdown from "simple-markdown";
-import { channels, users, roles, pvmeSpreadsheet } from "./pvmeSettings";
+import { channels, channelDetails, users, roles, pvmeSpreadsheet } from "./pvmeSettings";
 
 let messageAttachments = [];
+const DISCORD_CHANNEL_TYPE_FORUM = 15;
+const PVME_DISCORD_GUILD_ID = "534508796639182860";
 
 // -----------------------------------------------------------
 // DISCORD-MARKDOWN PATCHES
@@ -109,6 +111,31 @@ function applySpecialChannels(text) {
         .replaceAll("&lt;id:guide&gt;",
             `<span class="d-mention d-channel">#Server Guide</span>`
         );
+}
+
+function renderChannelMention(node) {
+    const id = String(node.id);
+    const name = channels[id] || id;
+    const channel = channelDetails[id];
+    const safeName = markdown.sanitizeText(name);
+    const channelText = channel?.type === DISCORD_CHANNEL_TYPE_FORUM
+        ? renderChannelIcon("forum") + safeName
+        : "#" + safeName;
+
+    return htmlTag(
+        "a",
+        channelText,
+        {
+            class: "d-channel-link",
+            href: `https://discord.com/channels/${PVME_DISCORD_GUILD_ID}/${id}`
+        }
+    );
+}
+
+function renderChannelIcon(type) {
+    if (type !== "forum") return "";
+
+    return `<svg class="d-channel-icon d-channel-icon--forum" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.75 4.25c-3.25 0-5.9 2.16-5.9 4.82 0 1.42.76 2.72 1.98 3.6l-.54 2.36a.55.55 0 0 0 .82.58l2.42-1.42c.4.07.81.11 1.22.11 3.25 0 5.9-2.16 5.9-4.82s-2.65-4.82-5.9-4.82Z" /><path fill="currentColor" d="M16.25 8.72c3.25 0 5.9 2.16 5.9 4.82 0 1.42-.76 2.72-1.98 3.6l.54 2.36a.55.55 0 0 1-.82.58l-2.42-1.42c-.4.07-.81.11-1.22.11-2.8 0-5.15-1.6-5.75-3.73 2.84-.83 4.87-2.95 4.87-5.44 0-.27-.02-.53-.07-.79.31-.06.63-.09.95-.09Z" /></svg>`;
 }
 
 function isYouTubeURL(rawUrl) {
@@ -234,7 +261,7 @@ export default function markdownToHTML(input) {
     // 3) Parse markdown
     let rendered = toHTML(working, {
         discordCallback: {
-            channel: n => "#" + channels[n.id],
+            channel: renderChannelMention,
             user: n => "@" + users[n.id],
             role: n => "@" + roles[n.id]
         },

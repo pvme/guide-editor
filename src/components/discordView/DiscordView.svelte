@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher, afterUpdate, onMount } from "svelte";
+  import { createEventDispatcher, afterUpdate, onMount, tick } from "svelte";
   import Message from "./Message.svelte";
   import Bot from "./Bot.svelte";
   import { parseMessages } from "../../parser/parseMessages.js";
@@ -31,7 +31,8 @@
   /* -------------------------------------------------------
      Link Intercept Popover
   ------------------------------------------------------- */
-  let popover = null; // { url, x, y }
+  let popover = null; // { url, x, y, left, ready }
+  let popoverEl;
   let tagFlashTimer = null;
 
   function handleRootClick(event) {
@@ -106,7 +107,22 @@
   }
 
   function openPopover(url, x, y) {
-    popover = { url, x, y };
+    popover = { url, x, y, ready: false };
+    tick().then(positionPopover);
+  }
+
+  function positionPopover() {
+    if (!popover || !popoverEl || !container) return;
+
+    const margin = 8;
+    const width = popoverEl.offsetWidth;
+    const maxLeft = Math.max(margin, container.clientWidth - width - margin);
+    const left = Math.min(
+      Math.max(popover.x - width / 2, margin),
+      maxLeft
+    );
+
+    popover = { ...popover, left, ready: true };
   }
 
   function closePopover() {
@@ -179,11 +195,12 @@
        ============================ -->
   {#if popover}
     <div
+      bind:this={popoverEl}
       class="popover-menu absolute z-50 px-4 py-2 rounded-md shadow-xl 
              bg-gray-800 text-gray-100 text-sm border border-gray-700 
-             flex items-center space-x-3 transform -translate-x-1/2 -translate-y-full
+             flex items-center space-x-3 transform -translate-y-full
              animate-pop"
-      style="left:{popover.x}px; top:{popover.y}px;"
+      style="left:{popover.left ?? 0}px; top:{popover.y}px; visibility:{popover.ready ? 'visible' : 'hidden'};"
     >
       <span>Open link?</span>
 
