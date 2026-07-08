@@ -174,6 +174,8 @@ async function handleSubmitGuideUpdate(req, res) {
   const existingPr = branchRef
     ? await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner)
     : null;
+  const staleReviewBranch = Boolean(branchRef && !existingPr);
+  let resetReviewBranchFromBase = !branchRef || staleReviewBranch;
 
   if (payload.source === "master") {
     const currentMasterFile = await getFile(
@@ -197,11 +199,15 @@ async function handleSubmitGuideUpdate(req, res) {
         "This will replace your existing submitted update with this version based on the live guide.",
       );
     }
+
+    if (existingPr && payload.replaceExistingReview) {
+      resetReviewBranchFromBase = true;
+    }
   } else if (payload.source === "user-pr") {
-    if (!branchRef) {
+    if (!branchRef || staleReviewBranch) {
       throw httpError(
         409,
-        "Your existing submitted update could not be found. Reload the guide and try again.",
+        "Your existing submitted update could not be found. Reload the live guide and try again.",
       );
     }
 
@@ -221,18 +227,28 @@ async function handleSubmitGuideUpdate(req, res) {
     }
   }
 
-  if (!branchRef) {
+  if (resetReviewBranchFromBase) {
     const baseRef = await github(
-      `/repos/${writeRepo.owner}/${writeRepo.repo}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`,
+      `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`,
     );
 
-    await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs`, {
-      method: "POST",
-      body: {
-        ref: `refs/heads/${reviewBranch}`,
-        sha: baseRef.object.sha,
-      },
-    });
+    if (!branchRef) {
+      await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs`, {
+        method: "POST",
+        body: {
+          ref: `refs/heads/${reviewBranch}`,
+          sha: baseRef.object.sha,
+        },
+      });
+    } else {
+      await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs/heads/${encodeURIComponent(reviewBranch)}`, {
+        method: "PATCH",
+        body: {
+          sha: baseRef.object.sha,
+          force: true,
+        },
+      });
+    }
   }
 
   const currentBranchFile = await getFile(
