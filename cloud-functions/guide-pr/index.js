@@ -241,7 +241,7 @@ async function handleSubmitGuideUpdate(req, res) {
         },
       });
     } else {
-      await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs/heads/${encodeURIComponent(reviewBranch)}`, {
+      await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs/heads/${encodeGitRef(reviewBranch)}`, {
         method: "PATCH",
         body: {
           sha: baseRef.object.sha,
@@ -1509,12 +1509,18 @@ async function getPublicMasterFile(path) {
 async function getBranchRef(github, owner, repo, branch) {
   try {
     return await github(
-      `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(branch)}`,
+      `/repos/${owner}/${repo}/git/ref/heads/${encodeGitRef(branch)}`,
     );
   } catch (err) {
     if (err.status === 404) return null;
     throw err;
   }
+}
+
+// GitHub's Git ref endpoint treats each slash-separated part of a branch name
+// as a path segment. Encode the parts, but preserve the separating slashes.
+function encodeGitRef(ref) {
+  return ref.split("/").map(encodeURIComponent).join("/");
 }
 
 async function getOpenPullRequest(github, owner, repo, branch, headOwner = owner) {
