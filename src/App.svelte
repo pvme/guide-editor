@@ -57,6 +57,7 @@
   let submitAuthError = "";
   let errorViewFlashKey = 0;
   let guideLoadStatus = "idle";
+  let guideLoadError = "";
   let guideNotice = "";
   let showNewDraftConfirm = false;
   let draftToRename = null;
@@ -125,25 +126,30 @@
     if (!pendingGuide) return;
 
     guideLoadStatus = "confirm";
-    const loaded = await loadGuideText(pendingGuide, "auto");
+    guideLoadError = "";
+    try {
+      const loaded = await loadGuideText(pendingGuide, "auto");
 
-    if (loaded.hasExistingReview) {
-      pendingGuide = {
-        ...pendingGuide,
-        ...loaded
-      };
+      if (loaded.hasExistingReview) {
+        pendingGuide = {
+          ...pendingGuide,
+          ...loaded
+        };
+        return;
+      }
+
+      applyLoadedGuide(loaded, "");
+
+      // Remove ?id from URL
+      window.history.replaceState({}, document.title, "/guide-editor/");
+
+      pendingGuide = null;
+      showGuideModal = false;
+    } catch (error) {
+      guideLoadError = error.message || "The guide could not be opened. Please try again.";
+    } finally {
       guideLoadStatus = "idle";
-      return;
     }
-
-    applyLoadedGuide(loaded, "");
-
-    // Remove ?id from URL
-    window.history.replaceState({}, document.title, "/guide-editor/");
-
-    pendingGuide = null;
-    showGuideModal = false;
-    guideLoadStatus = "idle";
   }
 
   async function openAnotherLocalGuideDraft() {
@@ -170,21 +176,33 @@
   async function loadExistingReviewGuide() {
     if (!pendingGuide) return;
     guideLoadStatus = "review";
-    const loaded = await loadGuideText(pendingGuide, "review");
-    applyLoadedGuide(loaded, "Loaded your submitted update.");
-    pendingGuide = null;
-    showGuideModal = false;
-    guideLoadStatus = "idle";
+    guideLoadError = "";
+    try {
+      const loaded = await loadGuideText(pendingGuide, "review");
+      applyLoadedGuide(loaded, "Loaded your submitted update.");
+      pendingGuide = null;
+      showGuideModal = false;
+    } catch (error) {
+      guideLoadError = error.message || "The submitted update could not be opened. Please try again.";
+    } finally {
+      guideLoadStatus = "idle";
+    }
   }
 
   async function loadLiveGuideReplacingReview() {
     if (!pendingGuide) return;
     guideLoadStatus = "live";
-    const loaded = await loadGuideText(pendingGuide, "master");
-    applyLoadedGuide(loaded, "Started a new draft from the PvME guide. Submitting will replace your existing submitted update.");
-    pendingGuide = null;
-    showGuideModal = false;
-    guideLoadStatus = "idle";
+    guideLoadError = "";
+    try {
+      const loaded = await loadGuideText(pendingGuide, "master");
+      applyLoadedGuide(loaded, "Started a new draft from the PvME guide. Submitting will replace your existing submitted update.");
+      pendingGuide = null;
+      showGuideModal = false;
+    } catch (error) {
+      guideLoadError = error.message || "The live guide could not be opened. Please try again.";
+    } finally {
+      guideLoadStatus = "idle";
+    }
   }
 
   function applyLoadedGuide(loaded, notice) {
@@ -216,6 +234,7 @@
 
   function cancelLoadGuide() {
     if (guideLoadStatus !== "idle") return;
+    guideLoadError = "";
     pendingGuide = null;
     showGuideModal = false;
   }
@@ -593,6 +612,7 @@
   }
 
   function handleGuideSearchSelect(guide) {
+    guideLoadError = "";
     pendingGuide = withExistingLocalDraft(guide);
     showGuideSearch = false;
     showGuideModal = true;
@@ -864,6 +884,7 @@
     open={showGuideModal}
     guide={pendingGuide}
     loadingAction={guideLoadStatus}
+    error={guideLoadError}
     on:confirm={confirmLoadGuide}
     on:continueLocalDraft={continueLocalGuideDraft}
     on:openAnotherDraft={openAnotherLocalGuideDraft}

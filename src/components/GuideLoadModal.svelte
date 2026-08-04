@@ -5,6 +5,7 @@
   export let open = false;
   export let guide = null;
   export let loadingAction = "idle";
+  export let error = "";
 
   let modalEl;
 
@@ -173,6 +174,10 @@
             {/if}
           </button>
         </div>
+      {/if}
+
+      {#if error}
+        <p class="mt-4 text-sm text-red-300" role="alert">{error}</p>
       {/if}
     </div>
   </div>
