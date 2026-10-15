@@ -13,6 +13,7 @@
 import { toHTML, rules, htmlTag } from "@riskymh/discord-markdown";
 import markdown from "simple-markdown";
 import { channels, channelDetails, users, roles, pvmeSpreadsheet } from "./pvmeSettings";
+import { getPresetEmbedUrl } from "./presetEmbeds.js";
 
 let messageAttachments = [];
 const DISCORD_CHANNEL_TYPE_FORUM = 15;
@@ -252,9 +253,9 @@ export default function markdownToHTML(input) {
     // PREPASS: detect markdown links to preset URLs
     // -----------------------------------------------------------
     const presetLinks = [];
-    working.replace(/\[([^\]]+)\]\((https:\/\/presets\.pvme\.io\/?\?id=[^)]+)\)/g,
+    working.replace(/\[([^\]]+)\]\((https?:\/\/[^)>]+)\)/g,
         (m, label, url) => {
-            presetLinks.push(url);
+            if (getPresetEmbedUrl(url)) presetLinks.push(url);
         }
     );
 

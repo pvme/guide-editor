@@ -1,20 +1,19 @@
 <script>
+    import { onDestroy } from "svelte";
+    import { getPresetEmbedUrl, readPresetEmbedMetadata } from "../../presetEmbeds.js";
+
     export let url;
 
     let presetTitle = "PvME Preset";
-    let lastPresetId = null;
+    let presetImageUrl = "";
+    let presetError = false;
+    let presetRequest;
 
-    $: presetId = getPresetId(url);
-    $: presetShareUrl = presetId
-        ? `https://presets.pvme.io?id=${encodeURIComponent(presetId)}`
-        : "";
-    $: presetImageUrl = presetId
-        ? `https://firebasestorage.googleapis.com/v0/b/preset-images/o/images%2F${encodeURIComponent(presetId)}.png?alt=media`
-        : "";
+    $: presetShareUrl = getPresetEmbedUrl(url);
     $: urlHTML = urlToHTML(url);
-    $: if (presetId && presetId !== lastPresetId) {
-        loadPresetTitle(presetId);
-    }
+    $: loadPresetPreview(presetShareUrl);
+
+    onDestroy(() => presetRequest?.abort());
 
     function escapeAttr(value) {
         return value
@@ -24,37 +23,24 @@
             .replace(/>/g, "&gt;");
     }
 
-    function getPresetId(rawUrl) {
-        if (!rawUrl.match(/https?:\/\/presets\.pvme\.io\/?\?id=/)) return null;
-        try {
-            return new URL(rawUrl).searchParams.get("id");
-        } catch {
-            return null;
-        }
-    }
-
-    async function loadPresetTitle(id) {
-        lastPresetId = id;
+    async function loadPresetPreview(embedUrl) {
+        presetRequest?.abort();
+        presetImageUrl = "";
         presetTitle = "PvME Preset";
-
-        if (window.location.origin !== "https://pvme.io") {
-            return;
-        }
+        presetError = false;
+        if (!embedUrl) return;
+        const request = new AbortController();
+        presetRequest = request;
 
         try {
-            const presetRes = await fetch(
-                `https://getpresetv2-bi6xdqcqpq-uc.a.run.app?id=${encodeURIComponent(id)}`
-            );
-            if (!presetRes.ok) return;
-
-            const data = await presetRes.json();
-            if (lastPresetId === id && data?.presetName) {
-                presetTitle = `PvME Preset: ${data.presetName}`;
-            }
+            const response = await fetch(embedUrl, { signal: request.signal });
+            if (!response.ok) throw new Error("Preset preview is unavailable");
+            const metadata = readPresetEmbedMetadata(await response.text(), embedUrl);
+            if (request.signal.aborted) return;
+            presetTitle = metadata.title;
+            presetImageUrl = metadata.imageUrl;
         } catch {
-            if (lastPresetId === id) {
-                presetTitle = "PvME Preset";
-            }
+            if (!request.signal.aborted) presetError = true;
         }
     }
 
@@ -130,11 +116,15 @@
     }
 </script>
 
-{#if presetId}
+{#if presetShareUrl}
     <a class="attachment-og-title" href={presetShareUrl} rel="noopener noreferrer">
         {presetTitle}
     </a>
-    <img class="media" src={presetImageUrl} alt="Preset preview">
+    {#if presetImageUrl}
+        <img class="media" src={presetImageUrl} alt="Preset preview">
+    {:else if presetError}
+        <p class="pvme-attachment-error">Couldn't load preset preview.</p>
+    {/if}
 {:else}
     {@html urlHTML}
 {/if}
