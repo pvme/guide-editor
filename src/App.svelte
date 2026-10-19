@@ -959,7 +959,7 @@
           <label class="mt-4 block text-sm text-slate-300" for="draft-name">Draft name</label>
           <input
             id="draft-name"
-            class="mt-2 w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
+            class="mt-2 w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white outline-hidden focus:border-blue-400"
             bind:value={renameDraftValue}
           />
           <div class="mt-5 flex justify-end gap-2">

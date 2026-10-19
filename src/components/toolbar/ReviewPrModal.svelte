@@ -627,7 +627,7 @@
                 </label>
                 <input
                   id="review-commit-message"
-                  class="w-full rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                  class="w-full rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-blue-500 focus:outline-hidden"
                   maxlength="160"
                   placeholder="Summarise what you changed"
                   bind:value={commitMessage}
@@ -692,7 +692,7 @@
                 </label>
                 <textarea
                   id="review-close-reason"
-                  class="min-h-24 w-full resize-y rounded border border-red-900/80 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-red-500 focus:outline-none"
+                  class="min-h-24 w-full resize-y rounded border border-red-900/80 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-red-500 focus:outline-hidden"
                   placeholder="Explain why this PR is being closed"
                   bind:value={closeReason}
                   disabled={loadingClose}

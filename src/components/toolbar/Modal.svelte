@@ -21,7 +21,7 @@
 {#if open}
     <!-- BACKDROP (NOW THE TOPMOST LAYER) -->
     <div
-      class="modal-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer"
+      class="modal-backdrop fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 cursor-pointer"
       role="presentation"
       on:click={() => close()}
     >

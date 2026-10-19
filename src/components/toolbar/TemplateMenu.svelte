@@ -162,7 +162,7 @@
             </div>
 
             <!-- PREVIEW PANEL -->
-            <div class="flex flex-col flex-grow p-3 pl-0">
+            <div class="flex flex-col grow p-3 pl-0">
                 <pre class="overflow-auto bg-slate-800 p-3 rounded text-sm whitespace-pre-wrap break-words"
                      style="height: 60vh;">
 {preview}

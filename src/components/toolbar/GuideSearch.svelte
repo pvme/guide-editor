@@ -233,7 +233,7 @@
 
 {#if open}
   <div
-    class="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm px-4 pt-[12vh]"
+    class="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-xs px-4 pt-[12vh]"
     role="presentation"
     on:click={close}
     on:keydown={(e) => {
@@ -252,7 +252,7 @@
       <div class="flex items-center gap-3 border-b border-slate-700 px-4 py-3">
         <Search class="text-slate-400" />
         <input
-          class="h-10 w-full bg-transparent text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none"
+          class="h-10 w-full bg-transparent text-lg text-slate-100 placeholder:text-slate-500 focus:outline-hidden"
           placeholder="Search and load a guide..."
           bind:this={inputEl}
           bind:value={query}

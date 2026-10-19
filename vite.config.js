@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import tailwindcss from '@tailwindcss/vite';
 import svelteConfig from './svelte.config.js';
 
 const DEV_API_PROXY_PREFIX = "/api/guide-pr";
@@ -9,6 +10,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      tailwindcss(),
       svelte(svelteConfig),
       guideSubmitProxy(env)
     ],
