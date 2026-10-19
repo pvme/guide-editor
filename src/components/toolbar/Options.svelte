@@ -26,6 +26,13 @@
             rotationBuilderMode: value
         }));
     }
+
+    function setSyntaxHighlighting(value) {
+        editorSettings.update(current => ({
+            ...normalizeEditorSettings(current),
+            syntaxHighlighting: value
+        }));
+    }
 </script>
 
 <ToolbarTooltip text="Editor options" align="right">
@@ -62,6 +69,21 @@
                 type="checkbox"
                 checked={showView}
                 on:change={() => dispatch("toggleView")}
+            />
+        </label>
+
+        <label class="flex items-start justify-between gap-4 rounded-lg border border-slate-700 bg-slate-900/40 p-4">
+            <span>
+                <span class="font-semibold">Syntax highlighting</span>
+                <span class="mt-1 block text-sm text-slate-300">
+                    Highlight guide commands, references, JSON fields and formatting markers.
+                </span>
+            </span>
+            <input
+                class="mt-1 h-5 w-5 accent-blue-500"
+                type="checkbox"
+                checked={settings.syntaxHighlighting}
+                on:change={(e) => setSyntaxHighlighting(e.currentTarget.checked)}
             />
         </label>
 
