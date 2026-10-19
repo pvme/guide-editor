@@ -47,7 +47,7 @@ function checkHeading(block, context, { lines, add }) {
   visitInline(block.children, node => { if (node.type === 'bold') bold = true; });
   if (bold) add('HEADING_BOLD', block.range, 'Bold formatting **text** is redundant in headers (#, ##, ###). Remove the ** on this line', 'error');
   const words = block.children.filter(node => node.type !== 'emoji' && !(node.type === 'text' && !node.value.trim()));
-  if (block.level <= 2 && !words.every(node => node.type === 'underline')) add('HEADING_UNDERLINE', block.range, 'Underline guide titles and level 1 section headings');
+  if (!context.quoted && block.level <= 2 && !words.every(node => node.type === 'underline')) add('HEADING_UNDERLINE', block.range, 'Underline guide titles and level 1 section headings');
   // ### can be underlined (sub-section) or plain (sub-sub-section). Logical
   // depth and Oxford capitalisation require author intent/parts of speech.
 }

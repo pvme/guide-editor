@@ -98,6 +98,15 @@ test('quote nesting preserves list indentation without treating its prefix as do
   assert.ok(codes('\u200B • Nested').includes('BULLET_INDENT'));
 });
 
+test('quoted headings do not require guide-section underlines but retain Discord heading checks', () => {
+  assert.deepEqual(style('> ## ⚠️ Disclaimer'), []);
+  assert.deepEqual(style('> # Quoted title\n> ## Quoted section'), []);
+  assert.deepEqual(style('>>> ## ⚠️ Disclaimer'), []);
+  assert.ok(codes('## Section').includes('HEADING_UNDERLINE'));
+  assert.ok(codes('> #### Heading').includes('HEADING_LEVEL'));
+  assert.ok(codes('> ## **Heading**').includes('HEADING_BOLD'));
+});
+
 test('publication length uses attachment splits and still budgets expanded tag URLs', () => {
   const source = `${'x'.repeat(1200)}\n.img:https://img.pvme.io/a.png\n${'y'.repeat(1200)}`;
   assert.ok(!codes(source).includes('MESSAGE_LENGTH'));
