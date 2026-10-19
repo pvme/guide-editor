@@ -2,6 +2,7 @@ import { Compartment, Facet } from "@codemirror/state";
 
 export const defaultCodeMirrorEditorSettings = {
   emojiTrailingInsert: "none",
+  syntaxHighlighting: true,
   rotationBuilderMode: false
 };
 

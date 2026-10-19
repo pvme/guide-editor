@@ -47,6 +47,7 @@ import { editorSettingsExtension } from "./editorSettings.js";
 
 import { messageSyncExtension } from "./messageSync.js";
 import { errorGutterExtension } from "./errorGutter.js";
+import { guideSyntaxHighlighting } from "./guideSyntaxHighlighting.js";
 
 function selectNextOccurrenceSafe(view) {
   const handled = selectNextOccurrence(view);
@@ -92,6 +93,7 @@ export function pvmeExtensions(textStore, syncApi, editorSettings = {}) {
     errorGutterExtension,
     lineNumbers(),
     markdown(),
+    guideSyntaxHighlighting,
     EditorView.lineWrapping,
     highlightActiveLine(),
     highlightSelectionMatches({ minSelectionLength: 3 }),
