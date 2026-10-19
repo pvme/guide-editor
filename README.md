@@ -6,6 +6,9 @@ https://github.com/user-attachments/assets/78ac849d-f7a6-4abb-bf52-49314a083d31
 
 ## Install
 
+Use Node.js 24 (see `.nvmrc`), matching the frontend deployment workflow.
+The frontend dependencies require Node.js 20 or newer; Node.js 18 is unsupported.
+
 ```powershell
 npm install
 npm --prefix cloud-functions/guide-pr install
