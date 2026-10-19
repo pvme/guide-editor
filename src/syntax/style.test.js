@@ -20,7 +20,6 @@ for (const [code, bad, good] of [
   ['ARROW_SPACING', 'A→B', '(→ B) → C'],
   ['EMOJI_SPACING', `Text${emoji}`, `Text ${emoji}`],
   ['EMOJI_IN_LINK', `[Text ${emoji}](<https://runescape.wiki/>)`, `[Text](<https://runescape.wiki/>) ${emoji}`],
-  ['HEADING_SEPARATOR', '# __Title__\n## __Section__', '# __Title__\n.\n## __Section__'],
   ['HEADING_UNDERLINE', '## Section', '## __Section__'],
   ['HEADING_LEVEL', '#### Section', '### Sub-sub-section'],
   ['HEADING_BOLD', '# __**Title**__', '# __Title__'],
@@ -43,7 +42,6 @@ for (const [code, bad, good] of [
   ['TOC_PIN', toc, toc + '\n.pin:delete'],
   ['TOC_POSITION', toc + '\n.pin:delete\n.\nAfter', toc + '\n.pin:delete'],
   ['TOC_TARGET', '# __Other__\n.tag:other\n$linkmsg_other$\n.\n' + toc, '# __Start__\n.tag:start\n.\n' + toc],
-  ['PRESET_LABEL', '[AFK setup](https://presets.pvme.io/?id=abc)', '[Necromancy - Basic](https://presets.pvme.io/?id=abc)'],
   ['PRESET_PREVIEW', '[Magic - Basic](https://presets.pvme.io/?id=abc)\n[Magic - Advanced](https://presets.pvme.io/?id=def)', '[Magic - Basic](<https://presets.pvme.io/?id=abc>)\n[Magic - Advanced](https://presets.pvme.io/?id=def)'],
   ['MESSAGE_LENGTH', 'x'.repeat(2001), 'x'.repeat(2000)],
   ['EMBED_SCHEMA', embed({ embed: { title: 'x'.repeat(257) } }), embed({ embed: { title: 'Valid' } })],
@@ -55,6 +53,22 @@ for (const [code, bad, good] of [
 ]) test(`${code}: invalid and valid cases`, () => {
   assert.ok(codes(bad).includes(code), JSON.stringify(style(bad)));
   assert.ok(!codes(good).includes(code), JSON.stringify(style(good)));
+});
+
+test('preset previews allow one visible link anywhere among suppressed links', () => {
+  const first = '⬥ [Melee (0 Mech)](https://presets.pvme.io/?id=e54f8126-5a67-4af2-b282-a975cb12b9b5) <:melee:1096130867279171706>';
+  const second = '⬥ [Melee (2 Mech)](<https://presets.pvme.io/?id=7a639b95-b6d7-4e7e-999c-0ed474704733>) <:melee:1096130867279171706>';
+  assert.deepEqual(style(`${first}\n${second}`), []);
+  assert.deepEqual(style(`${second}\n${first}`), []);
+  assert.deepEqual(style(`${second}\n${second}`), []);
+  const issues = style(`${first}\n${second}\n${first}`);
+  assert.deepEqual(issues.map(issue => issue.code), ['PRESET_PREVIEW']);
+  assert.equal(issues[0].range.start.line, 1);
+});
+
+test('headings need no dot separator and preset labels are unrestricted', () => {
+  assert.deepEqual(style('# __Title__\n## __Section__'), []);
+  assert.deepEqual(style('[AFK setup](https://presets.pvme.io/?id=abc)'), []);
 });
 
 test('emoji exceptions apply to static/animated emojis without exempting arbitrary word suffixes', () => {
@@ -148,7 +162,7 @@ test('PVME/editor/internal URL exemptions are deliberate; malformed tags do not 
   for (const url of ['https://pvme.io/guide-editor/', 'https://presets.pvme.io/?id=abc', 'https://pvme.github.io/rotation-builder/', 'https://github.com/pvme/pvme-guides', 'https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis/emojis.json', 'https://discord.com/channels/1/2']) assert.ok(!codes(`[Link](<${url}>)`).includes('CONTENT_DOMAIN'), url);
   const document = parseGuide('# __Start__\n.tag:start\n## __Next__');
   assert.equal(document.messages.length, 1);
-  assert.ok(validateGuideStyle(document).some(i => i.code === 'HEADING_SEPARATOR'));
+  assert.deepEqual(validateGuideStyle(document).map(issue => issue.code), ['UNREFERENCED_TAG']);
 });
 
 test('canonical Style Guide fixture is fully parsed; deliberately bad code examples are excluded', () => {

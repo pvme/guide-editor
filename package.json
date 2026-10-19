@@ -33,7 +33,7 @@
     "@codemirror/view": "^6.38.8",
     "@lezer/json": "1.0.3",
     "@macfja/svelte-persistent-store": "^2.4.2",
-    "@pvme/guide-parser": "^0.1.0",
+    "@pvme/guide-parser": "^0.2.0",
     "ajv": "^8.11.0",
     "codemirror": "^6.0.2"
   },

@@ -55,10 +55,10 @@
 
     const checkerRows = [
         ["Message and command problems", "Invalid commands, bad attachments, invalid embed JSON, message limits, and empty-line issues."],
-        ["Formatting structure", "Heading separators, underlined titles/sections, unsupported heading levels, redundant heading bolding, and list hierarchy/indentation."],
+        ["Formatting structure", "Underlined titles/sections, unsupported heading levels, redundant heading bolding, and list hierarchy/indentation."],
         ["Discord reliability", "Emoji spacing, emojis inside links, Discord CDN images, raw PvME image links, and blocked hosts such as streamable.com."],
         ["Cleanup", "Trailing whitespace, double spaces, unspaced arrows, date format, bullet/emoji full stops, explicit note italics, and spacer placeholders like _ _. Code examples are excluded."],
-        ["Links and presets", "Content hosts, suppressed link previews, preset labels, and hiding earlier preset previews."],
+        ["Links and presets", "Content hosts, suppressed link previews, and limiting preset previews to one per section."],
         ["Table of contents", "Parser checks cover missing/duplicate tags and references. Style checks cover unused tags, ToC embeds, final placement, targets, and .pin:delete."],
         ["Human review", "Check UK English, complete-sentence punctuation, Oxford heading capitalisation, guide structure, note relevance, filenames, gear choices, and rotation meaning yourself."]
     ];

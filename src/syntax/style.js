@@ -40,9 +40,8 @@ function checkEmoji(node, insideLink, source, add) {
   if ((!neighbor(before) && !prefix && !escapedBefore) || (!neighbor(after) && !escapedAfter)) add('EMOJI_SPACING', node.range, 'Emojis must have valid characters around them');
 }
 
-function checkHeading(block, context, { lines, add }) {
+function checkHeading(block, context, { add }) {
   if (block.level > 3) add('HEADING_LEVEL', block.range, 'Heading format with 4 or more # are not supported in Discord. ### is the max', 'error');
-  if (!context.quoted && block.range.start.line > 1 && lines[block.range.start.line - 2].text.trim() !== '.') add('HEADING_SEPARATOR', block.range, "Headings must be preceded by a line containing only '.'", 'error');
   let bold = false;
   visitInline(block.children, node => { if (node.type === 'bold') bold = true; });
   if (bold) add('HEADING_BOLD', block.range, 'Bold formatting **text** is redundant in headers (#, ##, ###). Remove the ** on this line', 'error');
@@ -227,13 +226,11 @@ export function validateGuideStyle(document, source = document.source, options =
         if (!['link', 'image'].includes(node.type)) return;
         checkUrl(node.url, node.range, add);
         if (getPresetEmbedUrl(node.url)) {
-          presets.push(node);
-          const label = inlineText(node.children);
-          if (label !== node.url && !/^(?:Melee|Ranged|Magic|Necromancy|Hybrid) - \S/i.test(label)) add('PRESET_LABEL', node.range, 'Use preset labels such as Necromancy - Basic or Necromancy - T95/100');
+          if (!node.suppressEmbed) presets.push(node);
         } else if (!node.suppressEmbed && /^https?:/.test(node.url) && !node.destination?.some(ref => ref.kind === 'tag')) add('LINK_SUPPRESSION', node.range, node.url.startsWith('https://img.pvme.io/') ? 'Image links are normally preceded by an .img: tag or wrapped in < > to not display' : 'Wrap link destinations in < > to suppress inline embeds');
       });
     });
-    for (const preset of presets.slice(0, -1)) if (!preset.suppressEmbed) add('PRESET_PREVIEW', preset.range, 'Only the last preset link in a section should show a preview; wrap earlier links in < >');
+    for (const preset of presets.slice(0, -1)) add('PRESET_PREVIEW', preset.range, 'Only one preset link in a section should show a preview; wrap other links in < >');
   }
   checkPublication(document, posts, ctx);
   checkToc(document, posts, ctx);
