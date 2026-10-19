@@ -346,6 +346,21 @@
   white-space: break-spaces;
 }
 
+.discord-view .spoiler-text {
+  background: #1e1f22;
+  color: transparent;
+  border-radius: 3px;
+}
+
+.discord-view .spoiler-text:hover,
+.discord-view .spoiler-text:focus {
+  color: inherit;
+}
+
+.discord-view .spoiler-text:not(:hover):not(:focus) > * {
+  visibility: hidden;
+}
+
 .discord-view .d-mention {
   display: inline;
   padding: 0 2px;

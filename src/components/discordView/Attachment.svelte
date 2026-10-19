@@ -1,5 +1,6 @@
 <script>
     import { onDestroy } from "svelte";
+    import { safeUrl } from '../../renderer/guideRenderer.js';
     import { getPresetEmbedUrl, readPresetEmbedMetadata } from "../../presetEmbeds.js";
 
     export let url;
@@ -19,6 +20,7 @@
         return value
             .replace(/&/g, "&amp;")
             .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");
     }
@@ -84,12 +86,14 @@
     }
 
     function urlToHTML(url) {
+        url = safeUrl(url);
+        if (!url) return '';
         let match;
 
         if (url.match(/https?:\/\/i?\.?imgur\.com\/([a-zA-Z0-9]+)/))
             return `${renderImage(url)}<p class='bg-red-900 p-2 my-2'
                 style='color: hsla(0,0%,100%,.7)'>Warning! imgur links are now deprecated… 
-                <a href='${url}'>${url}</a></p>`;
+                <a href='${escapeAttr(url)}'>${escapeAttr(url)}</a></p>`;
 
         if (url.match(/https?:\/\/img\.?pvme\.io\/images\/([a-zA-Z0-9]+)\.(mp4|webm|mov)(?:\?.*)?$/i))
             return renderVideo(url);
@@ -112,7 +116,7 @@
         }
 
         // --- FIXED FALLBACK ---
-        return `<p class='bg-red-900 p-2 my-2 pvme-attachment-error' style='color: hsla(0,0%,100%,.7)'>Can't embed <a href='${url}'>${url}</a></p>`;
+        return `<p class='bg-red-900 p-2 my-2 pvme-attachment-error' style='color: hsla(0,0%,100%,.7)'>Can't embed <a href='${escapeAttr(url)}'>${escapeAttr(url)}</a></p>`;
     }
 </script>
 

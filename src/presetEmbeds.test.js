@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { build } from "vite";
+import { parseEditorGuide } from "./parser/guideParser.js";
+import { renderGuide } from "./renderer/guideRenderer.js";
 import { getPresetEmbedUrl } from "./presetEmbeds.js";
 
 const id = "563964a0-2ddc-47ec-966b-a3f5a3876e37";
@@ -36,27 +37,16 @@ test("rejects unrelated, malformed, and unsupported preset URLs", () => {
 });
 
 test("captures new and legacy Markdown preset links while respecting embed suppression", async () => {
-    const bundle = await build({
-        configFile: false,
-        logLevel: "silent",
-        publicDir: false,
-        build: {
-            write: false,
-            minify: false,
-            lib: { entry: "src/markdown.js", formats: ["es"] }
-        }
-    });
-    const code = (Array.isArray(bundle) ? bundle[0] : bundle).output.find(file => file.isEntry).code;
-    const { default: markdownToHTML } = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+    const attachments = source => renderGuide(parseEditorGuide(source)).flatMap(message => message.lineMap).filter(part => part.type === "attachment").map(part => part.url);
     for (const url of [
         `${base}/7x4/?v=${version}`,
         `${base}/4x7/?v=${version}`,
         `https://presets.pvme.io/?id=${id}?layout=4x7`,
         `https://presets.pvme.io/?id=${id}&layout=7x4`
     ]) {
-        assert.deepEqual(markdownToHTML(`[Preset](${url})`).messageAttachments, [url]);
-        assert.deepEqual(markdownToHTML(url).messageAttachments, [url]);
-        assert.deepEqual(markdownToHTML(`[Preset](<${url}>)`).messageAttachments, []);
+        assert.deepEqual(attachments(`[Preset](${url})`), [url]);
+        assert.deepEqual(attachments(url), [url]);
+        assert.deepEqual(attachments(`[Preset](<${url}>)`), []);
     }
-    assert.deepEqual(markdownToHTML("[Other](https://example.com/)").messageAttachments, []);
+    assert.deepEqual(attachments("[Other](https://example.com/)"), []);
 });

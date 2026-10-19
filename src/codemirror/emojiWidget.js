@@ -1,4 +1,5 @@
 // src/codemirror/emojiWidget.js
+import { getEmojiId } from '../parser/guideParser.js';
 
 export function emojiWidget(completion) {
   const value = (completion?.applyText ?? completion?.text)?.trim();
@@ -18,9 +19,4 @@ export function emojiWidget(completion) {
   }
 
   return wrap;
-}
-
-function getEmojiId(value) {
-  const matches = [...String(value || "").matchAll(/:(\d+)>/g)];
-  return matches.length ? matches[matches.length - 1][1] : null;
 }

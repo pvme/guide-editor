@@ -1,0 +1,266 @@
+# PvME Style Guide
+Consistency makes guides easier to read and maintain. This guide covers formatting, structure, and PvME-specific conventions.
+
+.
+## __Sections & Templates__
+.tag:sections
+⬥ We have various types of guides, each of which has a unique structure and sections within
+⬥ Most templates you will require can be found on the [Guide Editor](<https://pvme.io/guide-editor/>):
+.img:https://img.pvme.io/images/By04eu9tkH.png
+
+.
+## __Language & Formatting__
+.tag:language
+⬥ Use UK English (e.g. armour, not armour; defence, not defense)
+⬥ Date format: 22nd July 2013
+⬥ Do not end lines with blank space (this is referred to as "trailing whitespace")
+
+.
+### __Styling & Punctuation__
+.tag:styling
+Always end full sentences with a full stop / period
+⬥ Exceptions:
+    • bullet points should __not__ end in a full stop
+    • Any sentence ending in an emoji should __not__ end in a full stop 🚀
+
+⬥ Text styles:
+    • `**Bold**` – Key items or emphases
+    • `*Italic*` – Inline notes or footnotes
+    • `__Underline__` – Optional emphasis
+
+.
+### __Emojis__
+.tag:emojis
+⬥ **Spacing**: Emojis require a space before **and** after:
+```
+❌ Detonate<:deto:123> is a spell.
+❌ Spellbook Swap <:SBS:543875425055670275>is a spell.
+✅ Spellbook Swap <:SBS:543875425055670275> is a spell.
+```
+
+⬥ There are a few **exceptions** where spaces are not needed:
+    • Letter prefixes (`r`, `s`, `_`)
+    • Punctuation/backslash/backtick prefixes
+    • Trailing punctuation or underscore
+    • Inside backticks (embeds)
+    • Invisible characters
+    • Allowed examples:
+```
+r<:emoji:1> <:emoji:7>. "… <:emoji:4> …" <:emoji:7>! `…<:emoji:11>…` <emoji:73>\n\u00a0
+```
+
+.
+### __Notes__
+.tag:notes
+⬥ Use sparingly to highlight key info
+⬥ Put notes *below* their related content
+⬥ For a single note, show it in-line and italic:
+```
+*Note: This is a note.*
+```
+⬥ For multiple notes, show as bullets and italic:
+```
+*Notes:*
+⬥ *This is a note*
+⬥ *This is another note*
+```
+
+.
+### __Headings__
+.tag:headings
+⬥ Headings represent sections and sub-sections
+
+⬥ Always put a `.` on the line before any heading (ignore the backslash `\` in the below example)
+```
+<End of previous section>
+
+\.
+## __Section 2__
+This is the new section
+```
+
+.
+⬥ Use `#` and underline the title
+⬥ Use `##` / `###` and underline level 1 and 2 headings
+⬥ Level 3 headings:
+    • Discord doesn't allow `####` for level 3 headings
+    • Therefore remove the underline to distinguish
+.
+```# __Title__
+## __Section 1__
+### __Sub-section 1.1__
+### Sub-sub-section 1.1.1
+
+## __Section 2__
+
+## __Section 3__
+### __Sub-section 3.1__```
+
+⬥ Headings should be capitalised following the Oxford style:
+.
+{
+  "embed": {
+    "color": 39423,
+    "fields": [
+      {
+        "name": "✅ Capitalise",
+        "inline": true,
+        "value": "⬥ First and last word\n⬥ Nouns\n⬥ Pronouns\n⬥ Verbs\n⬥ Adjectives\n⬥ Adverbs\n⬥ Any word over four letters"
+      },
+      {
+        "name": "❌ Don’t capitalise",
+        "inline": true,
+        "value": "⬥ Articles (a, an, the)\n⬥ Prepositions (to, on, in, for, with, etc.)\n⬥ Conjunctions (and, but, or, nor, etc.)"
+      }
+    ]
+  }
+}
+.embed:json
+
+.
+### __Lists__
+.tag:lists
+⬥ Bulleted lists use different characters depending on the level
+    • Level 2 bullets should be indented 4 spaces
+        ⬩ Level 3 bullets should be indented 8 spaces
+
+1) Numbered Lists follow the same rules with indentation
+    a) Level 2 should use letters
+        ⬩ Level 3 should be bullets
+
+⬥ Where visually dense, you may add line breaks between list items (like above this bullet)
+
+.
+### __Links and Embedded Content__
+.tag:embeds
+.
+⬥ Only use content from `https://runescape.wiki/`, `https://www.youtube.com/` or `https://img.pvme.io/` (via <#771436827214086154>)
+⬥ Add angled brackets `<>` around links to prevent them showing inline
+    • For example, `[Greater Fury](<https://runescape.wiki/w/Greater_Fury>)`
+
+.
+### __Useful Markdown & GitHub Syntax__
+.tag:markdown
+⬥ `` `code` `` for inline code
+⬥ `.img:<url>` for images
+⬥ `.tag:sectionName` for ToC section targets
+    • `$linkmsg_sectionName$` for linking to that section
+
+.
+## __Filenames__
+.tag:filenames
+⬥ Filenames should follow these naming patterns:
+    • Basic guides: `{bossName}-basic.txt`
+    • Combat Achievements: `{bossName}-ca.txt`
+    • Commands: `{commandName}.txt`
+    • DPM Advice: `dpm-advice-{style}.txt`
+    • One-tick guides: `{bossName}-one-tick.txt`
+    • Full Boss guides: `{bossName}-{difficulty}-{style}.txt`
+        ⬩ `{difficulty}` is optional; either `hm` or `nm`
+        ⬩ `{style}` is optional; either `ranged`, `magic`, `melee`, `necromancy`, `hybrid`
+    • Slayer: `{monsterName}.txt`
+
+⬥ If not listed above, hyphenate the title:
+    • e.g., `interface-guide.txt`
+
+⬥ These naming patterns should also apply if the file is inside the boss folder, e.g. `/sanctum/sanctum-hm-ranged.txt`
+
+.
+## __Presets__
+.tag:presets
+.
+⬥ Create and link to presets in our Preset Maker tool (<#1250465587813945440>)
+⬥ Multiple presets may be created for different situations
+⬥ Links to presets should be in the following pattern:
+    • `{Combat style} - {Basic/Advanced/Tier}`
+        ⬩ e.g., [Necromancy - Basic](#) / [Necromancy - T95/100](#)
+    • Only the last link should be shown - the rest should be hidden by wrapping the link in `<>`:
+        ⬩ e.g., <https://presets.pvme.io?id=presetID>
+⬥ Avoid dyed gear or overpriced items which do not feature in <#1020045708746833930>
+⬥ Be consistent with:
+    • Rune pouch colours (<#1025569571710718093>)
+    • EoF emojis (<#1020550560551813131>)
+
+.
+### __Using Notes in Presets__
+⬥ Notes relating to specific preset gear/items should be added to the Preset Maker
+    • Do not add notes to the guide, for example below the Preset image
+
+⬥ Add a note for any non-standard gear or niche items
+⬥ Add a note on any gear where perks differ from standard ones listed in <#553632787639435284>
+
+⬥ For AFK guides, notes may be added to the `Mandatory AFK Requirements` embed for:
+    • Required ability unlocks (including <:necromancy:1148995625896120460> Talent Tree)
+    • Mandatory gear/items differing from those listed in <#1251377307315077151>
+
+.
+## __Rotations__
+.tag:rotations
+.
+⬥ Use [full emoji codes](<https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis/emojis.json>), e.g., `<:emoji:ID>`
+
+⬥ Use `+` to combine same-tick actions, e.g., <:vulnbomb:655341074235129858> + <:deathskulls:1159434663903899728>
+
+⬥ Use `→` to separate ticks and GCDs, e.g., <:rapid:535541270521708566> → <:snap:535534127131394088>
+
+⬥ Use `()` for:
+    • Target cycle (tc)
+    • Auto attacks (auto)
+    • Waiting (2t) - ticks are from previous action
+    • Channel durations (3 hit)
+    • Weapon types (DW) / (2H)
+    • Autocasting (<:exsanguinate:856635090745950258>)
+
+⬥ Include non-ability actions, e.g., <:vulnbomb:655341074235129858> <:adrenrenewal:736298121704767538> <:undeadslayer:641339922019516416> <:dragonslayer:641339921814126594> <:demonslayer:641339921675845633> <:nip:537336877900890135>
+
+⬥ Use `s` and `r` to represent stall & release, e.g.:
+    • `s<ability> → r<ability> + <nextability>`
+
+.
+⬥ Use <:spec:537340400273195028> and <:eofspec:1257438999794946099> properly, e.g.:
+    • Weapon specs: `<:sgb> <:spec>` <:sgb:626466665848242186> <:spec:537340400273195028>
+    • EOF specs: `<:sgb> <:eofspec>` <:sgb:626466665848242186> <:eofspec:1257438999794946099>
+
+⬥ Show ammo swaps before and after abilities, e.g.:
+    • Single ammo switch: <:gricocaroming:867678153966878740> → <:fularrow:971025696958853180> <:sgb:626466665848242186> <:eofspec:1257438999794946099> → etc.
+        ⬩ Includes off-style abilities: <:hydrixbakri:550834403136503822> <:gricocaroming:867678153966878740> → etc.
+    • Multiple ammo switch (like "wensporing"): <:gricocaroming:867678153966878740> → <:wenarrow:971025697046925362> <:dbow:643848618553507843> <:eofspec:1257438999794946099> <:deathsporearrows:900758234527301642> → etc.
+
+⬥ 0-tick abilities should follow this pattern:
+    • <:roarofawakening:1266417538045317121> <:spec:537340400273195028> (0tick)
+    • Add a note pointing to the `!0tick` command
+
+.
+## __Table of Contents (ToC)__
+.tag:toc
+⬥ Each guide ends with a pinned ToC section
+⬥ ToC is always within a Discord embed
+⬥ Must be pinned – add `.pin:delete` under it
+⬥ The easiest way to create a ToC is to add a `.tag:` after all relevant headings, then auto-generate your ToC using the `Table of Contents` feature on the [Guide Editor](<https://pvme.io/guide-editor/>) (see image below)
+    • If using this method, you should check the words displayed as they may be abbreviated
+.img:https://img.pvme.io/images/mhO3jajZIa.png
+
+.
+Example:
+.
+{
+  "embed": {
+    "title": "__Table of Contents__",
+    "description": "*To edit this guide in our web editor [click here](<https://pvme.io/guide-editor/?id={{channel:id}}>), or visit <id:customize> and select Entry Editor*",
+    "color": 39423,
+    "fields": [
+      {
+        "name": "__Sections__",
+        "value": "⬥ [Sections & Templates]($linkmsg_sections$)\n⬥ [Filenames]($linkmsg_filenames$)\n⬥ [Presets]($linkmsg_presets$)\n⬥ [Rotations]($linkmsg_rotations$)\n⬥ [Table of Contents]($linkmsg_toc$)",
+        "inline": true
+      },
+      {
+        "name": "__Language & Formatting__",
+        "value": "⬥ [Intro]($linkmsg_language$)\n⬥ [Styling & Punctuation]($linkmsg_styling$)\n⬥ [Emojis]($linkmsg_emojis$)\n⬥ [Notes]($linkmsg_notes$)\n⬥ [Headings]($linkmsg_headings$)\n⬥ [Lists]($linkmsg_lists$)\n⬥ [Embeds]($linkmsg_embeds$)\n⬥ [Markdown]($linkmsg_markdown$)",
+        "inline": true
+      }
+    ]
+  }
+}
+.embed:json
+.pin:delete

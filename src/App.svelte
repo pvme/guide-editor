@@ -12,8 +12,8 @@
   import { populateConstants } from "./pvmeSettings";
   import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
   import { completeGithubDevLogin, getAuthenticatedUser } from "./guidePrApi";
-  import findStyleErrors from "./syntax/style";
-  import findSyntaxErrors from "./syntax/syntax";
+  import { validateGuideStyle } from "./syntax/style";
+  import { parseEditorGuide, parserIssues } from "./parser/guideParser.js";
   import GuideLoadModal from "./components/GuideLoadModal.svelte";
   import GuideSearch from "./components/toolbar/GuideSearch.svelte";
   import { setEditorIssuesEffect } from "./codemirror/errorGutter.js";
@@ -39,6 +39,7 @@
   let currentOffsets = [];
 
   let validText = "";
+  $: guideDocument = parseEditorGuide(validText);
   let showView = true;
   let scrollBottom = false;
 
@@ -82,8 +83,8 @@
     ? null
     : activeEditorLine;
   $: checkerIssues = [
-    ...findStyleErrors(validText, { ignoredTrailingWhitespaceLine }),
-    ...findSyntaxErrors(validText)
+    ...validateGuideStyle(guideDocument, validText, { ignoredTrailingWhitespaceLine }),
+    ...parserIssues(guideDocument)
   ];
   $: if (editor) {
     editor.dispatch({
@@ -632,7 +633,7 @@
     const line = editor.state.doc.line(lineNumber);
 
     editor.dispatch({
-      selection: { anchor: line.from },
+      selection: { anchor: Math.min(editor.state.doc.length, Math.max(0, e.detail?.range?.start.offset ?? line.from)) },
       effects: EditorView.scrollIntoView(line.from, {
         y: "center",
         x: "nearest"
@@ -857,9 +858,8 @@
         {/if}
 
         <ErrorView
-          text={validText}
+          errors={checkerIssues}
           flashKey={errorViewFlashKey}
-          {ignoredTrailingWhitespaceLine}
           on:jump={handleErrorJump}
         />
       </div>
@@ -871,7 +871,7 @@
         {#if showView}
           <div class="w-1/2 mr-4 ml-2 mb-4 overflow-auto discord-view">
             <DiscordView
-              text={validText}
+              document={guideDocument}
               scrollBottom={scrollBottom}
               bind:messages={currentMessages}
               bind:offsets={currentOffsets}

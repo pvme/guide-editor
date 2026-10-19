@@ -2,10 +2,10 @@
   import { createEventDispatcher, afterUpdate, onMount, tick } from "svelte";
   import Message from "./Message.svelte";
   import Bot from "./Bot.svelte";
-  import { parseMessages } from "../../parser/parseMessages.js";
+  import { renderGuide } from "../../renderer/guideRenderer.js";
   import { highlightPreviewMessage } from "../../codemirror/messageSync.js";
 
-  export let text;
+  export let document;
   export let scrollBottom = false;
 
   export let messages = [];
@@ -17,16 +17,9 @@
   /* -------------------------------------------------------
      Parse messages + offsets
   ------------------------------------------------------- */
-  $: messages = parseMessages(text);
+  $: messages = renderGuide(document);
 
-  $: offsets = (() => {
-    let acc = 0;
-    return messages.map((m) => {
-      const start = acc;
-      acc += m.lineMap.length;
-      return start;
-    });
-  })();
+  $: offsets = messages.map(message => message.range.start.line - 1);
 
   /* -------------------------------------------------------
      Link Intercept Popover
@@ -62,37 +55,17 @@
   }
 
   function getLinkmsgTarget(link) {
-    const rawHref = link.getAttribute("href") || "";
-    const candidates = [
-      rawHref,
-      safeDecode(rawHref),
-      link.href,
-      safeDecode(link.href)
-    ];
-
-    for (const candidate of candidates) {
-      const match = candidate.match(/\$linkmsg_([^$]+)\$/);
-      if (match) return match[1];
-    }
-
-    return null;
-  }
-
-  function safeDecode(value) {
-    try {
-      return decodeURIComponent(value);
-    } catch {
-      return value;
-    }
+    return link.dataset.guideTag || null;
   }
 
   function scrollToTag(tag) {
-    const targetIndex = messages.findIndex((msg) =>
-      msg.tag?.toLowerCase() === tag.toLowerCase()
-    );
-    if (targetIndex === -1) return;
-
-    const target = container.querySelector(
+    const anchor = document.tags[tag];
+    if (!anchor) return;
+    const sectionTarget = Array.from(container.querySelectorAll('[data-section-id]')).find(element => element.dataset.sectionId === anchor.sectionId);
+    const targetIndex = sectionTarget
+      ? Number(sectionTarget.closest('.pvme-message').dataset.msgIndex)
+      : messages.findIndex(message => message.anchors.includes(anchor));
+    const target = sectionTarget || container.querySelector(
       `.pvme-message[data-msg-index="${targetIndex}"]`
     );
     target?.scrollIntoView({
@@ -259,7 +232,6 @@
                     >
                       <Message
                         lineMap={msg.lineMap}
-                        globalOffset={offsets[i]}
                       />
                     </div>
                   {/each}

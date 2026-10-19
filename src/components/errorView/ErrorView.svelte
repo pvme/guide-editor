@@ -1,18 +1,14 @@
 <script>
     import { createEventDispatcher, tick } from 'svelte';
-    import findStyleErrors from './../../syntax/style';
-    import findSyntaxErrors from './../../syntax/syntax';
     import Error from './Error.svelte';
 
-    export let text;
+    export let errors = [];
     export let flashKey = 0;
-    export let ignoredTrailingWhitespaceLine = null;
 
     const dispatch = createEventDispatcher();
     let errorViewEl;
     let checkerHighlighted = false;
 
-    $: errors = findErrors(text);
     $: if (flashKey > 0) {
         flashChecker();
     }
@@ -27,13 +23,6 @@
                 return false;
         }
         return true;
-    }
-
-    function findErrors(text) {
-        return [
-            ...findStyleErrors(text, { ignoredTrailingWhitespaceLine }),
-            ...findSyntaxErrors(text)
-        ];
     }
 
     async function flashChecker() {

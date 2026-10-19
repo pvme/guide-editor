@@ -1,15 +1,6 @@
 // src/codemirror/listIndent.js
 import { keymap } from "@codemirror/view";
-
-/* -------------------------------------------------------------
-   LIST PATTERNS
--------------------------------------------------------------- */
-
-// Unordered: ⬥ • ⬩
-export const unorderedRE = /^(\s*)(⬥|•|⬩)\s+(.*)$/;
-
-// Ordered:   1.  2.  a.  b.
-export const orderedRE = /^(\s*)((\d+|[a-zA-Z])\.)\s+(.*)$/;
+import { parseGuide } from '@pvme/guide-parser';
 
 /* -------------------------------------------------------------
    Bullet rules for unordered lists
@@ -41,39 +32,20 @@ export function orderedMarkerForIndent(indent, index = 1) {
    Parse line (detects BOTH list types)
 -------------------------------------------------------------- */
 export function parseListLine(text) {
-    let m;
-
-    // Unordered
-    m = unorderedRE.exec(text);
-    if (m) {
-        return {
-            type: "unordered",
-            indent: m[1].length,
-            marker: m[2],
-            content: m[3]
-        };
-    }
-
-    // Ordered
-    m = orderedRE.exec(text);
-    if (m) {
-        const raw = m[2];
-        const indexPart = m[3];
-
-        let index = 1;
-        if (/^\d+$/.test(indexPart)) index = parseInt(indexPart, 10);
-        else index = indexPart.toLowerCase().charCodeAt(0) - 96;
-
-        return {
-            type: "ordered",
-            indent: m[1].length,
-            marker: raw,
-            index,
-            content: m[4]
-        };
-    }
-
-    return null;
+    const list = parseGuide(text, { validateReferences: false }).messages[0]?.blocks[0];
+    if (list?.type !== 'list') return null;
+    const item = list.items[0];
+    // Marker choices and indentation remain editor policy, not parser syntax.
+    if (!list.ordered && !['⬥', '•', '⬩'].includes(item.marker)) return null;
+    if (list.ordered && !item.marker.endsWith('.')) return null;
+    const indexPart = item.marker.slice(0, -1);
+    return {
+        type: list.ordered ? 'ordered' : 'unordered',
+        indent: item.indent,
+        marker: item.marker,
+        content: text.slice(item.children[0]?.range.start.offset ?? text.length),
+        ...(list.ordered ? { index: list.style === 'number' ? Number(indexPart) : indexPart.toLowerCase().charCodeAt(0) - 96 } : {})
+    };
 }
 
 /* -------------------------------------------------------------

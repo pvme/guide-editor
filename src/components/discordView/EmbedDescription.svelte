@@ -1,7 +1,7 @@
 <script>
-    import markdownToHTML from "./../../markdown";
+    import { renderFragment } from "../../renderer/guideRenderer.js";
 
     export let content;
 </script>
 
-<div class='embed-description markup'>{@html markdownToHTML(content).content}</div>
+<div class='embed-description markup'>{@html renderFragment(content)}</div>
