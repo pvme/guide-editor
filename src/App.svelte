@@ -16,8 +16,6 @@
   import findSyntaxErrors from "./syntax/syntax";
   import GuideLoadModal from "./components/GuideLoadModal.svelte";
   import GuideSearch from "./components/toolbar/GuideSearch.svelte";
-  import ReviewPrModal from "./components/toolbar/ReviewPrModal.svelte";
-  import SubmitPrModal from "./components/toolbar/SubmitPrModal.svelte";
   import { setEditorIssuesEffect } from "./codemirror/errorGutter.js";
   import {
     pvmeExtensions,
@@ -51,6 +49,11 @@
   let showGuideSearch = false;
   let showSubmitPrModal = false;
   let showReviewPrModal = false;
+  let reviewPrModal;
+  let submitPrModal;
+  // Load optional PR UI once and retain its instance across open/close cycles.
+  $: if (showReviewPrModal) reviewPrModal ??= import("./components/toolbar/ReviewPrModal.svelte");
+  $: if (showSubmitPrModal) submitPrModal ??= import("./components/toolbar/SubmitPrModal.svelte");
   let loginRequestId = 0;
   let loginSubmitAfter = false;
   let pendingSubmitAfterAuth = false;
@@ -899,26 +902,34 @@
     on:cancel={() => (showGuideSearch = false)}
   />
 
-  <SubmitPrModal
-    open={showSubmitPrModal}
-    authError={submitAuthError}
-    on:reviewIssues={handleReviewCheckerIssues}
-    close={() => {
-      showSubmitPrModal = false;
-      submitAuthError = "";
-    }}
-  />
+  {#if submitPrModal}
+    {#await submitPrModal then { default: SubmitPrModal }}
+      <svelte:component this={SubmitPrModal}
+        open={showSubmitPrModal}
+        authError={submitAuthError}
+        on:reviewIssues={handleReviewCheckerIssues}
+        close={() => {
+          showSubmitPrModal = false;
+          submitAuthError = "";
+        }}
+      />
+    {/await}
+  {/if}
 
-  <ReviewPrModal
-    open={showReviewPrModal}
-    currentText={$text}
-    on:loadFile={handleReviewFileLoad}
-    on:merged={handleReviewMerged}
-    on:closed={handleReviewClosed}
-    close={() => {
-      showReviewPrModal = false;
-    }}
-  />
+  {#if reviewPrModal}
+    {#await reviewPrModal then { default: ReviewPrModal }}
+      <svelte:component this={ReviewPrModal}
+        open={showReviewPrModal}
+        currentText={$text}
+        on:loadFile={handleReviewFileLoad}
+        on:merged={handleReviewMerged}
+        on:closed={handleReviewClosed}
+        close={() => {
+          showReviewPrModal = false;
+        }}
+      />
+    {/await}
+  {/if}
 
   {#if showNewDraftConfirm}
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
