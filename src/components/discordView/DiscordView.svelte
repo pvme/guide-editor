@@ -206,7 +206,7 @@
 
       <button
         class="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded 
-               text-white text-xs focus:outline-none"
+               text-white text-xs focus:outline-hidden"
         on:click|stopPropagation={confirmOpen}
       >
         Open
@@ -214,7 +214,7 @@
 
       <button
         class="px-2 py-1 bg-gray-600 hover:bg-gray-700 rounded 
-               text-white text-xs focus:outline-none"
+               text-white text-xs focus:outline-hidden"
         on:click|stopPropagation={closePopover}
       >
         Cancel

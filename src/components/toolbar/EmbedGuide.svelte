@@ -387,7 +387,7 @@
                                 class="flex items-center gap-2 p-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
                                 on:click={() => insertColour(c.decimal)}
                             >
-                                <span class="w-4 h-4 rounded flex-shrink-0" style="background:{c.hex}{c.name === 'Dark' ? ';border:1px solid #555' : ''}"></span>
+                                <span class="w-4 h-4 rounded shrink-0" style="background:{c.hex}{c.name === 'Dark' ? ';border:1px solid #555' : ''}"></span>
                                 <span class="text-slate-300 text-sm">{c.name}</span>
                                 <code class="text-slate-500 text-xs ml-auto font-mono">{c.decimal}</code>
                             </button>

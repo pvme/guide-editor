@@ -25,9 +25,9 @@
 
 <header
   class="sticky top-0 z-40
-         bg-slate-900/80 backdrop-blur
+         bg-slate-900/80 backdrop-blur-sm
          border-b border-slate-800
-         shadow-sm shadow-[0_1px_0_rgba(15,23,42,0.6)]"
+         shadow-xs shadow-[0_1px_0_rgba(15,23,42,0.6)]"
     >
         <div class="toolbar-shell mx-2 py-3 2xl:py-4 2xl:pl-3">
             <div class="toolbar-section toolbar-authoring">
@@ -35,7 +35,7 @@
                     <img
                         src="https://pvme.io/assets/logo-no-bg.png"
                         alt="PVME logo"
-                        class="hidden h-9 w-auto flex-shrink-0 xl:block"
+                        class="hidden h-9 w-auto shrink-0 xl:block"
                     />
                 </ToolbarTooltip>
 

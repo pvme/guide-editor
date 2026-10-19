@@ -47,7 +47,7 @@
 <svelte:window on:keydown={onKeydown} />
 
 {#if open}
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50">
     <div
       class="bg-slate-800 border border-slate-700 rounded-xl shadow-xl p-6 w-[440px] max-w-[calc(100vw-2rem)]"
       role="dialog"

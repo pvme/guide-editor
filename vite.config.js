@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import tailwindcss from '@tailwindcss/vite';
 import svelteConfig from './svelte.config.js';
 
 const DEV_API_PROXY_PREFIX = "/api/guide-pr";
@@ -9,10 +10,31 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      tailwindcss(),
       svelte(svelteConfig),
       guideSubmitProxy(env)
     ],
-    base: '/guide-editor/'
+    base: '/guide-editor/',
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            const path = id.replaceAll('\\', '/');
+            // Discord Markdown uses the full highlight.js catalogue. Keep every
+            // language, split into stable groups rather than one oversized chunk.
+            const language = path.match(/\/highlight\.js\/lib\/languages\/([^/]+)\.js/);
+            if (language) {
+              const initial = language[1][0];
+              return initial < 'i' ? 'highlight-a-h' : initial < 'n' ? 'highlight-i-m' : 'highlight-n-z';
+            }
+            if (/\/node_modules\/@codemirror\/(?:state|view)\//.test(path)) return 'codemirror-core';
+            if (/\/node_modules\/(?:@codemirror|@lezer)\//.test(path)) return 'codemirror-extensions';
+            if (/\/node_modules\/(?:highlight\.js|simple-markdown|@khanacademy|@riskymh)\//.test(path)) return 'markdown';
+            if (path.includes('/node_modules/') || path.includes('commonjsHelpers')) return 'vendor';
+          }
+        }
+      }
+    }
   };
 });
 
