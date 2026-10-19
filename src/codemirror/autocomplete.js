@@ -2,6 +2,7 @@
 
 import { usersFormat, channelsFormat, emojisFormat, emojiSearch, channels } from "../pvmeSettings";
 import { editorSettingsFacet } from "./editorSettings.js";
+import { getEmojiId } from '../parser/guideParser.js';
 
 const DEBUG = false;
 const log = (...args) => DEBUG && console.log("[AUTOFORMAT]", ...args);
@@ -311,9 +312,4 @@ function withEmojiTrailingInsert(state, value, doc, pos) {
   }
 
   return value;
-}
-
-function getEmojiId(value) {
-  const matches = [...String(value || "").matchAll(/:(\d+)>/g)];
-  return matches.length ? matches[matches.length - 1][1] : null;
 }

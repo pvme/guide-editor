@@ -25,7 +25,7 @@
     }
 
     function jumpToError() {
-        dispatch('jump', { line: error.line[0] });
+        dispatch('jump', { line: error.line[0], range: error.range });
     }
 
     function onKeydown(e) {
@@ -44,7 +44,7 @@
     on:keydown={onKeydown}
 >
     <td>{formatErrorLine(error.line)}</td>
-    <td>{@html formatErrorEmoji(error.type)} {error.text}</td>
+    <td>{formatErrorEmoji(error.type)} [{error.source === 'parser' ? 'Parser' : error.source === 'style' ? 'Style' : 'Editor'}] {error.text}</td>
 </tr>
 
 <style>

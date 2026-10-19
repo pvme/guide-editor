@@ -1,4 +1,5 @@
 <script>
+    import { safeUrl } from '../../renderer/guideRenderer.js';
     export let image;
     export let onClick; // ensure this is passed in by the parent
 </script>
@@ -11,7 +12,7 @@
     <img
         class="image"
         role="presentation"
-        src={image.url}
+        src={safeUrl(image.url)}
         alt=""
     />
 </button>

@@ -5,6 +5,7 @@
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
     import Clipboard from "svelte-bootstrap-icons/lib/Clipboard.svelte";
     import { text } from "../../stores";
+    import { parseEditorGuide, getTocEntries } from "../../parser/guideParser.js";
 
     import {
         bossGuide,
@@ -37,11 +38,11 @@
     }
 
     function buildToC(mode) {
-        const chapters = [...$text.matchAll(/\n.tag:([^\n]+)/g)];
+        const chapters = getTocEntries(parseEditorGuide($text));
         const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
         const formatted = chapters
-            .map(c => `⬥ [${cap(c[1])}]($linkmsg_${c[1]}$)`)
+            .map(c => `⬥ [${cap(c.tag)}]($linkmsg_${c.tag}$)`)
             .join("\\n");
 
         if (mode === "compact") {

@@ -1,4 +1,5 @@
 <script>
+    import { parseEditorGuide } from "../../parser/guideParser.js";
     import DropdownPanel from "./DropdownPanel.svelte";
     import ToolbarTooltip from "./ToolbarTooltip.svelte";
     import CaretDownFill from "svelte-bootstrap-icons/lib/CaretDownFill.svelte";
@@ -123,9 +124,13 @@
 \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
   \u2503 = colour sidebar`;
 
+    let editError = "";
+
     function insertProperty(key, val) {
+        editError = "";
         const current = $text;
-        const embedBlocks = findEmbedBlocks(current);
+        const document = parseEditorGuide(current);
+        const embedBlocks = document.embeds;
         const cursor = getEditorCursorPosition();
 
         if (embedBlocks.length === 0) {
@@ -135,7 +140,7 @@
             return;
         }
 
-        const block = embedBlocks.find(b => cursor !== null && cursor >= b.blockStart && cursor <= b.blockEnd);
+        const block = embedBlocks.find(b => cursor !== null && cursor >= b.range.start.offset && cursor <= b.range.end.offset);
 
         if (!block) {
             const template = buildNewEmbedTemplate(key, val);
@@ -145,19 +150,30 @@
         }
 
         try {
-            const obj = JSON.parse(block.json);
-            const embed = obj.embed || obj;
+            if (!block.valid || !block.value || typeof block.value !== "object") {
+                editError = "Fix the embed JSON diagnostics before editing its properties.";
+                return;
+            }
+            const obj = structuredClone(block.value);
+            const embed = Object.hasOwn(obj, 'embed') ? obj.embed : Object.hasOwn(obj, 'embeds') ? obj.embeds?.[0] : obj;
+            if (!embed || typeof embed !== "object" || Array.isArray(embed)) {
+                editError = "This embed value cannot have properties.";
+                return;
+            }
+            const marker = document.commands.find(command => command.name === "embed" && command.range.end.offset === block.range.end.offset);
+            const jsonStart = block.range.start.offset;
+            const jsonEnd = marker.range.start.offset;
             let parsed;
             try { parsed = JSON.parse(val); } catch { parsed = val; }
             embed[key] = parsed;
             if (obj.embed) obj.embed = embed;
 
             const newJson = JSON.stringify(obj, null, 2);
-            const updated = current.substring(0, block.jsonStart) + newJson + current.substring(block.jsonEnd);
+            const updated = current.substring(0, jsonStart) + newJson + "\n" + current.substring(jsonEnd);
             const propertyIndex = newJson.indexOf(`${JSON.stringify(key)}:`);
             const nextCursor = propertyIndex === -1
-                ? block.jsonStart
-                : block.jsonStart + propertyIndex;
+                ? jsonStart
+                : jsonStart + propertyIndex;
 
             if (replaceEditorText) {
                 replaceEditorText(updated, nextCursor);
@@ -178,72 +194,6 @@
 
     function insertColour(decimal) {
         insertProperty("color", decimal);
-    }
-
-    function findEmbedBlocks(src) {
-        const lines = src.split('\n');
-        const blocks = [];
-        let inEmbed = false;
-        let embedLines = [];
-        let embedStartChar = 0;
-        let charPos = 0;
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const trimmed = line.trim();
-
-            if (inEmbed) {
-                embedLines.push(line);
-                const joined = embedLines.join('\n');
-                try {
-                    JSON.parse(joined);
-                    blocks.push({
-                        json: joined,
-                        jsonStart: embedStartChar,
-                        jsonEnd: charPos + line.length,
-                        blockStart: embedStartChar,
-                        blockEnd: charPos + line.length
-                    });
-                    inEmbed = false;
-                    embedLines = [];
-                } catch { /* keep collecting */ }
-                charPos += line.length + 1;
-                continue;
-            }
-
-            if (trimmed === '.embed:json') {
-                const lastBlock = blocks[blocks.length - 1];
-                if (lastBlock) {
-                    lastBlock.blockEnd = charPos + line.length;
-                }
-                charPos += line.length + 1;
-                continue;
-            }
-
-            if (trimmed.startsWith('{') && !inEmbed) {
-                embedStartChar = charPos;
-                try {
-                    JSON.parse(trimmed);
-                    blocks.push({
-                        json: trimmed,
-                        jsonStart: charPos,
-                        jsonEnd: charPos + line.length,
-                        blockStart: charPos,
-                        blockEnd: charPos + line.length
-                    });
-                } catch {
-                    inEmbed = true;
-                    embedLines = [line];
-                    embedStartChar = charPos;
-                }
-                charPos += line.length + 1;
-                continue;
-            }
-
-            charPos += line.length + 1;
-        }
-
-        return blocks;
     }
 
     async function copyExample() {
@@ -286,6 +236,7 @@
             <div class="p-3 pl-0 overflow-auto" style="max-height: 60vh;">
 
                 {#if activeSection === "properties"}
+                    {#if editError}<p class="text-sm text-red-300 mb-3">{editError}</p>{/if}
                     <div class="text-sm text-slate-300 mb-3">
                         Top-level embed properties. Place your cursor inside an embed JSON block, then click <strong class="text-blue-300">Insert</strong> to update that embed.
                     </div>

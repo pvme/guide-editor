@@ -79,7 +79,11 @@ function buildIssueState(doc, issues) {
     const fromLine = Math.max(1, Number(start) || 1);
     const toLine = Math.min(doc.lines, Math.max(fromLine, Number(end) || fromLine));
 
-    if (fromLine === toLine) {
+    if (issue.range) {
+      const from = Math.max(0, Math.min(doc.length, issue.range.start.offset));
+      const to = Math.max(from, Math.min(doc.length, issue.range.end.offset));
+      if (from < to) markRanges.push(markDecorations[issueType].range(from, to));
+    } else if (fromLine === toLine) {
       const line = doc.line(fromLine);
       const columnRange = getIssueColumnRange(issue, line);
 

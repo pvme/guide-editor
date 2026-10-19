@@ -25,7 +25,7 @@
     <div class='embed embed-rich' class:selected={selected}>
         <div class='embed-content'>
             <div class='embed-content-inner'>
-                {#if author}
+                {#if author && typeof author === 'object'}
                     <EmbedAuthor {...author} />
                 {/if}
                 {#if title}
@@ -34,18 +34,18 @@
                 {#if description}
                     <EmbedDescription content={description} />
                 {/if}
-                {#if fields}
+                {#if Array.isArray(fields)}
                     <EmbedFields {fields} />
                 {/if}
             </div>
-            {#if thumbnail}
+            {#if thumbnail && typeof thumbnail === 'object'}
                 <EmbedThumbnail {thumbnail} />
             {/if}
         </div>
-        {#if image}
+        {#if image && typeof image === 'object'}
             <EmbedImage {image} />
         {/if}
-        {#if footer}
+        {#if footer && typeof footer === 'object'}
             <EmbedFooter {...footer} />
         {/if}
     </div>

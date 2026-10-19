@@ -5,7 +5,7 @@
 </script>
 
 <div class='embed-fields'>
-    {#each fields as field}
+    {#each fields.filter(field => field && typeof field === 'object') as field}
         <EmbedField {...field} />
     {/each}
 </div>
