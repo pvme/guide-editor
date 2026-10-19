@@ -26,7 +26,6 @@ for (const [code, bad, good] of [
   ['BULLET_INDENT', '  • Item', '    • Item'],
   ['LIST_HIERARCHY', '    1) Item', '1) Item\n    a) Nested\n        ⬩ Third'],
   ['BULLET_HIERARCHY', '- Item', '⬥ Item\n    • Nested\n        ⬩ Third'],
-  ['BULLET_FULL_STOP', '⬥ Item.', '⬥ Item'],
   ['EMOJI_FULL_STOP', `Finished ${emoji}.`, `Finished ${emoji}`],
   ['DATE_FORMAT', 'Released 22 July 2013', 'Released 22nd July 2013'],
   ['NOTE_ITALICS', 'Note: This matters.', '*Note: This matters.*'],
@@ -69,6 +68,12 @@ test('preset previews allow one visible link anywhere among suppressed links', (
 test('headings need no dot separator and preset labels are unrestricted', () => {
   assert.deepEqual(style('# __Title__\n## __Section__'), []);
   assert.deepEqual(style('[AFK setup](https://presets.pvme.io/?id=abc)'), []);
+});
+
+test('bullet and numbered list items may end in full stops', () => {
+  assert.deepEqual(style('⬥ Item.\n    • Nested.\n        ⬩ Third.'), []);
+  assert.deepEqual(style('1) Item.\n    a) Nested.'), []);
+  assert.deepEqual(style('> ⬥ Quoted item.'), []);
 });
 
 test('emoji exceptions apply to static/animated emojis without exempting arbitrary word suffixes', () => {
@@ -178,6 +183,6 @@ test('canonical Style Guide fixture is fully parsed; deliberately bad code examp
   });
   assert.ok(literals.length > 10);
   assert.ok(issues.every(issue => !literals.some(r => issue.range.start.offset >= r.start.offset && issue.range.end.offset <= r.end.offset)));
-  // The title is not underlined and three prose bullets end with "etc.".
-  assert.deepEqual(issues.map(i => i.code), ['HEADING_UNDERLINE', 'BULLET_FULL_STOP', 'BULLET_FULL_STOP', 'BULLET_FULL_STOP']);
+  // The title is not underlined; prose bullets ending with "etc." are allowed.
+  assert.deepEqual(issues.map(i => i.code), ['HEADING_UNDERLINE']);
 });

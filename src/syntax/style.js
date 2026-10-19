@@ -69,7 +69,7 @@ function checkList(block, source, { range, add }) {
   }
 }
 
-function checkPunctuation(block, context, source, { range, add }) {
+function checkPunctuation(block, source, { range, add }) {
   const leaves = [];
   function flatten(nodes) {
     for (const node of nodes || []) {
@@ -84,7 +84,6 @@ function checkPunctuation(block, context, source, { range, add }) {
   if (dot < last.range.start.offset) return;
   const location = range(dot, dot + 1);
   if ((leaves.at(-2)?.type === 'emoji' && last.value.trim() === '.') || /\p{Extended_Pictographic}\uFE0F?\.$/u.test(last.value.trimEnd())) add('EMOJI_FULL_STOP', location, 'Sentences ending in an emoji should not end in a full stop');
-  else if (context.item) add('BULLET_FULL_STOP', location, 'Bullet/list items should not end in a full stop');
 }
 
 function checkText(ctx, options) {
@@ -218,7 +217,7 @@ export function validateGuideStyle(document, source = document.source, options =
         if (space) add('COMMAND_SPACING', ctx.range(block.range.start.offset + space.index + 1, block.range.start.offset + space.index + space[0].length), 'Command must not have whitespace after the colon and before the content', 'error');
       }
       if (!proseTypes.includes(block.type)) return;
-      if (block.type !== 'heading') checkPunctuation(block, context, source, ctx);
+      if (block.type !== 'heading') checkPunctuation(block, source, ctx);
       const first = block.children.find(node => node.type !== 'text' || node.value.trim());
       if (first?.type !== 'inline-code' && /^Notes?:/.test(inlineText(block.children)) && !block.children.every(node => node.type === 'italic' || (node.type === 'text' && !node.value.trim()))) add('NOTE_ITALICS', block.range, 'Write explicit Note:/Notes: text in italics');
       visitInline(block.children, (node, insideLink) => {
