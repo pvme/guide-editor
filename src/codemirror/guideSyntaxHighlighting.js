@@ -91,7 +91,12 @@ export function getGuideHighlightTokens(document) {
   const embedMarkers = new Map(document.commands.filter(command => command.name === 'embed')
     .map(command => [command.range.end.offset, command.range.start.offset]));
   for (const message of document.messages) blocks(message.blocks);
-  for (const command of document.commands) mark(command, 'command');
+  for (const command of document.commands) {
+    const from = command.range.start.offset;
+    const to = command.range.end.offset;
+    const colon = source.slice(from, to).indexOf(':');
+    add(from, colon < 0 ? to : from + colon + 1, 'command');
+  }
   for (const separator of document.separators) add(separator.start.offset, separator.end.offset, 'command');
   for (const reference of document.references) mark(reference, 'reference');
   return tokens.sort((a, b) => a.from - b.from || b.to - a.to);

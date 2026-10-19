@@ -40,10 +40,20 @@ test('highlighting can be disabled at editor creation', () => {
 
 test('PvME command lines, explicit boundaries and references are distinct from ordinary prose', () => {
   const source = 'Normal text.\n.\n.tag:headings\n.img:https://img.pvme.io/a.png\n.file:https://img.pvme.io/b.png\n.pin:delete\n.react:test\n.blank:\n$linkmsg_headings$';
-  assert.deepEqual(textOf(source, 'command'), ['.', '.tag:headings', '.img:https://img.pvme.io/a.png', '.file:https://img.pvme.io/b.png', '.pin:delete', '.react:test', '.blank:']);
+  assert.deepEqual(textOf(source, 'command'), ['.', '.tag:', '.img:', '.file:', '.pin:', '.react:', '.blank:']);
   assert.deepEqual(textOf(source, 'reference'), ['$linkmsg_headings$']);
   assert.deepEqual(tokens('Normal text with a full stop.'), []);
   assert.equal(parseGuide('# Heading\n.tag:a\n## Next').messages.length, 1);
+});
+
+test('attachment URLs and other command arguments stay outside highlight ranges', () => {
+  const source = '.img:https://img.pvme.io/a.png?value=a+b\n.file:https://img.pvme.io/b.png\n.tag:headings\n.embed:json';
+  assert.deepEqual(textOf(source, 'command'), ['.img:', '.file:', '.tag:', '.embed:']);
+  for (const token of tokens(source)) {
+    const lineStart = source.lastIndexOf('\n', token.from - 1) + 1;
+    const valueStart = source.indexOf(':', lineStart) + 1;
+    assert.ok(token.to <= valueStart);
+  }
 });
 
 test('literal examples and escaped dot commands do not become live command/reference colours', () => {
@@ -71,7 +81,7 @@ test('JSON accents field names only; strings, numbers, literals and punctuation 
   assert.ok(textOf(source, 'json-key').includes('"title"'));
   assert.ok(tokens(source).every(token => !['json-string', 'json-number', 'json-literal', 'json-punctuation'].includes(token.kind)));
   assert.deepEqual(textOf(source, 'reference'), ['$linkmsg_start$']);
-  assert.deepEqual(textOf(source, 'command'), ['.embed:json']);
+  assert.deepEqual(textOf(source, 'command'), ['.embed:']);
   const marker = source.indexOf('.embed:json');
   assert.ok(tokens(source).filter(token => token.kind.startsWith('json-')).every(token => token.to <= marker));
 });
@@ -82,7 +92,7 @@ test('incomplete commands and invalid JSON remain highlightable while typing', (
   assert.ok(parseGuide(source).diagnostics.some(issue => issue.code === 'INVALID_EMBED_JSON'));
   assert.ok(textOf(source, 'json-key').includes('"title"'));
   assert.deepEqual(textOf(source, 'json-key'), ['"embed"', '"color"', '"title"']);
-  assert.deepEqual(textOf(source, 'command'), ['.embed:json']);
+  assert.deepEqual(textOf(source, 'command'), ['.embed:']);
 });
 
 test('JSON fences accent field names without turning quoted commands/references into bot commands', () => {
@@ -100,7 +110,7 @@ test('ranges preserve UTF-16/CRLF positions, nested lists/quotes and the origina
   const document = parseGuide(source), before = JSON.stringify(document);
   const highlights = getGuideHighlightTokens(document);
   assert.equal(JSON.stringify(document), before);
-  assert.deepEqual(textOf(source, 'command'), ['.', '.tag:section']);
+  assert.deepEqual(textOf(source, 'command'), ['.', '.tag:']);
   assert.deepEqual(textOf(source, 'bullet'), ['⬥', '•']);
   assert.ok(highlights.every(token => token.from >= 0 && token.from < token.to && token.to <= source.length));
 });
