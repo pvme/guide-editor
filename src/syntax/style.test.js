@@ -21,6 +21,8 @@ for (const [code, bad, good] of [
   ['EMOJI_SPACING', `Text${emoji}`, `Text ${emoji}`],
   ['EMOJI_IN_LINK', `[Text ${emoji}](<https://runescape.wiki/>)`, `[Text](<https://runescape.wiki/>) ${emoji}`],
   ['HEADING_UNDERLINE', '## Section', '## __Section__'],
+  ['TITLE_UNDERLINE', '# __Title__', '# Title'],
+  ['HEADING_SEPARATOR', 'Text\n## __Section__', 'Text\n.\n## __Section__'],
   ['HEADING_LEVEL', '#### Section', '### Sub-sub-section'],
   ['HEADING_BOLD', '# __**Title**__', '# __Title__'],
   ['BULLET_INDENT', '  • Item', '    • Item'],
@@ -65,9 +67,41 @@ test('preset previews allow one visible link anywhere among suppressed links', (
   assert.equal(issues[0].range.start.line, 1);
 });
 
-test('headings need no dot separator and preset labels are unrestricted', () => {
-  assert.deepEqual(style('# __Title__\n## __Section__'), []);
+test('heading hierarchy accepts plain titles and preset labels are unrestricted', () => {
+  assert.deepEqual(style('# Title\n.\n## __Section 1__\n.\n### __Sub-section 1.1__\n.\n### Sub-sub-section 1.1.1\n\n.\n## __Section 2__\n\n.\n## __Section 3__\n.\n### __Sub-section 3.1__'), []);
+  assert.deepEqual(codes('# __Title__\n.\n## __Section__'), ['TITLE_UNDERLINE']);
   assert.deepEqual(style('[AFK setup](https://presets.pvme.io/?id=abc)'), []);
+});
+
+test('headings require a literal dot immediately above, except opening titles and quotes', () => {
+  for (const heading of ['# Title', '## __Section__', '### __Sub-section__', '### Sub-sub-section']) {
+    for (const prefix of ['Text\n', 'Text\n\n', 'Text\n.\n\n', 'Text\n\\.\n', 'Text\n.dot:\n']) {
+      const source = prefix + heading;
+      const issue = style(source).find(issue => issue.code === 'HEADING_SEPARATOR');
+      assert.ok(issue, source);
+      assert.equal(issue.range.start.offset, prefix.length);
+      assert.equal(source.slice(issue.range.start.offset, issue.range.end.offset).trimEnd(), heading);
+    }
+    for (const newline of ['\n', '\r\n']) {
+      assert.ok(!codes(`Text${newline}.${newline}${heading}`).includes('HEADING_SEPARATOR'));
+    }
+  }
+  assert.deepEqual(style('# Title'), []);
+  assert.ok(codes('## __Section__').includes('HEADING_SEPARATOR'));
+  assert.deepEqual(style('> ## __Quoted section__'), []);
+  assert.deepEqual(style('```\n## Example heading\n```'), []);
+});
+
+test('title underline warnings include partial and nested formatting and preserve exemptions', () => {
+  for (const source of ['# A __Title__', '# __**Title**__', '# **__Title__**']) {
+    const issue = style(source).find(issue => issue.code === 'TITLE_UNDERLINE');
+    assert.ok(issue, source);
+    assert.equal(issue.type, 'warn');
+    assert.equal(issue.range.start.offset, 0);
+  }
+  for (const source of ['# Title', '# `__Title__`', '> # __Quoted title__', '```\n# __Example title__\n```', '.\n## __Section__', '.\n### __Sub-section__']) {
+    assert.deepEqual(style(source), [], source);
+  }
 });
 
 test('bullet and numbered list items may end in full stops', () => {
@@ -165,9 +199,9 @@ test('missing/duplicate tags, malformed commands/JSON/emojis/references and fenc
 
 test('PVME/editor/internal URL exemptions are deliberate; malformed tags do not create boundaries', () => {
   for (const url of ['https://pvme.io/guide-editor/', 'https://presets.pvme.io/?id=abc', 'https://pvme.github.io/rotation-builder/', 'https://github.com/pvme/pvme-guides', 'https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis/emojis.json', 'https://discord.com/channels/1/2']) assert.ok(!codes(`[Link](<${url}>)`).includes('CONTENT_DOMAIN'), url);
-  const document = parseGuide('# __Start__\n.tag:start\n## __Next__');
+  const document = parseGuide('# Start\n.tag:start\n## __Next__');
   assert.equal(document.messages.length, 1);
-  assert.deepEqual(validateGuideStyle(document).map(issue => issue.code), ['UNREFERENCED_TAG']);
+  assert.deepEqual(validateGuideStyle(document).map(issue => issue.code), ['UNREFERENCED_TAG', 'HEADING_SEPARATOR']);
 });
 
 test('canonical Style Guide fixture is fully parsed; deliberately bad code examples are excluded', () => {
@@ -183,6 +217,5 @@ test('canonical Style Guide fixture is fully parsed; deliberately bad code examp
   });
   assert.ok(literals.length > 10);
   assert.ok(issues.every(issue => !literals.some(r => issue.range.start.offset >= r.start.offset && issue.range.end.offset <= r.end.offset)));
-  // The title is not underlined; prose bullets ending with "etc." are allowed.
-  assert.deepEqual(issues.map(i => i.code), ['HEADING_UNDERLINE']);
+  assert.deepEqual(issues, []);
 });

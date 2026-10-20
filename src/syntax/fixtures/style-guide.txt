@@ -80,13 +80,13 @@ This is the new section
 ```
 
 .
-⬥ Use `#` and underline the title
+⬥ Use `#` for the title without underlining it
 ⬥ Use `##` / `###` and underline level 1 and 2 headings
 ⬥ Level 3 headings:
     • Discord doesn't allow `####` for level 3 headings
     • Therefore remove the underline to distinguish
 .
-```# __Title__
+```# Title
 ## __Section 1__
 ### __Sub-section 1.1__
 ### Sub-sub-section 1.1.1

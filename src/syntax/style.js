@@ -40,13 +40,19 @@ function checkEmoji(node, insideLink, source, add) {
   if ((!neighbor(before) && !prefix && !escapedBefore) || (!neighbor(after) && !escapedAfter)) add('EMOJI_SPACING', node.range, 'Emojis must have valid characters around them');
 }
 
-function checkHeading(block, context, { add }) {
+function checkHeading(block, context, { add, lines }) {
+  const line = block.range.start.line;
+  if (!context.quoted && !(line === 1 && block.level === 1) && lines[line - 2]?.text !== '.') add('HEADING_SEPARATOR', block.range, 'Put a . on the line immediately before each heading');
   if (block.level > 3) add('HEADING_LEVEL', block.range, 'Heading format with 4 or more # are not supported in Discord. ### is the max', 'error');
-  let bold = false;
-  visitInline(block.children, node => { if (node.type === 'bold') bold = true; });
+  let bold = false, underline = false;
+  visitInline(block.children, node => {
+    if (node.type === 'bold') bold = true;
+    if (node.type === 'underline') underline = true;
+  });
   if (bold) add('HEADING_BOLD', block.range, 'Bold formatting **text** is redundant in headers (#, ##, ###). Remove the ** on this line', 'error');
+  if (!context.quoted && block.level === 1 && underline) add('TITLE_UNDERLINE', block.range, 'Do not underline guide titles (#). Remove the __ formatting');
   const words = block.children.filter(node => node.type !== 'emoji' && !(node.type === 'text' && !node.value.trim()));
-  if (!context.quoted && block.level <= 2 && !words.every(node => node.type === 'underline')) add('HEADING_UNDERLINE', block.range, 'Underline guide titles and level 1 section headings');
+  if (!context.quoted && block.level === 2 && !words.every(node => node.type === 'underline')) add('HEADING_UNDERLINE', block.range, 'Underline level 1 section headings (##)');
   // ### can be underlined (sub-section) or plain (sub-sub-section). Logical
   // depth and Oxford capitalisation require author intent/parts of speech.
 }
