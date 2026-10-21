@@ -103,6 +103,10 @@
     scrollEditorToMessage(currentMessages, msgIndex, view);
   }
 
+  function _highlightEditorMessage(msgIndex, view) {
+    highlightEditorMessage(currentMessages, msgIndex, view);
+  }
+
   // -----------------------------
   // Preview click handler
   // -----------------------------
@@ -393,7 +397,7 @@
           scrollPreviewToMessage,
           highlightPreviewMessage,
           scrollEditorToMessage: _scrollEditorToMessage,
-          highlightEditorMessage
+          highlightEditorMessage: _highlightEditorMessage
         }, currentEditorSettings),
         EditorView.updateListener.of((update) => {
           if (!update.selectionSet && !update.docChanged) return;

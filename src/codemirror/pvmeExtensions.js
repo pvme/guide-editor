@@ -48,6 +48,7 @@ import { editorSettingsExtension } from "./editorSettings.js";
 import { messageSyncExtension } from "./messageSync.js";
 import { errorGutterExtension } from "./errorGutter.js";
 import { guideSyntaxHighlighting } from "./guideSyntaxHighlighting.js";
+import { editorRowFlash } from "./editorRowFlash.js";
 
 function selectNextOccurrenceSafe(view) {
   const handled = selectNextOccurrence(view);
@@ -96,6 +97,7 @@ export function pvmeExtensions(textStore, syncApi, editorSettings = {}) {
     guideSyntaxHighlighting,
     EditorView.lineWrapping,
     highlightActiveLine(),
+    editorRowFlash,
     highlightSelectionMatches({ minSelectionLength: 3 }),
 
     // cursor → preview sync

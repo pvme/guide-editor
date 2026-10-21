@@ -6,6 +6,7 @@
 // • Message click in preview
 
 import { EditorView } from "@codemirror/view";
+import { flashEditorRows } from "./editorRowFlash.js";
 
 export function messageSyncExtension({
   getMessageAtEditorLine,   // (line) → msgIndex
@@ -62,8 +63,10 @@ export function highlightPreviewMessage(index) {
   if (target) target.classList.add("highlight");
 }
 
-export function highlightEditorMessage() {
-  // optional hook
+export function highlightEditorMessage(currentMessages, msgIndex, view) {
+  const message = currentMessages[msgIndex];
+  if (!message) return;
+  flashEditorRows(view, message.firstEditorLine, message.lastEditorLine);
 }
 
 export function scrollPreviewToMessage(index) {
