@@ -31,9 +31,9 @@
     dispatch("renameDraft", draft);
   }
 
-  function deleteDraft(draft) {
+  function deleteDraft(draft, event) {
     close();
-    dispatch("deleteDraft", draft);
+    dispatch("deleteDraft", { draft, skipConfirmation: event.shiftKey });
   }
 
   function downloadDraft(draft) {
@@ -198,12 +198,12 @@
                 class="inline-flex h-8 w-8 items-center justify-center rounded border border-transparent text-slate-300 hover:border-red-700 hover:bg-red-800 hover:text-white"
                 type="button"
                 aria-label="Discard draft"
-                on:click={() => deleteDraft(draft)}
+                on:click={(event) => deleteDraft(draft, event)}
               >
                 <Trash />
               </button>
               <span class="pointer-events-none absolute right-9 top-1/2 z-30 hidden -translate-y-1/2 whitespace-nowrap rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs text-slate-200 shadow-lg group-hover/discard-action:inline-flex group-focus-within/discard-action:inline-flex">
-                Discard draft
+                Discard draft (Shift-click to skip confirmation)
                 <span class="absolute -right-[5px] top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 border-r border-t border-slate-600 bg-slate-950"></span>
               </span>
             </span>

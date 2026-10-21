@@ -761,8 +761,9 @@
     renameDraftValue = "";
   }
 
-  function openDeleteDraftModal(draft) {
+  function requestDeleteDraft({ draft, skipConfirmation }) {
     draftToDelete = draft;
+    if (skipConfirmation) confirmDeleteDraft();
   }
 
   function confirmDeleteDraft() {
@@ -834,7 +835,7 @@
       on:openReviewPr={() => (showReviewPrModal = true)}
       on:newDraft={requestNewDraft}
       on:renameDraft={(e) => openRenameDraftModal(e.detail)}
-      on:deleteDraft={(e) => openDeleteDraftModal(e.detail)}
+      on:deleteDraft={(e) => requestDeleteDraft(e.detail)}
     />
 
 
