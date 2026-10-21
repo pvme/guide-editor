@@ -1,5 +1,5 @@
 import Ajv from 'ajv';
-import { parseGuide } from '@pvme/guide-parser';
+import { parseGuide, serializeDiscordMessage } from '@pvme/guide-parser';
 import { parseEditorGuide } from '../parser/guideParser.js';
 import { projectDiscordMessages } from '../discord/projectDiscordMessages.js';
 import { embedSchema } from './embedSchema.js';
@@ -40,9 +40,9 @@ function checkEmoji(node, insideLink, source, add) {
   if ((!neighbor(before) && !prefix && !escapedBefore) || (!neighbor(after) && !escapedAfter)) add('EMOJI_SPACING', node.range, 'Emojis must have valid characters around them');
 }
 
-function checkHeading(block, context, { add, lines }) {
-  const line = block.range.start.line;
-  if (!context.quoted && !(line === 1 && block.level === 1) && lines[line - 2]?.text !== '.') add('HEADING_SEPARATOR', block.range, 'Put a . on the line immediately before each heading');
+function checkHeading(block, context, message, { add }) {
+  const firstContent = message.blocks.find(node => !['blank', 'command', 'unknown-command'].includes(node.type));
+  if (!context.quoted && block !== firstContent) add('HEADING_SEPARATOR', block.range, 'Start a new message before this heading');
   if (block.level > 3) add('HEADING_LEVEL', block.range, 'Heading format with 4 or more # are not supported in Discord. ### is the max', 'error');
   let bold = false, underline = false;
   visitInline(block.children, node => {
@@ -138,22 +138,16 @@ function hasMention(value) {
 
 function checkPublication(document, posts, { add }) {
   const url = 'https://discordapp.com/channels/00000000000000000000/00000000000000000000/00000000000000000000';
-  const expansion = references => references.filter(ref => ref.kind === 'tag')
-    .reduce((sum, ref) => sum + url.length - ref.raw.length, 0);
   for (const post of posts) {
     const payload = post.blocks.filter(block => !['command', 'unknown-command', 'attachment'].includes(block.type));
-    const content = payload.map(block => block.type === 'embed' ? (typeof block.value?.content === 'string' ? block.value.content : null) : block.raw).filter(value => value !== null).join('\n');
-    // References expand to message URLs; retain the legacy conservative budget.
-    const references = document.references.filter(ref => ref.kind === 'tag' && ref.range.start.offset >= post.range.start.offset && ref.range.end.offset <= post.range.end.offset && !document.embeds.some(embed => ref.range.start.offset >= embed.range.start.offset && ref.range.end.offset <= embed.range.end.offset));
-    let length = content.length + expansion(references);
-    for (const block of payload) {
-      if (block.type === 'embed' && typeof block.value?.content === 'string') {
-        length += expansion(parseGuide(block.value.content, { validateReferences: false }).references);
-      }
+    // The parser owns normalization, reference substitution (including code),
+    // padding and Discord's text limit. Keep only the editor diagnostic here.
+    try {
+      serializeDiscordMessage(document.messages[post.sourceMessageIndex], { resolveTag: () => url });
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      add('MESSAGE_LENGTH', post.range, 'Message text exceeds 2000 characters', 'error');
     }
-    if (/^[ \n]/.test(content)) length++; // Retain the legacy validator's blank-padding budget.
-    if (/\n$/.test(content)) length++;
-    if (length > 2000) add('MESSAGE_LENGTH', post.range, 'Message text exceeds 2000 characters', 'error');
     if (!post.explicitBlank && payload[0]?.type === 'blank' && payload.some(block => block.type !== 'blank')) add('LEADING_BLANK', payload[0].range, 'Message should not start with an empty line', 'error');
   }
   for (const node of document.embeds.filter(embed => embed.valid)) {
@@ -215,7 +209,7 @@ export function validateGuideStyle(document, source = document.source, options =
     const presets = [];
     walkBlocks(message.blocks, (block, context) => {
       if (block.type === 'attachment') checkUrl(block.url, block.range, add);
-      if (block.type === 'heading') checkHeading(block, context, ctx);
+      if (block.type === 'heading') checkHeading(block, context, message, ctx);
       if (block.type === 'list') checkList(block, source, ctx);
       if (block.type === 'command' && block.valid) {
         const space = /:[ \t]+/.exec(block.raw);

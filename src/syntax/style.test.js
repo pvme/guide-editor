@@ -73,9 +73,9 @@ test('heading hierarchy accepts plain titles and preset labels are unrestricted'
   assert.deepEqual(style('[AFK setup](https://presets.pvme.io/?id=abc)'), []);
 });
 
-test('headings require a literal dot immediately above, except opening titles and quotes', () => {
+test('headings start parsed messages, with quoted and literal examples exempt', () => {
   for (const heading of ['# Title', '## __Section__', '### __Sub-section__', '### Sub-sub-section']) {
-    for (const prefix of ['Text\n', 'Text\n\n', 'Text\n.\n\n', 'Text\n\\.\n', 'Text\n.dot:\n']) {
+    for (const prefix of ['Text\n', 'Text\n\n', 'Text\n\\.\n', 'Text\n..tag:literal\n']) {
       const source = prefix + heading;
       const issue = style(source).find(issue => issue.code === 'HEADING_SEPARATOR');
       assert.ok(issue, source);
@@ -83,11 +83,16 @@ test('headings require a literal dot immediately above, except opening titles an
       assert.equal(source.slice(issue.range.start.offset, issue.range.end.offset).trimEnd(), heading);
     }
     for (const newline of ['\n', '\r\n']) {
-      assert.ok(!codes(`Text${newline}.${newline}${heading}`).includes('HEADING_SEPARATOR'));
+      for (const boundary of ['.', '.tag:section', '.pin:delete', '.react:x', '.img:https://img.pvme.io/a.png', '.unknown:x']) {
+        for (const gap of ['', newline]) {
+          assert.ok(!codes(`Text${newline}${boundary}${newline}${gap}${heading}`).includes('HEADING_SEPARATOR'));
+        }
+      }
     }
   }
   assert.deepEqual(style('# Title'), []);
-  assert.ok(codes('## __Section__').includes('HEADING_SEPARATOR'));
+  assert.deepEqual(style('## __Section__'), []);
+  assert.ok(!codes('.\n## heading 1\n.tag:heading2\n### heading 2\ncontent').includes('HEADING_SEPARATOR'));
   assert.deepEqual(style('> ## __Quoted section__'), []);
   assert.deepEqual(style('```\n## Example heading\n```'), []);
 });
@@ -160,16 +165,26 @@ test('quoted headings do not require guide-section underlines but retain Discord
   assert.ok(codes('> ## **Heading**').includes('HEADING_BOLD'));
 });
 
-test('publication length uses attachment splits and still budgets expanded tag URLs', () => {
+test('publication length uses semantic messages and parser serialization', () => {
   const source = `${'x'.repeat(1200)}\n.img:https://img.pvme.io/a.png\n${'y'.repeat(1200)}`;
   assert.ok(!codes(source).includes('MESSAGE_LENGTH'));
   assert.ok(codes(`${'x'.repeat(1950)}\n$linkmsg_target$`).includes('MESSAGE_LENGTH'));
   assert.ok(codes(embed({ content: 'x'.repeat(2001) })).includes('MESSAGE_LENGTH'));
   assert.ok(codes(embed({ content: `${'x'.repeat(1950)} $linkmsg_target$` })).includes('MESSAGE_LENGTH'));
+  for (const command of ['.tag:part', '.pin:delete', '.react:x']) {
+    assert.ok(!codes(`${'x'.repeat(1200)}\n${command}\n${'y'.repeat(1200)}`).includes('MESSAGE_LENGTH'));
+  }
+  assert.ok(!codes(`..${'x'.repeat(1999)}`).includes('MESSAGE_LENGTH'));
+  assert.ok(!codes(`${'x'.repeat(2000)}\r\n`).includes('MESSAGE_LENGTH'));
+  assert.ok(codes('```\n' + 'x'.repeat(1940) + '$linkmsg_target$\n```').includes('MESSAGE_LENGTH'));
+  assert.ok(!codes('```\n' + 'x'.repeat(1200) + '\n.react:x\n' + 'y'.repeat(1200) + '\n```').includes('MESSAGE_LENGTH'));
 });
 
-test('leading blank warnings follow preview payloads rather than unsupported blank commands', () => {
-  assert.ok(codes('.blank:\n\nText').includes('LEADING_BLANK'));
+test('leading blank warnings follow command transitions and attachment spacing', () => {
+  for (const command of ['.tag:part', '.pin:delete', '.react:x']) {
+    assert.ok(codes(`${command}\n\nText`).includes('LEADING_BLANK'));
+    assert.ok(!codes(`${command}\nText`).includes('LEADING_BLANK'));
+  }
   assert.ok(!codes('.img:https://img.pvme.io/a.png\n\nText').includes('LEADING_BLANK'));
 });
 
@@ -188,9 +203,11 @@ test('date ordinals, emoji punctuation, heading depth and ToC failures have no r
 });
 
 test('style diagnostics stay separate from parser diagnostics and do not duplicate invalid pin warnings', () => {
-  const source = '# __Start__\n.tag:start\n.tag:start\n.img:not-a-url\n.unknown:foo\n$linkmsg_missing$\n<:broken>\n.\n{"embed":bad}\n.embed:json\n.\n```\nunclosed';
+  const source = '# __Start__\n.tag:start\n.tag:start\n.img:not-a-url\n.unknown:foo\n.blank:\n$linkmsg_missing$\n<:broken>\n.\n{"embed":bad}\n.embed:json\n.\n```\nunclosed';
   const document = parseGuide(source);
   const structural = parserIssues(document), editorial = validateGuideStyle(document);
+  assert.ok(structural.some(issue => issue.code === 'UNKNOWN_COMMAND' && source.slice(issue.range.start.offset, issue.range.end.offset) === '.blank:'));
+  assert.ok(!editorial.some(issue => source.slice(issue.range.start.offset, issue.range.end.offset) === '.blank:'));
   assert.ok(structural.every(i => i.source === 'parser'));
   assert.ok(editorial.every(i => i.source === 'style'));
   assert.ok(!editorial.some(i => structural.some(p => p.code === i.code || p.text === i.text)));
@@ -199,10 +216,11 @@ test('style diagnostics stay separate from parser diagnostics and do not duplica
   assert.ok(!validateGuideStyle(malformedPin).some(issue => issue.code === 'TOC_PIN'));
 });
 
-test('internal URLs are exempt and command boundaries do not exempt headings from style rules', () => {
+test('internal URLs are exempt and command transitions retain editorial heading checks', () => {
   for (const url of ['https://pvme.io/guide-editor/', 'https://presets.pvme.io/?id=abc', 'https://pvme.github.io/rotation-builder/', 'https://github.com/pvme/pvme-guides', 'https://raw.githubusercontent.com/pvme/pvme-settings/master/emojis/emojis.json', 'https://discord.com/channels/1/2']) assert.ok(!codes(`[Link](<${url}>)`).includes('CONTENT_DOMAIN'), url);
   const document = parseGuide('# Start\n.tag:start\n## __Next__');
-  assert.deepEqual(validateGuideStyle(document).map(issue => issue.code), ['UNREFERENCED_TAG', 'HEADING_SEPARATOR']);
+  assert.deepEqual(validateGuideStyle(document).map(issue => issue.code), ['UNREFERENCED_TAG']);
+  assert.deepEqual(codes('# Start\n.tag:start\n## Next'), ['UNREFERENCED_TAG', 'HEADING_UNDERLINE']);
 });
 
 test('canonical Style Guide has no editorial warnings, including inside code examples', () => {
