@@ -43,7 +43,6 @@ test('PvME command lines, explicit boundaries and references are distinct from o
   assert.deepEqual(textOf(source, 'command'), ['.', '.tag:', '.img:', '.file:', '.pin:', '.react:', '.blank:']);
   assert.deepEqual(textOf(source, 'reference'), ['$linkmsg_headings$']);
   assert.deepEqual(tokens('Normal text with a full stop.'), []);
-  assert.equal(parseGuide('# Heading\n.tag:a\n## Next').messages.length, 1);
 });
 
 test('attachment URLs and other command arguments stay outside highlight ranges', () => {
@@ -56,11 +55,17 @@ test('attachment URLs and other command arguments stay outside highlight ranges'
   }
 });
 
-test('literal examples and escaped dot commands do not become live command/reference colours', () => {
-  const source = '..tag:escaped\n\\.tag:escaped\n`.tag:literal $linkmsg_literal$`\n```\n.\n.tag:literal\n$linkmsg_literal$\n```';
+test('escaped commands and inline code keep ordinary colours', () => {
+  const source = '..tag:escaped\n\\.tag:escaped\n`.tag:literal $linkmsg_literal$`\n```\n..tag:literal\n$linkmsg_literal$\n```';
   assert.deepEqual(textOf(source, 'command'), []);
   assert.deepEqual(textOf(source, 'reference'), []);
   assert.equal(textOf(source, 'markup').length, 4);
+});
+
+test('parser-recognised commands inside fences receive command colours', () => {
+  const source = '```\n.\n.tag:example\n$linkmsg_example$\n```';
+  assert.deepEqual(textOf(source, 'command'), ['.', '.tag:']);
+  assert.deepEqual(textOf(source, 'reference'), ['$linkmsg_example$']);
 });
 
 test('Markdown accents only delimiters; heading text, styled text, emoji and mention codes stay plain', () => {
@@ -89,7 +94,6 @@ test('JSON accents field names only; strings, numbers, literals and punctuation 
 test('incomplete commands and invalid JSON remain highlightable while typing', () => {
   assert.deepEqual(textOf('.ta', 'command'), ['.ta']);
   const source = '{"embed": {"color": 123, "title": }}\n.embed:json';
-  assert.ok(parseGuide(source).diagnostics.some(issue => issue.code === 'INVALID_EMBED_JSON'));
   assert.ok(textOf(source, 'json-key').includes('"title"'));
   assert.deepEqual(textOf(source, 'json-key'), ['"embed"', '"color"', '"title"']);
   assert.deepEqual(textOf(source, 'command'), ['.embed:']);

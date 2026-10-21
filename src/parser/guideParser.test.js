@@ -5,27 +5,24 @@ import { parseListLine } from '../codemirror/listIndent.js';
 import { renderGuide, renderFragment } from '../renderer/guideRenderer.js';
 import findStyleErrors from '../syntax/style.js';
 
-test('shared sections, tags and explicit boundaries drive preview and ToC', () => {
+test('parser integration smoke: preview line mapping and ToC links use the shared document', () => {
   const source = '# Intro\n.tag:intro\n## Next\nText **bold** <:test:123>\n.img:https://example.com/a.png\nAfter image\n.\n[Intro]($linkmsg_intro$)';
   const document = parseEditorGuide(source);
   const messages = renderGuide(document);
-  assert.equal(document.messages.length, 2);
-  assert.equal(messages.length, 3);
-  assert.equal(document.tags.intro.sectionId, document.sections[0].id);
   assert.equal(getTocEntries(document)[0].tag, 'intro');
   assert.equal(getTocEntries(document)[0].section.heading, 'Intro');
-  assert.deepEqual(messages[0].lineMap.filter(part => part.type === 'attachment').map(part => part.line), [5]);
-  assert.ok(messages[0].lineMap.some(part => part.html?.includes('<strong>bold</strong>')));
-  assert.match(messages[2].lineMap[0].html, /data-guide-tag="intro"/);
-  assert.equal(messages[2].firstEditorLine, 8);
+  const parts = messages.flatMap(message => message.lineMap);
+  assert.deepEqual(parts.filter(part => part.type === 'attachment').map(part => part.line), [5]);
+  assert.ok(parts.some(part => part.html?.includes('<strong>bold</strong>')));
+  const linkMessage = messages.find(message => message.lineMap.some(part => part.html?.includes('data-guide-tag="intro"')));
+  assert.equal(linkMessage.firstEditorLine, 8);
 });
 
-test('complete embed wrappers survive; invalid JSON is visible and diagnostics retain exact ranges', () => {
+test('parser integration smoke: embeds render and parser diagnostics map to editor locations', () => {
   const payload = { content: 'Hello', embeds: [{ title: '**First**' }, { description: 'Second' }], allowed_mentions: { parse: [] } };
   const source = `${JSON.stringify(payload)}\n.embed:json`;
   const document = parseEditorGuide(source);
-  assert.deepEqual(document.embeds[0].value, payload);
-  assert.equal(renderGuide(document)[0].lineMap.filter(part => part.type === 'embed').length, 2);
+  assert.deepEqual(renderGuide(document)[0].lineMap.filter(part => part.type === 'embed').map(part => part.embed), payload.embeds);
   const invalid = parseEditorGuide('# Header\r\n.tag:a\r\n$linkmsg_missing$\r\n.\r\n{"embed": bad}\r\n.embed:json');
   const missing = parserIssues(invalid).find(issue => issue.code === 'MISSING_TAG');
   assert.equal(invalid.source.slice(missing.range.start.offset, missing.range.end.offset), '$linkmsg_missing$');

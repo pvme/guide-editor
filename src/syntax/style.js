@@ -197,8 +197,7 @@ function checkToc(document, posts, { add, range, lines }) {
   }
   const post = posts.find(message => message.blocks.includes(toc));
   const pin = post.blocks.find(block => block.type === 'command' && block.valid && block.name === 'pin' && block.parameter === 'delete' && block.range.start.offset >= toc.range.end.offset);
-  const malformedPin = document.diagnostics.some(issue => issue.code === 'LEGACY_PIN_VALUE'
-    && issue.range.start.offset >= post.range.start.offset && issue.range.end.offset <= post.range.end.offset);
+  const malformedPin = post.blocks.some(block => block.type === 'command' && block.name === 'pin' && !block.valid);
   if ((!pin || post.pin !== 'delete') && !malformedPin) add('TOC_PIN', toc.range, 'Add .pin:delete under the Table of Contents embed');
   const laterPayload = posts.flatMap(message => message.blocks).some(block => block.range.start.offset >= toc.range.end.offset && !['blank', 'command'].includes(block.type));
   if (laterPayload) add('TOC_POSITION', toc.range, 'The Table of Contents should be the final guide content');
