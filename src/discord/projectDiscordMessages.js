@@ -6,6 +6,7 @@
 export function projectDiscordMessages(document) {
   const messages = [];
   let previousPayload;
+  let previousTextBlock;
 
   for (const source of document.messages) {
     // Metadata alone has no preview. Invalid commands remain visible; blank
@@ -26,9 +27,11 @@ export function projectDiscordMessages(document) {
       pin: source.pin, reactions: [...source.reactions],
       range: { start: first.range.start, end: last.range.end },
       followsAttachment: Boolean(afterAttachment && payload[0].type !== 'blank'),
+      continuesList: previousTextBlock?.type === 'list' && payload[0].type === 'list',
       explicitBlank: Boolean(source.explicitBlank || (afterAttachment && payload[0].type === 'blank'))
     });
     previousPayload = lastPayload;
+    previousTextBlock = payload.filter(block => block.type !== 'attachment').at(-1);
   }
   return messages;
 }

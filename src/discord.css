@@ -58,6 +58,14 @@
   padding-top: 2px;
 }
 
+.message.pvme-message--continues-list {
+  padding-top: 0;
+}
+
+.message.pvme-message--list-continues {
+  padding-bottom: 0;
+}
+
 /* Discord-style row hover */
 .message.pvme-message:hover {
   background: linear-gradient(
