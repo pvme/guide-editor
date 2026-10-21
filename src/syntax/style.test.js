@@ -31,7 +31,22 @@ for (const [code, bad, good] of [
   ['EMOJI_FULL_STOP', `Finished ${emoji}.`, `Finished ${emoji}`],
   ['DATE_FORMAT', 'Released 22 July 2013', 'Released 22nd July 2013'],
   ['NOTE_ITALICS', 'Note: This matters.', '*Note: This matters.*'],
-  ['LINK_SUPPRESSION', '[Wiki](https://runescape.wiki/)', '[Wiki](<https://runescape.wiki/>)'],
+  ['LINK_SUPPRESSION', [
+    '[Wiki](https://runescape.wiki/)',
+    '[Wiki](https://runescape.wiki/)\n[Video](<https://youtu.be/clip>)',
+    '[Image](https://img.pvme.io/a.png)',
+    '[Video](https://youtu.be/first)\n[Video](https://www.youtube.com/watch?v=second)',
+    '[Video](https://youtu.be/clip)\n[Preset](https://presets.pvme.io/?id=abc)'
+  ], [
+    '[Wiki](<https://runescape.wiki/>)',
+    '[Wiki](<https://runescape.wiki/>)\n[Video](https://youtu.be/clip)',
+    '[Wiki](<https://runescape.wiki/>)\n[Preset](https://presets.pvme.io/?id=abc)',
+    '[Video](https://img.pvme.io/clip.mp4?download=1)',
+    '[Wiki](<https://runescape.wiki/>)\n[Video](<https://youtu.be/clip>)',
+    '[Video](https://youtu.be/first)\n.\n[Video](https://youtu.be/second)',
+    '[Video](https://youtu.be/first)\n.react:x\n[Video](https://youtu.be/second)',
+    '[Video](https://youtu.be/clip)\n`[Wiki](https://runescape.wiki/)`'
+  ]],
   ['CONTENT_DOMAIN', '[Clip](<https://example.com/clip>)', '[Clip](<https://youtu.be/clip>)'],
   ['BLOCKED_HOST', '[Clip](<https://streamable.com/abcdef>)', '[Clip](<https://www.youtube.com/watch?v=abc>)'],
   ['DISCORD_CDN', '.img:https://cdn.discordapp.com/a.png', '.img:https://img.pvme.io/a.png'],
@@ -52,11 +67,11 @@ for (const [code, bad, good] of [
   ['EMBED_FIELD_VALUE', embed({ embed: { fields: [{ name: 'Valid', value: ' ' }] } }), embed({ embed: { fields: [{ name: 'Valid', value: 'Valid' }] } })],
   ['EMBED_FIELD_MENTION', embed({ embed: { fields: [{ name: '<#123>', value: 'Valid' }] } }), embed({ embed: { fields: [{ name: 'Valid', value: 'Valid' }] } })]
 ]) test(`${code}: invalid and valid cases`, () => {
-  assert.ok(codes(bad).includes(code), JSON.stringify(style(bad)));
-  assert.ok(!codes(good).includes(code), JSON.stringify(style(good)));
+  for (const source of [bad].flat()) assert.ok(codes(source).includes(code), JSON.stringify(style(source)));
+  for (const source of [good].flat()) assert.ok(!codes(source).includes(code), JSON.stringify(style(source)));
 });
 
-test('preset previews allow one visible link anywhere among suppressed links', () => {
+test('video and preset previews share one visible embed per parsed message', () => {
   const first = '⬥ [Melee (0 Mech)](https://presets.pvme.io/?id=e54f8126-5a67-4af2-b282-a975cb12b9b5) <:melee:1096130867279171706>';
   const second = '⬥ [Melee (2 Mech)](<https://presets.pvme.io/?id=7a639b95-b6d7-4e7e-999c-0ed474704733>) <:melee:1096130867279171706>';
   assert.deepEqual(style(`${first}\n${second}`), []);
@@ -65,6 +80,20 @@ test('preset previews allow one visible link anywhere among suppressed links', (
   const issues = style(`${first}\n${second}\n${first}`);
   assert.deepEqual(issues.map(issue => issue.code), ['PRESET_PREVIEW']);
   assert.equal(issues[0].range.start.line, 1);
+  assert.deepEqual(codes(`${first}\n[Wiki](https://runescape.wiki/)`), ['LINK_SUPPRESSION']);
+  assert.deepEqual(codes(`${first}\n[Video](https://youtu.be/clip)`), ['PRESET_PREVIEW']);
+  assert.deepEqual(codes('[Wiki](https://runescape.wiki/)\n[Video](https://youtu.be/clip)'), ['LINK_SUPPRESSION']);
+  assert.deepEqual(codes('[Wiki](https://runescape.wiki/)\n[Video](https://youtu.be/clip)\n[More](https://runescape.wiki/w/Combat)'), ['LINK_SUPPRESSION', 'LINK_SUPPRESSION']);
+  const preset = '⬥ [Ranged-Melee Preset Example](https://pvme.io/preset-maker-storage/embeds/a4ac0f53-d82a-4c16-8713-7b7854a872f9/7x4/?v=b7addc6940f0e411a1a8712db1747bd3340981de65e56fde1be827322037857f)';
+  const example = `.\n## __Preset Suggestions__\n${preset}\n${preset}\n.\n\n.\n## __Example Kills__\n⬥ [1:15.6](https://youtu.be/BiMMKYNJ7LE)\n⬥ [1:15.6](https://youtu.be/BiMMKYNJ7L)\n.\n\n\n.\n## __Example Kills__\n⬥ [1:15.6](https://google.com)\n⬥ [1:15.6](https://google.com)\n.`;
+  const exampleIssues = style(example);
+  assert.deepEqual(exampleIssues.map(issue => [issue.range.start.line, issue.code]), [
+    [3, 'PRESET_PREVIEW'], [9, 'LINK_SUPPRESSION'],
+    [16, 'CONTENT_DOMAIN'], [16, 'LINK_SUPPRESSION'],
+    [17, 'CONTENT_DOMAIN'], [17, 'LINK_SUPPRESSION']
+  ]);
+  assert.equal(exampleIssues[0].text, exampleIssues[1].text);
+  assert.deepEqual(style('⬥ [1:15.6](https://youtu.be/BiMMKYNJ7LE)'), []);
 });
 
 test('heading hierarchy accepts plain titles and preset labels are unrestricted', () => {

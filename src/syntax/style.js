@@ -20,6 +20,14 @@ function permittedHost(url) {
     || (['github.com', 'raw.githubusercontent.com'].includes(url.hostname) && url.pathname.startsWith('/pvme/'));
 }
 
+function isVideoUrl(value) {
+  try {
+    const url = new URL(value);
+    return ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'].includes(url.hostname)
+      || /\.(?:mp4|webm|mov|m4v|ogv)$/i.test(url.pathname);
+  } catch { return false; }
+}
+
 function checkUrl(value, location, add) {
   let url;
   try { url = new URL(value); } catch { return; } // Syntax/references are parser-owned.
@@ -206,7 +214,7 @@ export function validateGuideStyle(document, source = document.source, options =
   const posts = projectDiscordMessages(document);
   checkText(ctx, options);
   for (const message of document.messages) {
-    const presets = [];
+    const previews = [];
     walkBlocks(message.blocks, (block, context) => {
       if (block.type === 'attachment') checkUrl(block.url, block.range, add);
       if (block.type === 'heading') checkHeading(block, context, message, ctx);
@@ -223,12 +231,14 @@ export function validateGuideStyle(document, source = document.source, options =
         if (node.type === 'emoji') checkEmoji(node, insideLink, source, add);
         if (!['link', 'image'].includes(node.type)) return;
         checkUrl(node.url, node.range, add);
-        if (getPresetEmbedUrl(node.url)) {
-          if (!node.suppressEmbed) presets.push(node);
-        } else if (!node.suppressEmbed && /^https?:/.test(node.url) && !node.destination?.some(ref => ref.kind === 'tag')) add('LINK_SUPPRESSION', node.range, node.url.startsWith('https://img.pvme.io/') ? 'Image links are normally preceded by an .img: tag or wrapped in < > to not display' : 'Wrap link destinations in < > to suppress inline embeds');
+        if (!node.suppressEmbed && /^https?:/.test(node.url) && !node.destination?.some(ref => ref.kind === 'tag')) previews.push(node);
       });
     });
-    for (const preset of presets.slice(0, -1)) add('PRESET_PREVIEW', preset.range, 'Only one preset link in a section should show a preview; wrap other links in < >');
+    const allowedPreviews = previews.filter(node => getPresetEmbedUrl(node.url) || isVideoUrl(node.url));
+    for (const node of previews.filter(node => node !== allowedPreviews.at(-1))) {
+      if (allowedPreviews.includes(node)) add(getPresetEmbedUrl(node.url) ? 'PRESET_PREVIEW' : 'LINK_SUPPRESSION', node.range, 'Only one link in a message should show a preview; wrap other links in < >');
+      else add('LINK_SUPPRESSION', node.range, node.url.startsWith('https://img.pvme.io/') ? 'Image links are normally preceded by an .img: tag or wrapped in < > to not display' : 'Wrap link destinations in < > to suppress inline embeds');
+    }
   }
   checkPublication(document, posts, ctx);
   checkToc(document, posts, ctx);
