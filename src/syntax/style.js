@@ -6,6 +6,7 @@ import { embedSchema } from './embedSchema.js';
 import { embedValues } from '../renderer/guideRenderer.js';
 import { getPresetEmbedUrl } from '../presetEmbeds.js';
 import { createStyleContext, inlineText, visitInline, walkBlocks } from './styleContext.js';
+import { resolveSpreadsheetReference } from '../spreadsheetReferences.js';
 
 const validateEmbed = new Ajv({ allErrors: true }).compile(embedSchema);
 const proseTypes = ['paragraph', 'heading', 'subtext'];
@@ -212,6 +213,13 @@ export function validateGuideStyle(document, source = document.source, options =
   const ctx = createStyleContext(document, source);
   const { add } = ctx;
   const posts = projectDiscordMessages(document);
+  if (options.pvmeSpreadsheet != null) {
+    for (const reference of document.references) {
+      if (reference.kind === 'data' && resolveSpreadsheetReference(options.pvmeSpreadsheet, reference.target) == null) {
+        add('MISSING_DATA_REFERENCE', reference.range, `${reference.raw} does not match any PvME spreadsheet alias or cell`);
+      }
+    }
+  }
   checkText(ctx, options);
   for (const message of document.messages) {
     const previews = [];

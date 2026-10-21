@@ -2,6 +2,7 @@ import { parseGuide } from '@pvme/guide-parser';
 import * as settings from '../pvmeSettings.js';
 import { getPresetEmbedUrl } from '../presetEmbeds.js';
 import { projectDiscordMessages } from '../discord/projectDiscordMessages.js';
+import { resolveSpreadsheetReference } from '../spreadsheetReferences.js';
 
 export function escapeHTML(value) {
   return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
@@ -17,10 +18,7 @@ export function safeUrl(value, allowMail = false) {
 }
 
 function spreadsheetValue(target) {
-  const [sheet, cell] = target.split('!');
-  if (!cell) return settings.pvmeSpreadsheet?.cell_aliases?.[target];
-  const address = /^([A-Za-z]+)(\d+)$/.exec(cell);
-  return address ? settings.pvmeSpreadsheet?.cells?.[sheet]?.[address[1]]?.[address[2]] : undefined;
+  return resolveSpreadsheetReference(settings.pvmeSpreadsheet, target);
 }
 
 function referenceLink(node, label) {

@@ -9,7 +9,7 @@
   import { get } from "svelte/store";
 
   import { activeDraft, authUser, drafts, getDraftTitle, loadedGuide, reviewSession, text, editorSettings, normalizeEditorSettings } from "./stores";
-  import { populateConstants } from "./pvmeSettings";
+  import { populateConstants, pvmeSpreadsheet } from "./pvmeSettings";
   import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
   import { completeGithubDevLogin, getAuthenticatedUser } from "./guidePrApi";
   import { validateGuideStyle } from "./syntax/style";
@@ -39,6 +39,10 @@
   let currentOffsets = [];
 
   let validText = "";
+  let spreadsheetData = null;
+  const constantsPromise = populateConstants().then(() => {
+    spreadsheetData = pvmeSpreadsheet;
+  });
   $: guideDocument = parseEditorGuide(validText);
   let showView = true;
   let scrollBottom = false;
@@ -83,7 +87,7 @@
     ? null
     : activeEditorLine;
   $: checkerIssues = [
-    ...validateGuideStyle(guideDocument, validText, { ignoredTrailingWhitespaceLine }),
+    ...validateGuideStyle(guideDocument, validText, { ignoredTrailingWhitespaceLine, pvmeSpreadsheet: spreadsheetData }),
     ...parserIssues(guideDocument)
   ];
   $: if (editor) {
@@ -870,7 +874,7 @@
       </div>
 
       <!-- PREVIEW -->
-      {#await populateConstants()}
+      {#await constantsPromise}
         <p class="ml-2">Loading constants…</p>
       {:then}
         {#if showView}
