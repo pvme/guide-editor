@@ -19,6 +19,7 @@
   let status = "idle";
   let message = "";
   let prUrl = "";
+  let forkSyncUrl = "";
   let issueAcknowledged = false;
   let replaceExistingReview = false;
   let authStatus = "idle";
@@ -58,6 +59,7 @@
     status = "idle";
     message = "";
     prUrl = "";
+    forkSyncUrl = "";
     replaceExistingReview = false;
     authCheckedForOpen = false;
     submitAttempted = false;
@@ -150,13 +152,14 @@
     status = "submitting";
     message = "";
     prUrl = "";
+    forkSyncUrl = "";
 
     try {
       authUser.set(await getAuthenticatedUser());
     } catch {
       authUser.set(null);
       status = "error";
-      message = "Your login session has expired. Please log in again and retry.";
+      message = "Please log in again, then try again.";
       return;
     }
 
@@ -199,6 +202,9 @@
     } catch (err) {
       status = "error";
       message = normalizeSubmitError(err);
+      if (err.code === "FORK_SYNC_REQUIRED" && $authUser?.githubLogin) {
+        forkSyncUrl = `https://github.com/${encodeURIComponent($authUser.githubLogin)}/pvme-guides`;
+      }
     }
   }
 
@@ -230,7 +236,9 @@
     const text = err?.message || "";
 
     if (!text) return "Submit failed. Try again in a moment.";
-    if (text.includes("log in") || text.includes("Log in")) return "You must log in to submit a guide update.";
+    if (/log in/i.test(text)) return /again/i.test(text)
+      ? "Please log in again, then try again."
+      : "Please log in to submit your update.";
     if (text.includes("No guide changes") || text.includes("make a guide change")) return "You must make a guide change to submit a guide update.";
     if (text.includes("summary of what changed") || text.includes("describe what changed")) return "You must describe what changed to submit a guide update.";
     if (text.includes("changed since it was loaded")) return text;
@@ -372,6 +380,9 @@
           }`}
         >
           {message}
+          {#if forkSyncUrl}
+            <a class="ml-1 text-blue-300 underline" href={forkSyncUrl} target="_blank" rel="noreferrer">Open your fork to sync</a>
+          {/if}
           {#if prUrl}
             <a class="ml-1 text-blue-300 underline" href={prUrl} target="_blank" rel="noreferrer">View submitted update</a>
           {/if}

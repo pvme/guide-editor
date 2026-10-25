@@ -134,7 +134,10 @@ exports.submitGuideUpdate = async (req, res) => {
       console.error(err);
     }
 
-    sendJson(res, status, { error: message });
+    sendJson(res, status, {
+      error: message,
+      ...(err.code === "FORK_SYNC_REQUIRED" ? { code: err.code } : {}),
+    });
   }
 };
 
@@ -232,23 +235,7 @@ async function handleSubmitGuideUpdate(req, res) {
       `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`,
     );
 
-    if (!branchRef) {
-      await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs`, {
-        method: "POST",
-        body: {
-          ref: `refs/heads/${reviewBranch}`,
-          sha: baseRef.object.sha,
-        },
-      });
-    } else {
-      await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/refs/heads/${encodeGitRef(reviewBranch)}`, {
-        method: "PATCH",
-        body: {
-          sha: baseRef.object.sha,
-          force: true,
-        },
-      });
-    }
+    await setSubmissionReviewBranch(github, user, writeRepo, reviewBranch, baseRef.object.sha, Boolean(branchRef));
   }
 
   const currentBranchFile = await getFile(
@@ -1355,7 +1342,7 @@ async function updateReviewPullFileContent(github, path, body) {
 function createForkPrUpdateError(user, err) {
   const scopes = new Set(user.githubScopes || []);
   if (!scopes.has("repo")) {
-    return "Your GitHub login needs the repo OAuth permission for reviewer edits. Log out, log in with GitHub again, and approve repository access.";
+    return "Please log in with GitHub again, then try again.";
   }
 
   const detail = err?.message ? ` GitHub said: ${err.message}` : "";
@@ -1537,13 +1524,66 @@ async function getOpenPullRequest(github, owner, repo, branch, headOwner = owner
 async function createSubmitGithubClient(user, owner, repo) {
   if (user.provider === "github") {
     if (!user.githubToken) {
-      throw httpError(401, "Please log in with GitHub again to submit a guide update.");
+      throw httpError(401, "Please log in with GitHub again, then try again.");
+    }
+
+    const scopes = new Set(user.githubScopes || []);
+    if (!scopes.has("repo") && !scopes.has("public_repo")) {
+      throw httpError(
+        403,
+        "Please log in with GitHub again, then try again.",
+      );
     }
 
     return createGithubClient(user.githubToken);
   }
 
   return createGithubAppInstallationClient(owner, repo);
+}
+
+async function setSubmissionReviewBranch(github, user, writeRepo, branch, sha, exists) {
+  const repoPath = `/repos/${writeRepo.owner}/${writeRepo.repo}`;
+  try {
+    await github(exists ? `${repoPath}/git/refs/heads/${encodeGitRef(branch)}` : `${repoPath}/git/refs`, {
+      method: exists ? "PATCH" : "POST",
+      body: exists ? { sha, force: true } : { ref: `refs/heads/${branch}`, sha },
+    });
+  } catch (err) {
+    // Do not mistake every GitHub 404 for a workflow permission failure.
+    // Diagnose only failed ref writes, and confirm a workflow mismatch first.
+    if (user.provider === "github" && [403, 404, 422].includes(err.status)) {
+      try {
+        const [upstream, fork] = await Promise.all([
+          getWorkflowFiles(github, REPO, sha),
+          getWorkflowFiles(github, `${writeRepo.owner}/${writeRepo.repo}`, BASE_BRANCH),
+        ]);
+        if (upstream.size !== fork.size || [...upstream].some(([path, hash]) => fork.get(path) !== hash)) {
+          const syncError = httpError(409,
+            "GitHub could not prepare your review branch, and your fork has different workflow files from the current PvME repository. Open your fork on GitHub, choose Sync fork then Update branch, and retry this submission. If GitHub reports conflicts, resolve them there first. Your draft stays in the editor. No additional workflow permission is needed.",
+          );
+          syncError.code = "FORK_SYNC_REQUIRED";
+          throw syncError;
+        }
+      } catch (diagnosticError) {
+        if (diagnosticError.code === "FORK_SYNC_REQUIRED") throw diagnosticError;
+        // Preserve the original write error if the diagnostic reads fail.
+      }
+    }
+    throw err;
+  }
+}
+
+async function getWorkflowFiles(github, repository, ref) {
+  let files;
+  try {
+    files = await github(`/repos/${repository}/contents/.github/workflows?ref=${encodeURIComponent(ref)}`);
+  } catch (err) {
+    if (err.status === 404) return new Map();
+    throw err;
+  }
+  if (!Array.isArray(files)) throw httpError(502, "GitHub returned an invalid workflow directory.");
+  return new Map(files.filter(file => file.type === "file" && /\.ya?ml$/i.test(file.name))
+    .map(file => [file.path, file.sha]));
 }
 
 function getReviewWriteRepo(user, owner, repo) {
@@ -1761,7 +1801,7 @@ function createCommitAuthor(user) {
   if (!name) {
     throw httpError(
       400,
-      "Your Discord username could not be found. Please log out and log in with Discord again.",
+      "Please log in with Discord again, then try again.",
     );
   }
 

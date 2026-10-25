@@ -1,13 +1,14 @@
 const DEV_API_BASE = "/api/guide-pr";
 const DEFAULT_LIVE_API_BASE = "https://guide-api.pvme.io";
+const env = import.meta.env || {};
 const LIVE_API_BASE =
-  import.meta.env.VITE_GUIDE_PR_ENDPOINT_LIVE ||
-  import.meta.env.VITE_GUIDE_PR_ENDPOINT ||
+  env.VITE_GUIDE_PR_ENDPOINT_LIVE ||
+  env.VITE_GUIDE_PR_ENDPOINT ||
   DEFAULT_LIVE_API_BASE;
 let csrfToken = "";
 
 export function getGuidePrApiBase() {
-  return import.meta.env.DEV ? DEV_API_BASE : LIVE_API_BASE.replace(/\/$/, "");
+  return env.DEV ? DEV_API_BASE : LIVE_API_BASE.replace(/\/$/, "");
 }
 
 export function getDiscordLoginUrl(options = {}) {
@@ -142,7 +143,9 @@ async function requestJsonAttempt(path, options = {}, canRetryAuth = false) {
       await refreshSessionToken();
       return requestJsonAttempt(path, options, false);
     }
-    throw new Error(data.error || data.message || `Request failed with status ${res.status}.`);
+    const error = new Error(data.error || data.message || `Request failed with status ${res.status}.`);
+    if (typeof data.code === "string") error.code = data.code;
+    throw error;
   }
 
   return data;

@@ -4,6 +4,14 @@ Web editor for PvME Discord guides. It loads existing guide files, previews Disc
 
 https://github.com/user-attachments/assets/78ac849d-f7a6-4abb-bf52-49314a083d31
 
+## Editing Guides
+
+1. Open the [guide editor](https://pvme.io/guide-editor/) and load a guide.
+2. Make your changes and check the preview and any reported issues.
+3. Log in, describe what changed, and select **Submit update**.
+
+If asked to sync your GitHub fork, select **Open your fork to sync**, then **Sync fork → Update branch** on GitHub. Return to the editor and submit again. Your draft stays in the editor.
+
 ## Install
 
 Use Node.js 24 (see `.nvmrc`), matching the frontend deployment workflow.
@@ -53,7 +61,11 @@ Discord local callback:
 http://localhost:5173/api/guide-pr/auth/discord/callback
 ```
 
-If the local backend is not running, the dev proxy falls back to the live backend using `PVME_SUBMIT_SECRET`.
+Set `VITE_GUIDE_PR_ENDPOINT_LOCAL` to use a local backend. Leave it empty to use the configured live backend. Local requests never fall back to production.
+
+### Test GitHub submissions locally
+
+See the [local GitHub testing setup](docs/local-github-testing.md). Test submissions create real commits and PRs under your GitHub account.
 
 ## Publish Backend
 
@@ -97,7 +109,7 @@ Homepage URL: https://pvme.io/guide-editor/
 Authorization callback URL: https://guide-api.pvme.io/auth/github/callback
 ```
 
-Store its client secret in Secret Manager as `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET`, then deploy with `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID` set to the app's client ID. The guide editor requests GitHub OAuth scopes `repo read:user`; GitHub's contents API requires `repo` for OAuth app tokens that create or update files. GitHub-authenticated submissions use the user's OAuth token to create/update a branch in the user's `pvme-guides` fork and open the PR against `pvme/pvme-guides`, so GitHub shows the PR and commit activity as the signed-in GitHub user.
+Store the client secret as `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET` in Secret Manager and set `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID` when deploying. Requested scopes: `repo read:user`. GitHub submissions use the contributor's fork and account for both commits and PRs; no workflow permission is requested.
 
 Dry-run deploy:
 

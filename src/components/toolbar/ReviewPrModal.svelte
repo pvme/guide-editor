@@ -201,7 +201,7 @@
 
     if (!Boolean($authUser?.discordId || $authUser?.githubId)) {
       status = "error";
-      message = "Your login session has expired. Please log in again and retry";
+      message = "Please log in again, then try again.";
       loading = false;
       loadingAction = "";
       return;

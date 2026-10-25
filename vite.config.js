@@ -50,10 +50,10 @@ function guideSubmitProxy(env) {
           return;
         }
 
-        const endpoints = [
-          env.VITE_GUIDE_PR_ENDPOINT_LOCAL,
-          env.VITE_GUIDE_PR_ENDPOINT_LIVE
-        ].filter(Boolean);
+        // A configured local backend must stay local, including when it is down.
+        const endpoints = env.VITE_GUIDE_PR_ENDPOINT_LOCAL
+          ? [env.VITE_GUIDE_PR_ENDPOINT_LOCAL]
+          : [env.VITE_GUIDE_PR_ENDPOINT_LIVE].filter(Boolean);
 
         if (endpoints.length === 0) {
           res.statusCode = 500;
