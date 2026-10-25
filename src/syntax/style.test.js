@@ -71,6 +71,35 @@ for (const [code, bad, good] of [
   for (const source of [good].flat()) assert.ok(!codes(source).includes(code), JSON.stringify(style(source)));
 });
 
+test('bold Note and Notes labels do not require italics', () => {
+  for (const label of ['Note:', 'Notes:']) {
+    for (const source of [`**${label}**`, `**${label}** This matters`, `**${label}**\nThis matters`, `**${label}**\n⬥ This matters`]) {
+      assert.ok(!codes(source).includes('NOTE_ITALICS'), source);
+    }
+    assert.ok(codes(`${label} This matters`).includes('NOTE_ITALICS'));
+    assert.ok(codes(`**${label} This matters**`).includes('NOTE_ITALICS'));
+  }
+});
+
+test('approved content domains accept subdomains and reject lookalike hosts', () => {
+  const example = "⬥ To compare abilities, use [RS Analysis' Melee Page](<https://tools.runescape.wiki/rs-rot/melee>), and add your gear";
+  assert.deepEqual(style(example), []);
+  for (const domain of ['runescape.wiki', 'youtube.com', 'youtu.be', 'pvme.io', 'pvme.github.io']) {
+    for (const host of [domain, `tools.${domain}`, `nested.tools.${domain}`]) {
+      assert.ok(!codes(`[Link](<https://${host}/page>)`).includes('CONTENT_DOMAIN'), host);
+    }
+    for (const host of [`fake${domain}`, `${domain}.example.com`]) {
+      assert.ok(codes(`[Link](<https://${host}/page>)`).includes('CONTENT_DOMAIN'), host);
+    }
+  }
+  for (const url of ['https://discord.com/channels/123/456', 'https://github.com/pvme/guides', 'https://raw.githubusercontent.com/pvme/guides/main/guide.txt']) {
+    assert.ok(!codes(`[Link](<${url}>)`).includes('CONTENT_DOMAIN'), url);
+  }
+  for (const url of ['https://discord.com/other', 'https://github.com/other/guides', 'https://sub.github.com/pvme/guides']) {
+    assert.ok(codes(`[Link](<${url}>)`).includes('CONTENT_DOMAIN'), url);
+  }
+});
+
 test('video and preset previews share one visible embed per parsed message', () => {
   const first = '⬥ [Melee (0 Mech)](https://presets.pvme.io/?id=e54f8126-5a67-4af2-b282-a975cb12b9b5) <:melee:1096130867279171706>';
   const second = '⬥ [Melee (2 Mech)](<https://presets.pvme.io/?id=7a639b95-b6d7-4e7e-999c-0ed474704733>) <:melee:1096130867279171706>';

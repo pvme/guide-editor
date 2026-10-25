@@ -15,8 +15,8 @@ const bulletIndents = new Map([['⬥', 0], ['•', 4], ['⬩', 8]]);
 const neighbor = character => character === undefined || /[\s\p{Cf}\\`"'\[\](){}.,!?;:_*\-]/u.test(character);
 
 function permittedHost(url) {
-  return ['runescape.wiki', 'www.runescape.wiki', 'youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'pvme.io', 'pvme.github.io'].includes(url.hostname)
-    || url.hostname.endsWith('.pvme.io')
+  return ['runescape.wiki', 'youtube.com', 'youtu.be', 'pvme.io', 'pvme.github.io']
+    .some(domain => url.hostname === domain || url.hostname.endsWith(`.${domain}`))
     || (['discord.com', 'discordapp.com'].includes(url.hostname) && url.pathname.startsWith('/channels/'))
     || (['github.com', 'raw.githubusercontent.com'].includes(url.hostname) && url.pathname.startsWith('/pvme/'));
 }
@@ -234,7 +234,8 @@ export function validateGuideStyle(document, source = document.source, options =
       if (!proseTypes.includes(block.type)) return;
       if (block.type !== 'heading') checkPunctuation(block, source, ctx);
       const first = block.children.find(node => node.type !== 'text' || node.value.trim());
-      if (first?.type !== 'inline-code' && /^Notes?:/.test(inlineText(block.children)) && !block.children.every(node => node.type === 'italic' || (node.type === 'text' && !node.value.trim()))) add('NOTE_ITALICS', block.range, 'Write explicit Note:/Notes: text in italics');
+      const boldNoteLabel = first?.type === 'bold' && /^Notes?:$/.test(inlineText(first.children));
+      if (first?.type !== 'inline-code' && !boldNoteLabel && /^Notes?:/.test(inlineText(block.children)) && !block.children.every(node => node.type === 'italic' || (node.type === 'text' && !node.value.trim()))) add('NOTE_ITALICS', block.range, 'Write explicit Note:/Notes: text in italics');
       visitInline(block.children, (node, insideLink) => {
         if (node.type === 'emoji') checkEmoji(node, insideLink, source, add);
         if (!['link', 'image'].includes(node.type)) return;
