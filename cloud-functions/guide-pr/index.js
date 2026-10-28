@@ -248,7 +248,10 @@ async function handleSubmitGuideUpdate(req, res) {
 
   const contentsBody = {
     message: createCommitMessage(payload, user),
-    content: Buffer.from(payload.content, "utf8").toString("base64"),
+    content: Buffer.from(
+      preserveLineEndings(payload.content, currentBranchFile.text),
+      "utf8",
+    ).toString("base64"),
     sha: currentBranchFile.sha,
     branch: reviewBranch,
   };
@@ -822,6 +825,11 @@ function createLoadedGuide({ path, text, source, branch, prUrl }) {
     prUrl,
     originalText: text,
   };
+}
+
+function preserveLineEndings(content, existingContent) {
+  const lineEnding = existingContent.includes("\r\n") ? "\r\n" : "\n";
+  return content.replace(/\r\n/g, "\n").replace(/\n/g, lineEnding);
 }
 
 function normalizePayload(body) {

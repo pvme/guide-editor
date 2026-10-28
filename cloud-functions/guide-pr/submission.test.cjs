@@ -175,6 +175,26 @@ function mockForkSubmission(t, options = {}) {
   return calls;
 }
 
+test('LF edits to an existing CRLF guide are written back with CRLF and preserve content', async t => {
+  const original = 'Guide heading\r\n\r\n\tOriginal advice  \r\n';
+  const content = 'Guide heading\n\n\tUpdated advice  \n';
+  const calls = mockForkSubmission(t, { originalContent: original });
+  const req = request(['repo']);
+  req.body.originalContent = original;
+  req.body.content = content;
+  const res = response();
+
+  await submitGuideUpdate(req, res);
+
+  assert.equal(res.statusCode, 201);
+  const writes = calls.filter(c => c.method === 'PUT' && c.route.includes('/contents/'));
+  assert.equal(writes.length, 1);
+  assert.equal(
+    Buffer.from(writes[0].body.content, 'base64').toString('utf8'),
+    'Guide heading\r\n\r\n\tUpdated advice  \r\n',
+  );
+});
+
 for (const exists of [false, true]) {
   test(`workflow mismatch during review branch ${exists ? 'reset' : 'creation'} asks for fork sync, then retry succeeds`, async t => {
     const options = { existingPr: exists, refStatus: 404, missingWorkflowDirectory: !exists };
