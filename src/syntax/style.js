@@ -7,6 +7,7 @@ import { embedValues } from '../renderer/guideRenderer.js';
 import { getPresetEmbedUrl } from '../presetEmbeds.js';
 import { createStyleContext, inlineText, visitInline, walkBlocks } from './styleContext.js';
 import { resolveSpreadsheetReference } from '../spreadsheetReferences.js';
+import { knownEmojiIds } from '../pvmeSettings.js';
 
 const validateEmbed = new Ajv({ allErrors: true }).compile(embedSchema);
 const proseTypes = ['paragraph', 'heading', 'subtext'];
@@ -38,10 +39,18 @@ function checkUrl(value, location, add) {
   else if (!permittedHost(url)) add('CONTENT_DOMAIN', location, 'Use approved content hosts (RuneScape Wiki, YouTube or PvME); check this external link');
 }
 
-function checkEmoji(node, insideLink, source, add) {
+function checkEmoji(node, insideLink, source, { add, range }, options) {
   if (!node.id) return;
+  if (options.knownEmojiIds != null && !options.knownEmojiIds.has(node.id)) {
+    add('UNAVAILABLE_EMOJI', node.range, `Unknown PvME emoji ID for :${node.name}:`);
+  }
   if (insideLink) { add('EMOJI_IN_LINK', node.range, 'Discord emoji must not appear inside links', 'error'); return; }
   const start = node.range.start.offset, end = node.range.end.offset;
+  const separatedPrefix = /(?:^|[\s(→+])([sr])[ \t]+$/.exec(source.slice(0, start));
+  if (separatedPrefix) {
+    const prefixStart = start - separatedPrefix[0].length + separatedPrefix[0].indexOf(separatedPrefix[1]);
+    add('STALL_RELEASE_SPACING', range(prefixStart, end), 'Remove the space between s/r and the emoji');
+  }
   const before = source[start - 1], after = source[end];
   const prefix = ['r', 's', '_'].includes(before) && neighbor(source[start - 2]);
   const escapedBefore = /\\u(?:200b|00a0)$/i.test(source.slice(Math.max(0, start - 6), start));
@@ -237,7 +246,7 @@ export function validateGuideStyle(document, source = document.source, options =
       const boldNoteLabel = first?.type === 'bold' && /^Notes?:$/.test(inlineText(first.children));
       if (first?.type !== 'inline-code' && !boldNoteLabel && /^Notes?:/.test(inlineText(block.children)) && !block.children.every(node => node.type === 'italic' || (node.type === 'text' && !node.value.trim()))) add('NOTE_ITALICS', block.range, 'Write explicit Note:/Notes: text in italics');
       visitInline(block.children, (node, insideLink) => {
-        if (node.type === 'emoji') checkEmoji(node, insideLink, source, add);
+        if (node.type === 'emoji') checkEmoji(node, insideLink, source, ctx, options);
         if (!['link', 'image'].includes(node.type)) return;
         checkUrl(node.url, node.range, add);
         if (!node.suppressEmbed && /^https?:/.test(node.url) && !node.destination?.some(ref => ref.kind === 'tag')) previews.push(node);
@@ -255,5 +264,5 @@ export function validateGuideStyle(document, source = document.source, options =
 }
 
 export default function findStyleErrors(source, options = {}) {
-  return validateGuideStyle(parseEditorGuide(source), source, options);
+  return validateGuideStyle(parseEditorGuide(source), source, { knownEmojiIds, ...options });
 }

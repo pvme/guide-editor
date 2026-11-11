@@ -10,6 +10,7 @@ export let usersFormat = {};
 export let rolesFormat = {};
 export let emojisFormat = {};
 export let emojiSearch = [];
+export let knownEmojiIds = null;
 
 export let styleGuide = ''; // doesn't fit here but it is what it is
 
@@ -98,6 +99,7 @@ async function setEmojis() {
 
     emojisFormat = {};
     emojiSearch = [];
+    knownEmojiIds = new Set();
 
     const categories = Array.isArray(emojisJSON.categories)
         ? emojisJSON.categories
@@ -111,6 +113,7 @@ async function setEmojis() {
 
         if (!emoji || typeof emoji.id !== "string") continue;
         if (!emoji.emoji_id) continue;
+        knownEmojiIds.add(String(emoji.emoji_id));
 
         const emojiFormat = `<:${emoji.id}:${emoji.emoji_id}>`;
 

@@ -12,6 +12,31 @@ const codes = source => style(source).map(issue => issue.code);
 const embed = value => `${JSON.stringify(value)}\n.embed:json`;
 const toc = embed({ embed: { title: '__Table of Contents__', description: '[Start]($linkmsg_start$)' } });
 
+test('emoji availability uses Discord IDs, including stale IDs with recognised names', () => {
+  const source = '🚀 <:imbueshadows:1478039940385472615>\r\n<:bolg:1236429081021780102> <a:malachistooth:1559852689033138186>\r\n<:renamed:994189289623662702>';
+  const options = { knownEmojiIds: new Set(['1478061866193518744', '994189289623662702', '1560137984848691200']) };
+  const issues = style(source, options).filter(issue => issue.code === 'UNAVAILABLE_EMOJI');
+  assert.equal(issues.length, 3);
+  assert.deepEqual(issues.map(issue => source.slice(issue.range.start.offset, issue.range.end.offset)), [
+    '<:imbueshadows:1478039940385472615>', '<:bolg:1236429081021780102>', '<a:malachistooth:1559852689033138186>'
+  ]);
+  assert.deepEqual(issues.map(issue => issue.line), [[1, 1], [2, 2], [2, 2]]);
+  assert.equal(style(source).filter(issue => issue.code === 'UNAVAILABLE_EMOJI').length, 0);
+  assert.equal(style(emoji, { knownEmojiIds: new Set() })[0].code, 'UNAVAILABLE_EMOJI');
+  assert.equal(style('`<:missing:1>`\n```\n<:missing:2>\n```', options).length, 0);
+});
+
+test('stall/release prefixes touch static and animated emojis without matching word endings or code', () => {
+  const source = `s ${emoji} → r\t<a:ability:456>\r\n⬥ Use s  ${emoji} + r ${emoji}`;
+  const issues = style(source).filter(issue => issue.code === 'STALL_RELEASE_SPACING');
+  assert.deepEqual(issues.map(issue => source.slice(issue.range.start.offset, issue.range.end.offset)), [
+    `s ${emoji}`, 'r\t<a:ability:456>', `s  ${emoji}`, `r ${emoji}`
+  ]);
+  for (const good of [`s${emoji} → r${emoji}`, `arrows ${emoji}`, `after ${emoji}`, `player's ${emoji}`, `s\n${emoji}`, `\`s ${emoji}\``, `\`\`\`\ns ${emoji}\n\`\`\``]) {
+    assert.ok(!codes(good).includes('STALL_RELEASE_SPACING'), good);
+  }
+});
+
 // Each row asserts both a positive warning and a representative legitimate case.
 for (const [code, bad, good] of [
   ['TRAILING_WHITESPACE', 'Text \t', 'Text'],

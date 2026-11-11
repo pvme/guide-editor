@@ -9,7 +9,7 @@
   import { get } from "svelte/store";
 
   import { activeDraft, authUser, drafts, getDraftTitle, loadedGuide, reviewSession, text, editorSettings, normalizeEditorSettings } from "./stores";
-  import { populateConstants, pvmeSpreadsheet } from "./pvmeSettings";
+  import { populateConstants, pvmeSpreadsheet, knownEmojiIds } from "./pvmeSettings";
   import { findGuideFromParam, loadGuideText } from "./components/GuideLoadModal.js";
   import { completeGithubDevLogin, getAuthenticatedUser } from "./guidePrApi";
   import { validateGuideStyle } from "./syntax/style";
@@ -40,8 +40,10 @@
 
   let validText = "";
   let spreadsheetData = null;
+  let emojiIds = null;
   const constantsPromise = populateConstants().then(() => {
     spreadsheetData = pvmeSpreadsheet;
+    emojiIds = knownEmojiIds;
   });
   $: guideDocument = parseEditorGuide(validText);
   let showView = true;
@@ -87,7 +89,7 @@
     ? null
     : activeEditorLine;
   $: checkerIssues = [
-    ...validateGuideStyle(guideDocument, validText, { ignoredTrailingWhitespaceLine, pvmeSpreadsheet: spreadsheetData }),
+    ...validateGuideStyle(guideDocument, validText, { ignoredTrailingWhitespaceLine, pvmeSpreadsheet: spreadsheetData, knownEmojiIds: emojiIds }),
     ...parserIssues(guideDocument)
   ];
   $: if (editor) {
