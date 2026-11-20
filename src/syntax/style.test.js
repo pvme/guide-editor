@@ -12,6 +12,44 @@ const codes = source => style(source).map(issue => issue.code);
 const embed = value => `${JSON.stringify(value)}\n.embed:json`;
 const toc = embed({ embed: { title: '__Table of Contents__', description: '[Start]($linkmsg_start$)' } });
 
+test('PR 9441 emoji spacing warnings appear inside embed fields with exact JSON ranges', () => {
+  const field = {
+    name: '__Tier 85 __',
+    value: '⬥ Dragonrider Lance <:dragonriderlance:643161541931171872>\n⬥ Ripper Claws<:ripperclaw:797895640054759444> <:ripperclawoh:915232154252890122>\n⬥ Wyvern Crossbow<:WyvernCrossbow:580177522587729940>',
+    inline: true,
+  };
+  for (const payload of [{ fields: [field] }, { embed: { fields: [field] } }, { embeds: [{ fields: [field] }] }]) {
+    const source = JSON.stringify(payload, null, 2).replaceAll('\n', '\r\n') + '\r\n.embed:json';
+    const issues = findStyleErrors(source, { knownEmojiIds: null }).filter(issue => issue.code === 'EMOJI_SPACING');
+    assert.deepEqual(issues.map(issue => source.slice(issue.range.start.offset, issue.range.end.offset)), [
+      '<:ripperclaw:797895640054759444>', '<:WyvernCrossbow:580177522587729940>',
+    ]);
+    const line = source.slice(0, source.indexOf('Ripper Claws')).split('\n').length;
+    assert.deepEqual(issues.map(issue => issue.line), [[line, line], [line, line]]);
+    for (const issue of issues) assert.equal(issue.column[0], issue.range.start.offset - source.lastIndexOf('\n', issue.range.start.offset));
+    const fixed = source.replace('Claws<:', 'Claws <:').replace('Crossbow<:', 'Crossbow <:');
+    assert.ok(!codes(fixed).includes('EMOJI_SPACING'));
+  }
+});
+
+test('embed emoji checks decode JSON escapes and retain source selections', () => {
+  const source = String.raw`{"content":"🚀\nClaws\u003c:ability:123>\t r <:ability:123>","embed":{"description":"Text<:ability:123>","fields":[{"name":"Name<:ability:123>","value":"Value<:ability:123>"}]}}` + '\n.embed:json';
+  const issues = style(source).filter(issue => ['EMOJI_SPACING', 'STALL_RELEASE_SPACING'].includes(issue.code));
+  assert.deepEqual(issues.map(issue => source.slice(issue.range.start.offset, issue.range.end.offset)), [
+    String.raw`\u003c:ability:123>`, 'r <:ability:123>', '<:ability:123>', '<:ability:123>', '<:ability:123>',
+  ]);
+});
+
+test('embed emoji checks preserve code, allowed prefixes and metadata URLs', () => {
+  const source = embed({ embed: {
+    title: 'Title', url: 'https://example.com/Text<:ability:123>',
+    description: '`Claws<:ability:123>`\n```\nClaws<:ability:123>\n```\n⬥ s<:ability:123> r<:ability:123> _<:ability:123>\n⬥ Claws <:ability:123>',
+    fields: [{ name: 'Field', value: String.raw`Claws\<:ability:123>` }],
+  } });
+  assert.deepEqual(style(source).filter(issue => ['EMOJI_SPACING', 'STALL_RELEASE_SPACING'].includes(issue.code)), []);
+  assert.ok(!codes('{"embed":bad}\n.embed:json').includes('EMOJI_SPACING'));
+});
+
 test('emoji availability uses Discord IDs, including stale IDs with recognised names', () => {
   const source = '🚀 <:imbueshadows:1478039940385472615>\r\n<:bolg:1236429081021780102> <a:malachistooth:1559852689033138186>\r\n<:renamed:994189289623662702>';
   const options = { knownEmojiIds: new Set(['1478061866193518744', '994189289623662702', '1560137984848691200']) };
@@ -213,7 +251,7 @@ test('code examples, including nested code and URL destinations, do not trigger 
     `\`${bad}\``, `\`\`${bad}\`\``, `\`\`\`\n${bad}\n#### Bad\n- Bad.\n..tag:missing\n\`\`\``,
     `> \`\`\`\n> ${bad}\n> \`\`\``, `⬥ \`${bad}\``,
     `⬥ Example\n    \`\`\`\n    ${bad}\n    \`\`\``,
-    '[Clip](<https://img.pvme.io/A→B>)', '`Note: literal.`', embed({ embed: { description: bad } })
+    '[Clip](<https://img.pvme.io/A→B>)', '`Note: literal.`', embed({ embed: { description: `\`${bad}\`` } })
   ]) assert.deepEqual(style(source), [], source);
   assert.deepEqual(style(`\`${bad}\`  `).map(i => i.code), ['TRAILING_WHITESPACE']);
 });

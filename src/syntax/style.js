@@ -8,6 +8,7 @@ import { getPresetEmbedUrl } from '../presetEmbeds.js';
 import { createStyleContext, inlineText, visitInline, walkBlocks } from './styleContext.js';
 import { resolveSpreadsheetReference } from '../spreadsheetReferences.js';
 import { knownEmojiIds } from '../pvmeSettings.js';
+import { embedTextFields } from './embedText.js';
 
 const validateEmbed = new Ajv({ allErrors: true }).compile(embedSchema);
 const proseTypes = ['paragraph', 'heading', 'subtext'];
@@ -56,6 +57,26 @@ function checkEmoji(node, insideLink, source, { add, range }, options) {
   const escapedBefore = /\\u(?:200b|00a0)$/i.test(source.slice(Math.max(0, start - 6), start));
   const escapedAfter = /^\\u(?:200b|00a0)/i.test(source.slice(end, end + 6));
   if ((!neighbor(before) && !prefix && !escapedBefore) || (!neighbor(after) && !escapedAfter)) add('EMOJI_SPACING', node.range, 'Emojis must have valid characters around them');
+}
+
+function checkEmbedEmojis(document, source, ctx, options) {
+  for (const embed of document.embeds.filter(node => node.valid)) {
+    for (const { value, offsets } of embedTextFields(embed, source)) {
+      const fragment = parseGuide(value, { validateReferences: false });
+      const mapped = {
+        range: (start, end) => ({ start: { offset: start }, end: { offset: end } }),
+        add(code, location, text, type) {
+          ctx.add(code, ctx.range(offsets[location.start.offset], offsets[location.end.offset]), text, type);
+        },
+      };
+      for (const message of fragment.messages) walkBlocks(message.blocks, block => {
+        if (!proseTypes.includes(block.type)) return;
+        visitInline(block.children, (node, insideLink) => {
+          if (node.type === 'emoji') checkEmoji(node, insideLink, value, mapped, options);
+        });
+      });
+    }
+  }
 }
 
 function checkHeading(block, context, message, { add }) {
@@ -230,6 +251,7 @@ export function validateGuideStyle(document, source = document.source, options =
     }
   }
   checkText(ctx, options);
+  checkEmbedEmojis(document, source, ctx, options);
   for (const message of document.messages) {
     const previews = [];
     walkBlocks(message.blocks, (block, context) => {
