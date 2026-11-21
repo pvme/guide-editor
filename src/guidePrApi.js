@@ -144,6 +144,7 @@ async function requestJsonAttempt(path, options = {}, canRetryAuth = false) {
       return requestJsonAttempt(path, options, false);
     }
     const error = new Error(data.error || data.message || `Request failed with status ${res.status}.`);
+    error.status = res.status;
     if (typeof data.code === "string") error.code = data.code;
     throw error;
   }

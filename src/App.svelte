@@ -243,7 +243,7 @@
       loadedGuide: guide
     });
 
-    guideNotice = notice;
+    guideNotice = loaded.notice || notice;
   }
 
   function cancelLoadGuide() {
