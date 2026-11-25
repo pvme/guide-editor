@@ -32,7 +32,7 @@
   }
 
   function deleteDraft(draft, event) {
-    close();
+    if (!event.shiftKey) close();
     dispatch("deleteDraft", { draft, skipConfirmation: event.shiftKey });
   }
 
