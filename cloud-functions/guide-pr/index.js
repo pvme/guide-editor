@@ -18,7 +18,7 @@ const PVME_GUILD_ID = "534508796639182860";
 const DISCORD_OAUTH_SCOPE = "identify guilds.members.read";
 const GITHUB_OAUTH_SCOPE = "repo read:user";
 const DEFAULT_TRUSTED_ORIGIN = "https://pvme.io";
-const DEFAULT_ALLOWED_ORIGIN = "http://localhost:5173,https://pvme.io";
+const DEFAULT_ALLOWED_ORIGIN = "http://localhost:5173,http://localhost:4321,https://pvme.io";
 const SESSION_COOKIE = "pvme_guide_session";
 const ANON_GUIDE_USAGE_COOKIE = "pvme_guide_anon_loads";
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
@@ -42,6 +42,7 @@ exports.submitGuideUpdate = async (req, res) => {
   }
 
   const route = getRoute(req);
+  if (route.startsWith("/auth/")) res.set("Cache-Control", "no-store");
 
   try {
     if (route === "/auth/discord/callback") {
@@ -96,11 +97,13 @@ exports.submitGuideUpdate = async (req, res) => {
     validateRequestAccess(req);
 
     if (route === "/auth/me" && req.method === "GET") {
-      sendJson(res, 200, { user: getSessionUser(req) });
+      sendJson(res, 200, { user: publicUser(getSessionUser(req)) });
       return;
     }
 
     if (route === "/auth/logout" && req.method === "POST") {
+      const user = getSessionUser(req);
+      if (user) validateCsrfToken(req, user, { allowTrustedOriginFallback: true });
       clearSessionCookie(res);
       sendJson(res, 200, { ok: true });
       return;
@@ -136,7 +139,7 @@ exports.submitGuideUpdate = async (req, res) => {
 
     sendJson(res, status, {
       error: message,
-      ...(err.code === "FORK_SYNC_REQUIRED" ? { code: err.code } : {}),
+      ...(err.code ? { code: err.code } : {}),
     });
   }
 };
@@ -169,6 +172,8 @@ async function handleSubmitGuideUpdate(req, res) {
   }
 
   const github = await createSubmitGithubClient(user, owner, repo);
+  const baseRef = await github(`/repos/${owner}/${repo}/git/ref/heads/${BASE_BRANCH}`);
+  const baseSha = baseRef.object.sha;
   const writeRepo = await getSubmissionWriteRepo(github, user, owner, repo);
   const head = writeRepo.owner === owner
     ? reviewBranch
@@ -186,7 +191,7 @@ async function handleSubmitGuideUpdate(req, res) {
       owner,
       repo,
       payload.path,
-      BASE_BRANCH,
+      baseSha,
     );
 
     if (currentMasterFile.text !== payload.originalContent) {
@@ -219,7 +224,7 @@ async function handleSubmitGuideUpdate(req, res) {
       writeRepo.owner,
       writeRepo.repo,
       payload.path,
-      reviewBranch,
+      branchRef.object.sha,
     );
 
     if (currentReviewFile.text !== payload.originalContent) {
@@ -230,40 +235,54 @@ async function handleSubmitGuideUpdate(req, res) {
     }
   }
 
-  if (resetReviewBranchFromBase) {
-    const baseRef = await github(
-      `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`,
-    );
-
-    await setSubmissionReviewBranch(github, user, writeRepo, reviewBranch, baseRef.object.sha, Boolean(branchRef));
-  }
-
-  const currentBranchFile = await getFile(
-    github,
-    writeRepo.owner,
-    writeRepo.repo,
-    payload.path,
-    reviewBranch,
-  );
-
-  const contentsBody = {
-    message: createCommitMessage(payload, user),
-    content: Buffer.from(
-      preserveLineEndings(payload.content, currentBranchFile.text),
-      "utf8",
-    ).toString("base64"),
-    sha: currentBranchFile.sha,
-    branch: reviewBranch,
-  };
-  const commitAuthor = createCommitAuthor(user);
-  if (commitAuthor) {
-    contentsBody.author = commitAuthor;
-  }
-
-  await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/contents/${encodePath(payload.path)}`, {
-    method: "PUT",
-    body: contentsBody,
+  // Build from immutable snapshots. Publish only a child of the captured head:
+  // a concurrent sibling commit makes the non-force ref update fail atomically.
+  const parentSha = branchRef?.object.sha || baseSha;
+  const treeSourceSha = resetReviewBranchFromBase ? baseSha : parentSha;
+  const treeSourceOwner = resetReviewBranchFromBase ? owner : writeRepo.owner;
+  const snapshot = await getFile(github, treeSourceOwner, repo, payload.path, treeSourceSha);
+  if (snapshot.text !== payload.originalContent) throw submissionConflict();
+  const treeSource = await github(`/repos/${treeSourceOwner}/${repo}/git/commits/${treeSourceSha}`);
+  const tree = await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/trees`, {
+    method: "POST",
+    body: {
+      base_tree: treeSource.tree.sha,
+      tree: [{
+        path: payload.path,
+        mode: "100644",
+        type: "blob",
+        content: payload.sourcePreservation === "exact"
+          ? payload.content
+          : preserveLineEndings(payload.content, snapshot.text),
+      }],
+    },
   });
+  const author = createCommitAuthor(user);
+  const commit = await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/commits`, {
+    method: "POST",
+    body: {
+      message: createCommitMessage(payload, user),
+      tree: tree.sha,
+      // Explicit replacement uses the chosen master tree, without merging text.
+      // Record master ancestry so upstream changes are not shown as contributor edits.
+      parents: resetReviewBranchFromBase && branchRef && parentSha !== baseSha
+        ? [parentSha, baseSha] : [parentSha],
+      ...(author ? { author } : {}),
+    },
+  });
+  // Recheck upstream immediately before publishing a master-based submission.
+  // Later upstream changes remain normal PR divergence, never overwritten master.
+  if (payload.source === "master") {
+    const latest = await getFile(github, owner, repo, payload.path, BASE_BRANCH);
+    if (latest.text !== payload.originalContent) throw submissionConflict();
+  }
+  try {
+    await setSubmissionReviewBranch(github, user, writeRepo, reviewBranch,
+      commit.sha, Boolean(branchRef), baseSha);
+  } catch (err) {
+    if ([409, 422].includes(err.status) && !err.code) throw submissionConflict();
+    throw err;
+  }
 
   const openPr =
     existingPr || (await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner));
@@ -417,6 +436,7 @@ async function handleReviewRoute(req, res, route) {
   enforceRateLimit(req, `review:${user.githubId}`, 120, 60);
   if (["POST", "PUT"].includes(req.method)) {
     validateCsrfToken(req, user);
+    if (isDryRun()) throw httpError(403, "Reviewer writes are disabled in dry-run mode.");
   }
   const github = createGithubClient(user.githubToken);
   const [owner, repo] = REPO.split("/");
@@ -531,11 +551,7 @@ function handleDiscordStart(req, res) {
 
   const redirectUri = getDiscordRedirectUri(req);
   const returnTo = getSafeReturnTo(req);
-  const state = signJson({
-    exp: nowSeconds() + OAUTH_STATE_MAX_AGE_SECONDS,
-    returnTo,
-    redirectUri,
-  });
+  const state = createOAuthState(res, "discord", { returnTo, redirectUri });
 
   const params = new URLSearchParams({
     client_id: getDiscordClientId(),
@@ -562,12 +578,12 @@ async function handleDiscordCallback(req, res) {
   }
 
   const code = String(req.query.code || "");
-  const state = verifySignedJson(String(req.query.state || ""));
-
-  if (!code || !state || state.exp < nowSeconds() || !state.redirectUri) {
+  const state = readOAuthState(req, "discord");
+  if (!code || !state) {
     redirectAuthFailure(req, res, "Discord login could not be verified.");
     return;
   }
+  clearOAuthState(res, "discord");
 
   const tokenRes = await fetch(`${DISCORD_API}/oauth2/token`, {
     method: "POST",
@@ -642,11 +658,7 @@ function handleGithubStart(req, res) {
 
   const redirectUri = getGithubRedirectUri(req);
   const returnTo = getSafeReturnTo(req);
-  const state = signJson({
-    exp: nowSeconds() + OAUTH_STATE_MAX_AGE_SECONDS,
-    returnTo,
-    redirectUri,
-  });
+  const state = createOAuthState(res, "github", { returnTo, redirectUri });
 
   const params = new URLSearchParams({
     client_id: getGithubOAuthClientId(),
@@ -672,12 +684,12 @@ async function handleGithubCallback(req, res) {
   }
 
   const code = String(req.query.code || "");
-  const state = verifySignedJson(String(req.query.state || ""));
-
-  if (!code || !state || state.exp < nowSeconds() || !state.redirectUri) {
+  const state = readOAuthState(req, "github");
+  if (!code || !state) {
     redirectAuthFailure(req, res, "GitHub login could not be verified.");
     return;
   }
+  clearOAuthState(res, "github");
 
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
@@ -734,7 +746,7 @@ async function handleGithubCallback(req, res) {
 
   if (isLocalReturnTo(state.returnTo)) {
     const returnUrl = new URL(state.returnTo);
-    returnUrl.searchParams.set("githubSession", createDevSessionToken(session));
+    returnUrl.searchParams.set("githubSession", createDevSessionToken(session, returnUrl.origin));
     res.redirect(returnUrl.toString());
     return;
   }
@@ -745,8 +757,10 @@ async function handleGithubCallback(req, res) {
 }
 
 function handleDevSession(req, res) {
+  validateRequestAccess(req);
+  if (!isDryRun() || !getProxyOrigin(req)) throw httpError(403, "Development sessions require a local dry-run proxy.");
   const token = String(req.body?.token || "");
-  const session = verifyDevSessionToken(token);
+  const session = verifyDevSessionToken(token, getProxyOrigin(req));
 
   if (!session) {
     throw httpError(400, "GitHub login could not be verified.");
@@ -756,7 +770,7 @@ function handleDevSession(req, res) {
     ...session,
     exp: nowSeconds() + SESSION_MAX_AGE_SECONDS,
   });
-  sendJson(res, 200, { user: publicUser(getSessionUser(req) || session) });
+  sendJson(res, 200, { user: publicUser(session) });
 }
 
 async function fetchPvmeGuildMember(accessToken) {
@@ -793,22 +807,43 @@ function getSessionRoles(member) {
   return member.roles.map(String).filter(Boolean).slice(0, MAX_SESSION_ROLES);
 }
 
-function redirectAuthFailure(req, res, message) {
+function createOAuthState(res, provider, data) {
+  const nonce = crypto.randomBytes(32).toString("base64url");
+  res.set("Set-Cookie", serializeCookie(`pvme_oauth_${provider}`, nonce, {
+    httpOnly: true, secure: isCookieSecure(), sameSite: "Lax", path: "/",
+    maxAge: OAUTH_STATE_MAX_AGE_SECONDS,
+  }));
+  res.set("Cache-Control", "no-store");
+  return signJson({ ...data, provider, nonce, exp: nowSeconds() + OAUTH_STATE_MAX_AGE_SECONDS });
+}
+
+function readOAuthState(req, provider) {
   const state = verifySignedJson(String(req.query.state || ""));
+  const nonce = parseCookies(req.get("cookie") || "")[`pvme_oauth_${provider}`] || "";
+  if (!state || state.provider !== provider || !Number.isFinite(state.exp)
+    || state.exp <= nowSeconds() || !state.redirectUri || !state.nonce
+    || !secureCompare(nonce, state.nonce)) return null;
+  return state;
+}
+
+function clearOAuthState(res, provider) {
+  res.append("Set-Cookie", serializeCookie(`pvme_oauth_${provider}`, "", {
+    httpOnly: true, secure: isCookieSecure(), sameSite: "Lax", path: "/", maxAge: 0,
+  }));
+}
+
+function redirectAuthFailure(req, res, message) {
+  const provider = getRoute(req).includes("/github/") ? "github" : "discord";
+  const state = readOAuthState(req, provider);
   const fallback = getFrontendOrigin(req);
-  const allowedOrigin = getUrlOrigin(fallback);
+  const candidate = state?.returnTo || fallback;
   let redirectUrl;
-
-  try {
-    redirectUrl = new URL(state?.returnTo || fallback, fallback);
-  } catch {
+  try { redirectUrl = new URL(candidate, fallback); } catch { redirectUrl = new URL(fallback); }
+  if (redirectUrl.username || redirectUrl.password ||
+      !(getTrustedOrigins().includes(redirectUrl.origin) || isLocalReturnTo(redirectUrl.toString()))) {
     redirectUrl = new URL(fallback);
   }
-
-  if (redirectUrl.origin !== allowedOrigin) {
-    redirectUrl = new URL(fallback);
-  }
-
+  clearOAuthState(res, provider);
   redirectUrl.searchParams.set("submit", "1");
   redirectUrl.searchParams.set("authError", message);
   res.redirect(redirectUrl.toString());
@@ -827,7 +862,16 @@ function createLoadedGuide({ path, text, source, branch, prUrl }) {
   };
 }
 
+function submissionConflict() {
+  const err = httpError(409, "The guide or review branch changed during submission. Keep your draft and reload the source before trying again.");
+  err.code = "SOURCE_CONFLICT";
+  return err;
+}
+
 function preserveLineEndings(content, existingContent) {
+  // Keep exact patches (including mixed endings). Legacy CodeMirror LF output
+  // still inherits the EOL of a uniformly CRLF original.
+  if (content.includes("\r") || /(?<!\r)\n/.test(existingContent) || /\r(?!\n)/.test(existingContent)) return content;
   const lineEnding = existingContent.includes("\r\n") ? "\r\n" : "\n";
   return content.replace(/\r\n/g, "\n").replace(/\n/g, lineEnding);
 }
@@ -838,6 +882,7 @@ function normalizePayload(body) {
   }
 
   return {
+    sourcePreservation: body.sourcePreservation,
     type: String(body.type || ""),
     repo: String(body.repo || ""),
     baseBranch: String(body.baseBranch || ""),
@@ -855,6 +900,9 @@ function normalizePayload(body) {
 }
 
 function validatePayload(payload) {
+  if (payload.sourcePreservation !== undefined && payload.sourcePreservation !== "exact") {
+    throw httpError(400, "The source preservation mode is invalid.");
+  }
   if (payload.type !== "update") {
     throw httpError(400, "Only guide update submissions are supported.");
   }
@@ -1459,10 +1507,10 @@ function isSafeGuidePath(path) {
     Boolean(path) &&
     path.endsWith(".txt") &&
     !path.startsWith("/") &&
-    !path.startsWith("\\") &&
+    !path.includes("\\") &&
     !path.includes("..") &&
     !/[<>:"|?*\u0000-\u001f]/.test(path) &&
-    path.split(/[\\/]/).every(Boolean)
+    path.split("/").every(part => part && part !== ".")
   );
 }
 
@@ -1549,12 +1597,12 @@ async function createSubmitGithubClient(user, owner, repo) {
   return createGithubAppInstallationClient(owner, repo);
 }
 
-async function setSubmissionReviewBranch(github, user, writeRepo, branch, sha, exists) {
+async function setSubmissionReviewBranch(github, user, writeRepo, branch, sha, exists, baseSha = sha) {
   const repoPath = `/repos/${writeRepo.owner}/${writeRepo.repo}`;
   try {
     await github(exists ? `${repoPath}/git/refs/heads/${encodeGitRef(branch)}` : `${repoPath}/git/refs`, {
       method: exists ? "PATCH" : "POST",
-      body: exists ? { sha, force: true } : { ref: `refs/heads/${branch}`, sha },
+      body: exists ? { sha, force: false } : { ref: `refs/heads/${branch}`, sha },
     });
   } catch (err) {
     // Do not mistake every GitHub 404 for a workflow permission failure.
@@ -1562,7 +1610,7 @@ async function setSubmissionReviewBranch(github, user, writeRepo, branch, sha, e
     if (user.provider === "github" && [403, 404, 422].includes(err.status)) {
       try {
         const [upstream, fork] = await Promise.all([
-          getWorkflowFiles(github, REPO, sha),
+          getWorkflowFiles(github, REPO, baseSha),
           getWorkflowFiles(github, `${writeRepo.owner}/${writeRepo.repo}`, BASE_BRANCH),
         ]);
         if (upstream.size !== fork.size || [...upstream].some(([path, hash]) => fork.get(path) !== hash)) {
@@ -1921,22 +1969,19 @@ function getRoute(req) {
 }
 
 function setCorsHeaders(req, res) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN;
   const allowedOrigins = allowedOrigin
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
   const origin = req.get("origin");
 
-  if (!isDryRun() && origin && allowedOrigins.includes("*")) {
+  if (origin && (!allowedOrigins.includes(origin) || allowedOrigins.includes("*"))) {
     res.set("Vary", "Origin");
     return false;
   }
 
-  if (allowedOrigins.includes("*") && origin) {
-    res.set("Access-Control-Allow-Origin", origin);
-    res.set("Access-Control-Allow-Credentials", "true");
-  } else if (allowedOrigins.includes(origin)) {
+  if (allowedOrigins.includes(origin)) {
     res.set("Access-Control-Allow-Origin", origin);
     res.set("Access-Control-Allow-Credentials", "true");
   }
@@ -2074,8 +2119,9 @@ function getProxyOrigin(req) {
   const origin = req.get("x-pvme-proxy-origin") || "";
   if (!origin) return "";
 
-  const allowedOrigins = getAllowedOrigins();
-  return allowedOrigins.includes(origin) ? origin : "";
+  const secret = process.env.PVME_SUBMIT_SECRET || "";
+  return isDryRun() && isLocalReturnTo(origin) && secret
+    && secureCompare(req.get("x-pvme-submit-secret") || "", secret) ? origin : "";
 }
 
 function getSafeReturnTo(req) {
@@ -2085,7 +2131,7 @@ function getSafeReturnTo(req) {
 
   try {
     const url = new URL(returnTo || frontendUrl, frontendUrl);
-    if (url.origin === allowedOrigin) return url.toString();
+    if (!url.username && !url.password && url.origin === allowedOrigin) return url.toString();
   } catch {
     // Ignore invalid returnTo and fall back below.
   }
@@ -2098,7 +2144,7 @@ function getLocalReturnOrigin(req) {
 
   try {
     const origin = new URL(returnTo).origin;
-    return origin.startsWith("http://localhost:") ? origin : "";
+    return isLocalReturnTo(returnTo) ? origin : "";
   } catch {
     return "";
   }
@@ -2122,19 +2168,12 @@ function getUrlOrigin(value) {
   }
 }
 
-function getAllowedOrigins() {
-  return (process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN)
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-}
-
 function getSessionUser(req) {
   const cookie = parseCookies(req.get("cookie") || "")[SESSION_COOKIE];
   if (!cookie) return null;
 
   const session = verifySessionCookie(cookie);
-  if (!session || session.exp < nowSeconds()) {
+  if (!session || !Number.isFinite(session.exp) || session.exp <= nowSeconds() || session.devSession) {
     return null;
   }
 
@@ -2182,7 +2221,7 @@ function getSessionUser(req) {
 
 function isLocalReturnTo(value) {
   try {
-    return new URL(value).origin.startsWith("http://localhost:");
+    return isDryRun() && ["http://localhost:5173", "http://localhost:4321"].includes(new URL(value).origin);
   } catch {
     return false;
   }
@@ -2314,7 +2353,7 @@ function setAnonymousGuideUsage(res, usage) {
 }
 
 function setSessionCookie(res, session) {
-  res.set(
+  res.append(
     "Set-Cookie",
     serializeCookie(SESSION_COOKIE, sealJson(session), {
       httpOnly: true,
@@ -2381,7 +2420,7 @@ function parseCookies(header) {
     if (index === -1) return cookies;
     const name = part.slice(0, index).trim();
     const value = part.slice(index + 1).trim();
-    if (name) cookies[name] = decodeURIComponent(value);
+    try { if (name) cookies[name] = decodeURIComponent(value); } catch { /* Ignore malformed cookies. */ }
     return cookies;
   }, {});
 }
@@ -2423,25 +2462,31 @@ function sealJson(value) {
 }
 
 function verifySessionCookie(value) {
-  return openJson(value) || verifySignedJson(value);
+  const encrypted = openJson(value);
+  if (encrypted) return encrypted;
+  const legacy = verifySignedJson(value);
+  return legacy?.provider === "github" ? null : legacy;
 }
 
-function createDevSessionToken(session) {
+function createDevSessionToken(session, devOrigin) {
   return sealJson({
     ...session,
     devSession: true,
+    devOrigin,
     exp: nowSeconds() + 2 * 60,
   });
 }
 
-function verifyDevSessionToken(value) {
+function verifyDevSessionToken(value, origin) {
   const session = openJson(value);
 
-  if (!session || session.devSession !== true || session.exp < nowSeconds()) {
+  if (!session || session.provider !== "github" || session.devSession !== true
+    || session.devOrigin !== origin || !Number.isFinite(session.exp) || session.exp <= nowSeconds()) {
     return null;
   }
 
   delete session.devSession;
+  delete session.devOrigin;
   return session;
 }
 

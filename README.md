@@ -18,8 +18,8 @@ Use Node.js 24 (see `.nvmrc`), matching the frontend deployment workflow.
 The frontend dependencies require Node.js 20 or newer; Node.js 18 is unsupported.
 
 ```powershell
-npm install
-npm --prefix cloud-functions/guide-pr install
+npm ci
+npm --prefix cloud-functions/guide-pr ci
 ```
 
 Create `.env.development`:
@@ -52,6 +52,7 @@ $env:DISCORD_CLIENT_ID = "..."
 $env:DISCORD_CLIENT_SECRET = "..."
 $env:AUTH_COOKIE_SECRET = "local-dev-cookie-secret"
 $env:AUTH_COOKIE_SECURE = "false"
+$env:AUTH_COOKIE_SAMESITE = "Lax"
 npm start
 ```
 
@@ -61,15 +62,17 @@ Discord local callback:
 http://localhost:5173/api/guide-pr/auth/discord/callback
 ```
 
-Set `VITE_GUIDE_PR_ENDPOINT_LOCAL` to use a local backend. Leave it empty to use the configured live backend. Local requests never fall back to production.
+Keep `VITE_GUIDE_PR_ENDPOINT_LOCAL` set for local OAuth testing with `DRY_RUN=true`. Leaving it empty selects the configured live backend for legacy proxy requests; production authentication no longer accepts local return/session completion. Local requests never fall back to production.
 
 ### Test GitHub submissions locally
 
-See the [local GitHub testing setup](docs/local-github-testing.md). Test submissions create real commits and PRs under your GitHub account.
+Use a development GitHub OAuth app and set `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID`, `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET` and `GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI` in the backend terminal. The recommended callback is `http://localhost:8080/auth/github/callback`; the existing `http://localhost:5173/api/guide-pr/auth/github/callback` also works while that frontend proxy is running. Use localhost consistently.
+
+Keep `DRY_RUN=true`. Automated integration tests mock GitHub writes and require no credentials. Dry-run submission checks sessions, CSRF and payloads, but skips existing PR detection, source freshness and live GitHub permissions. Review-source loading and reviewer writes are unavailable in dry-run.
 
 ## Publish Backend
 
-The backend is a Google Cloud Function in `cloud-functions/guide-pr`. It uses Discord OAuth for identity and the GitHub App to write branches and PRs.
+The backend is a Google Cloud Function in `cloud-functions/guide-pr`. Discord contributors submit through the GitHub App; GitHub contributors use their own OAuth identity and fork.
 
 Required Google Secret Manager secrets:
 
@@ -80,7 +83,7 @@ GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET
 guide-editor-auth-cookie-secret
 ```
 
-From repo root:
+From repo root, in a separate PowerShell terminal from local development. The deployment script also loads local environment files; explicitly set the production values below so they take precedence:
 
 ```powershell
 $env:PVME_SUBMIT_SECRET = "..."
@@ -89,6 +92,11 @@ $env:GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID = "..."
 $env:DISCORD_REDIRECT_URI = "https://guide-api.pvme.io/auth/discord/callback"
 $env:GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI = "https://guide-api.pvme.io/auth/github/callback"
 $env:FRONTEND_ORIGIN = "https://pvme.io/guide-editor/"
+$env:ALLOWED_ORIGIN = "https://pvme.io"
+$env:TRUSTED_ORIGIN = "https://pvme.io"
+$env:AUTH_COOKIE_SECURE = "true"
+$env:AUTH_COOKIE_SAMESITE = "None"
+$env:DRY_RUN = "false"
 $env:GITHUB_INSTALLATION_ID = "128427383"
 
 $env:GITHUB_APP_PRIVATE_KEY_SECRET = "github-guide-editor-private-key"
@@ -111,7 +119,7 @@ Authorization callback URL: https://guide-api.pvme.io/auth/github/callback
 
 Store the client secret as `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET` in Secret Manager and set `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID` when deploying. Requested scopes: `repo read:user`. GitHub submissions use the contributor's fork and account for both commits and PRs; no workflow permission is requested.
 
-Dry-run deploy:
+Deploy with submission writes disabled (this still deploys the real Cloud Function):
 
 ```powershell
 $env:DRY_RUN = "true"
@@ -121,7 +129,7 @@ npm run deploy:guide-pr
 Live deploy:
 
 ```powershell
-Remove-Item Env:\DRY_RUN -ErrorAction SilentlyContinue
+$env:DRY_RUN = "false"
 npm run deploy:guide-pr
 ```
 
@@ -134,8 +142,10 @@ Invoke-RestMethod https://guide-api.pvme.io
 ## Checks
 
 ```powershell
+npm test
 npm run build
 npm run check:guide-pr
+npm --prefix cloud-functions/guide-pr test
 ```
 
 ## Publish Frontend

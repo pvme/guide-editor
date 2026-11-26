@@ -30,7 +30,10 @@ export default defineConfig(({ mode }) => {
   };
 });
 
-export function guideSubmitProxy(env) {
+export function guideSubmitProxy(env, { frontendOrigin = "http://localhost:5173" } = {}) {
+  if (!["http://localhost:5173", "http://localhost:4321"].includes(frontendOrigin)) {
+    throw new Error("The guide proxy requires a supported localhost frontend origin.");
+  }
   return {
     name: "pvme-guide-submit-proxy",
     configureServer(server) {
@@ -38,15 +41,7 @@ export function guideSubmitProxy(env) {
         if (!["GET", "POST", "PUT"].includes(req.method || "")) {
           res.statusCode = 405;
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Only GET and POST requests are supported." }));
-          return;
-        }
-
-        const localAuthFailureRedirect = getLocalAuthFailureRedirect(req.url || "");
-        if (localAuthFailureRedirect) {
-          res.statusCode = 302;
-          res.setHeader("Location", localAuthFailureRedirect);
-          res.end("");
+          res.end(JSON.stringify({ error: "Only GET, POST and PUT requests are supported." }));
           return;
         }
 
@@ -77,7 +72,7 @@ export function guideSubmitProxy(env) {
           try {
             const response = await fetch(`${endpoint.replace(/\/$/, "")}${upstreamPath}`, {
               method: req.method,
-              headers: createProxyHeaders(env, req),
+              headers: createProxyHeaders(env, req, frontendOrigin),
               body: ["POST", "PUT"].includes(req.method || "") ? body : undefined,
               redirect: "manual"
             });
@@ -104,53 +99,6 @@ export function guideSubmitProxy(env) {
   };
 }
 
-function getLocalAuthFailureRedirect(url) {
-  const parsed = new URL(url, "http://localhost:5173");
-  const path = parsed.pathname.startsWith(DEV_API_PROXY_PREFIX)
-    ? parsed.pathname.slice(DEV_API_PROXY_PREFIX.length) || "/"
-    : parsed.pathname || "/";
-
-  if (!["/auth/discord/callback", "/auth/github/callback"].includes(path) || !parsed.searchParams.has("error")) {
-    return "";
-  }
-
-  const fallback = "http://localhost:5173/guide-editor/";
-  const stateReturnTo = getUnsignedStateReturnTo(parsed.searchParams.get("state"));
-  let redirectUrl;
-
-  try {
-    redirectUrl = new URL(stateReturnTo || fallback, fallback);
-  } catch {
-    redirectUrl = new URL(fallback);
-  }
-
-  if (redirectUrl.origin !== "http://localhost:5173") {
-    redirectUrl = new URL(fallback);
-  }
-
-  redirectUrl.searchParams.set("submit", "1");
-  redirectUrl.searchParams.set(
-    "authError",
-    path.includes("/github/")
-      ? "GitHub login was cancelled. You must log in to submit a guide update."
-      : "Discord login was cancelled. You must log in with Discord to submit a guide update."
-  );
-
-  return redirectUrl.toString();
-}
-
-function getUnsignedStateReturnTo(state) {
-  const [payload] = String(state || "").split(".");
-  if (!payload) return "";
-
-  try {
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    return typeof data.returnTo === "string" ? data.returnTo : "";
-  } catch {
-    return "";
-  }
-}
-
 function getUpstreamPath(url) {
   const parsed = new URL(url, "http://localhost");
   const path = parsed.pathname.startsWith(DEV_API_PROXY_PREFIX)
@@ -169,11 +117,11 @@ async function readRequestBody(req) {
   return Buffer.concat(chunks);
 }
 
-function createProxyHeaders(env, req) {
+function createProxyHeaders(env, req, frontendOrigin) {
   const headers = {
     "Content-Type": "application/json",
     "X-PVME-Submit-Secret": env.PVME_SUBMIT_SECRET,
-    "X-PVME-Proxy-Origin": "http://localhost:5173"
+    "X-PVME-Proxy-Origin": frontendOrigin
   };
 
   if (req.headers.cookie) {
