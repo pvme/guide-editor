@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
   };
 });
 
-function guideSubmitProxy(env) {
+export function guideSubmitProxy(env) {
   return {
     name: "pvme-guide-submit-proxy",
     configureServer(server) {
@@ -56,14 +56,14 @@ function guideSubmitProxy(env) {
           : [env.VITE_GUIDE_PR_ENDPOINT_LIVE].filter(Boolean);
 
         if (endpoints.length === 0) {
-          res.statusCode = 500;
+          res.statusCode = 503;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "Guide update endpoint is not configured." }));
           return;
         }
 
         if (!env.PVME_SUBMIT_SECRET) {
-          res.statusCode = 500;
+          res.statusCode = 503;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "PVME_SUBMIT_SECRET is not configured for the dev submit proxy." }));
           return;
