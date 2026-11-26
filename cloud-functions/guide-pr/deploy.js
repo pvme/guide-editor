@@ -3,152 +3,171 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
-loadLocalEnvFiles();
-
-const appId = process.env.GITHUB_APP_ID || "3553040";
-const installationId = process.env.GITHUB_INSTALLATION_ID;
-const project = process.env.GCLOUD_PROJECT_ID || "pvmebackend";
-const region = process.env.GCLOUD_REGION || "europe-west1";
-const allowedOrigin = process.env.ALLOWED_ORIGIN || "https://pvme.io";
-const trustedOrigin = process.env.TRUSTED_ORIGIN || "https://pvme.io";
-const privateKeySecret = process.env.GITHUB_APP_PRIVATE_KEY_SECRET || "github-guide-editor-private-key";
-const discordClientSecretName = process.env.DISCORD_CLIENT_SECRET_SECRET || "discord-client-secret";
-const guideEditorGithubOAuthClientIdSecretName =
-  process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID === "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID"
-    ? "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID"
-    : "";
-const guideEditorGithubOAuthRedirectUriSecretName =
-  process.env.GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI === "GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI"
-    ? "GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI"
-    : "";
-const guideEditorGithubOAuthClientSecretName =
-  process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET === "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET"
-    ? "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET"
-    : getSecretName(
-      process.env.GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET,
-      "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET",
-    ) ||
-  process.env.GITHUB_OAUTH_CLIENT_SECRET_SECRET ||
-  (getEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_ID")
-    ? "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET"
-    : "");
-const authCookieSecretName = process.env.AUTH_COOKIE_SECRET_SECRET || "guide-editor-auth-cookie-secret";
-const dryRun = process.env.DRY_RUN;
-const submitSecret = process.env.PVME_SUBMIT_SECRET;
-
-if (!submitSecret) {
-  console.error("PVME_SUBMIT_SECRET is required. Non-pvme.io submissions use it for authorization.");
-  process.exit(1);
-}
-
-const envVars = [
-  ["GITHUB_APP_ID", appId],
-  ["ALLOWED_ORIGIN", allowedOrigin],
-  ["TRUSTED_ORIGIN", trustedOrigin],
-  ["PVME_SUBMIT_SECRET", submitSecret]
-];
-
-const secretBindings = [
-  `GITHUB_APP_PRIVATE_KEY=${privateKeySecret}:latest`
-];
-
-if (installationId) {
-  envVars.push(["GITHUB_INSTALLATION_ID", installationId]);
-}
-
-if (dryRun) {
-  envVars.push(["DRY_RUN", dryRun]);
-}
-
-addOptionalEnv("DISCORD_CLIENT_ID");
-addOptionalEnv("DISCORD_REDIRECT_URI");
-if (guideEditorGithubOAuthClientIdSecretName) {
-  secretBindings.push(`GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID=${guideEditorGithubOAuthClientIdSecretName}:latest`);
-} else {
-  addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_ID");
-}
-
-if (guideEditorGithubOAuthRedirectUriSecretName) {
-  secretBindings.push(`GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI=${guideEditorGithubOAuthRedirectUriSecretName}:latest`);
-} else {
-  addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI", "GITHUB_OAUTH_REDIRECT_URI");
-}
-addOptionalEnv("FRONTEND_ORIGIN");
-addOptionalEnv("AUTH_COOKIE_SAMESITE");
-addOptionalEnv("AUTH_COOKIE_SECURE");
-addOptionalEnv("AUTH_COOKIE_DOMAIN");
-addOptionalEnv("GUIDE_EDITOR_REVIEWER_GITHUB_LOGINS");
-
-if (discordClientSecretName) {
-  secretBindings.push(`DISCORD_CLIENT_SECRET=${discordClientSecretName}:latest`);
-} else {
-  addOptionalEnv("DISCORD_CLIENT_SECRET");
-}
-
-if (guideEditorGithubOAuthClientSecretName) {
-  secretBindings.push(`GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET=${guideEditorGithubOAuthClientSecretName}:latest`);
-} else {
-  addOptionalEnv("GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET", "GITHUB_OAUTH_CLIENT_SECRET");
-}
-
-if (authCookieSecretName) {
-  secretBindings.push(`AUTH_COOKIE_SECRET=${authCookieSecretName}:latest`);
-} else {
-  addOptionalEnv("AUTH_COOKIE_SECRET");
-}
-
-const args = [
-  "functions",
-  "deploy",
-  "submitGuideUpdate",
-  "--gen2",
-  "--project",
-  project,
-  "--runtime",
-  "nodejs22",
-  "--region",
-  region,
-  "--source",
-  "cloud-functions/guide-pr",
-  "--entry-point",
-  "submitGuideUpdate",
-  "--trigger-http",
-  "--allow-unauthenticated",
-  "--set-secrets",
-  secretBindings.join(","),
-  "--env-vars-file",
-  createEnvVarsFile(envVars)
-];
-
-const result = spawnSync("gcloud", args, {
-  stdio: "inherit",
-  shell: process.platform === "win32"
+const TARGET = Object.freeze({ project: "pvmebackend", region: "europe-west1", name: "submitGuideUpdate" });
+const PRODUCTION = Object.freeze({
+  ALLOWED_ORIGIN: "https://pvme.io",
+  TRUSTED_ORIGIN: "https://pvme.io",
+  FRONTEND_ORIGIN: "https://pvme.io/guide-editor/",
+  DISCORD_REDIRECT_URI: "https://guide-api.pvme.io/auth/discord/callback",
+  GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI: "https://guide-api.pvme.io/auth/github/callback",
+  AUTH_COOKIE_SECURE: "true",
+  AUTH_COOKIE_SAMESITE: "None",
+  DRY_RUN: "false",
 });
+const CREDENTIAL_KEYS = ["PVME_SUBMIT_SECRET", "AUTH_COOKIE_SECRET", "DISCORD_CLIENT_SECRET",
+  "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET", "GITHUB_OAUTH_CLIENT_SECRET", "GITHUB_APP_PRIVATE_KEY"];
+const PRESERVED_KEYS = [...CREDENTIAL_KEYS, "DISCORD_CLIENT_ID", "GITHUB_APP_ID", "GITHUB_INSTALLATION_ID",
+  "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID", "GUIDE_EDITOR_REVIEWER_GITHUB_LOGINS", "AUTH_COOKIE_DOMAIN"];
+const SECRET_OPTIONS = {
+  GITHUB_APP_PRIVATE_KEY_SECRET: "GITHUB_APP_PRIVATE_KEY",
+  DISCORD_CLIENT_SECRET_SECRET: "DISCORD_CLIENT_SECRET",
+  GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET: "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET",
+  GITHUB_OAUTH_CLIENT_SECRET_SECRET: "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET",
+  AUTH_COOKIE_SECRET_SECRET: "AUTH_COOKIE_SECRET",
+};
 
-process.exit(result.status ?? 1);
-
-function loadLocalEnvFiles() {
-  const root = path.resolve(__dirname, "../..");
-  const files = [
-    ".env",
-    ".env.local",
-    ".env.production",
-    ".env.production.local",
-    ".env.development",
-    ".env.development.local"
-  ];
-  const loaded = {};
-
-  for (const file of files) {
+function loadProductionEnv(root, exported = process.env) {
+  const values = {};
+  // Generic and development env files may contain local credentials/settings.
+  for (const file of [".env.production", ".env.production.local"]) {
     const fullPath = path.join(root, file);
-    if (!fs.existsSync(fullPath)) continue;
-
-    Object.assign(loaded, parseEnvFile(fs.readFileSync(fullPath, "utf8")));
+    if (fs.existsSync(fullPath)) Object.assign(values, parseEnvFile(fs.readFileSync(fullPath, "utf8")));
   }
+  return { ...values, ...exported };
+}
 
-  for (const [name, value] of Object.entries(loaded)) {
-    if (process.env[name] === undefined) {
-      process.env[name] = value;
+function isPlaceholder(value) {
+  return /^(?:\.{3}|changeme|change-me|same-as-root-env)$/i.test(value)
+    || /^(?:local|test|mock|example|your|dev|framework)[-_ ]/i.test(value)
+    || /placeholder|change[-_ ]?me/i.test(value);
+}
+
+function buildDeploymentPlan(env, current) {
+  for (const [key, expected] of Object.entries(PRODUCTION)) {
+    if (env[key] !== expected) throw new Error(`${key} must explicitly match the production configuration.`);
+  }
+  if (env.GITHUB_OAUTH_REDIRECT_URI !== undefined
+    && env.GITHUB_OAUTH_REDIRECT_URI !== PRODUCTION.GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI) {
+    throw new Error("GITHUB_OAUTH_REDIRECT_URI must match the production callback.");
+  }
+  if ((env.GCLOUD_PROJECT_ID && env.GCLOUD_PROJECT_ID !== TARGET.project)
+    || (env.GCLOUD_REGION && env.GCLOUD_REGION !== TARGET.region)) {
+    throw new Error("Deployment target does not match the existing production function.");
+  }
+  const resource = `projects/${TARGET.project}/locations/${TARGET.region}/functions/${TARGET.name}`;
+  if (current.name !== resource || current.environment !== "GEN_2" || current.state !== "ACTIVE"
+    || current.buildConfig?.runtime !== "nodejs22" || current.buildConfig?.entryPoint !== TARGET.name
+    || current.eventTrigger || !current.serviceConfig?.revision || !current.serviceConfig.serviceAccountEmail) {
+    throw new Error("The existing production function target, runtime or service account could not be verified.");
+  }
+  const existing = current.serviceConfig.environmentVariables || {};
+  const bindings = current.serviceConfig.secretEnvironmentVariables || [];
+  const bound = new Map(bindings.map(binding => [binding.key, binding]));
+  for (const key of CREDENTIAL_KEYS) {
+    if ([env[key], existing[key]].some(value => value && isPlaceholder(String(value)))) {
+      throw new Error(`${key} contains a development placeholder.`);
+    }
+  }
+  for (const key of PRESERVED_KEYS) {
+    if (env[key] === undefined) continue;
+    const binding = bound.get(key);
+    if (env[key] !== (binding ? binding.secret : existing[key])) {
+      throw new Error(`${key} must preserve the existing production value or secret binding.`);
+    }
+  }
+  for (const [option, key] of Object.entries(SECRET_OPTIONS)) {
+    if (env[option] !== undefined && env[option] !== bound.get(key)?.secret) {
+      throw new Error(`${option} must preserve the existing Secret Manager binding.`);
+    }
+  }
+  for (const key of ["PVME_SUBMIT_SECRET", "AUTH_COOKIE_SECRET", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET",
+    "GITHUB_APP_ID", "GITHUB_APP_PRIVATE_KEY", "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID",
+    "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET", "GUIDE_EDITOR_REVIEWER_GITHUB_LOGINS"]) {
+    if (!existing[key] && !bound.has(key)) throw new Error(`Required existing production setting ${key} is missing.`);
+  }
+  for (const binding of bindings) {
+    if (!binding.key || !binding.secret || !binding.version || !binding.projectId) {
+      throw new Error("An existing Secret Manager binding is incomplete.");
+    }
+  }
+  const environment = { ...existing };
+  const verifyCallbacks = [];
+  for (const [key, value] of Object.entries(PRODUCTION)) {
+    if (bound.has(key)) {
+      if (key !== "GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI") {
+        throw new Error(`${key} is secret-bound and cannot be verified by this deployment procedure.`);
+      }
+      // Preserve this binding; verify its effective public value via OAuth start.
+      verifyCallbacks.push({ provider: "github", expected: value });
+    } else environment[key] = value;
+  }
+  return { environment, verifyCallbacks, revision: current.serviceConfig.revision,
+    serviceAccount: current.serviceConfig.serviceAccountEmail };
+}
+
+function runGcloud(args) {
+  return spawnSync("gcloud", args, { encoding: "utf8", shell: process.platform === "win32",
+    windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+}
+
+function describeFunction(execute) {
+  const result = execute(["functions", "describe", TARGET.name, "--gen2", `--project=${TARGET.project}`,
+    `--region=${TARGET.region}`, "--format=json", "--quiet"]);
+  if (result.error || result.status !== 0) throw new Error("Could not inspect the existing production function. No deployment was started.");
+  try { return JSON.parse(result.stdout); }
+  catch { throw new Error("The production function description is invalid. No deployment was started."); }
+}
+
+async function verifyCallback({ provider, expected }, fetchFn) {
+  const response = await fetchFn(`https://guide-api.pvme.io/auth/${provider}/start?returnTo=${encodeURIComponent(PRODUCTION.FRONTEND_ORIGIN)}`,
+    { redirect: "manual", signal: AbortSignal.timeout(15000) });
+  let location;
+  try { location = new URL(response.headers.get("location")); } catch { /* Report a safe error below. */ }
+  if (response.status !== 302 || location?.origin !== "https://github.com"
+    || location.searchParams.get("redirect_uri") !== expected) {
+    throw new Error("The existing secret-bound GitHub callback does not match the production callback.");
+  }
+}
+
+async function deploy({ env = process.env, root = path.resolve(__dirname, "../.."),
+  execute = runGcloud, fetchFn = globalThis.fetch, tempRoot = os.tmpdir() } = {}) {
+  const config = loadProductionEnv(root, env);
+  // Validate explicit settings before any cloud access.
+  for (const [key, expected] of Object.entries(PRODUCTION)) {
+    if (config[key] !== expected) throw new Error(`${key} must explicitly match the production configuration.`);
+  }
+  const current = describeFunction(execute);
+  const plan = buildDeploymentPlan(config, current);
+  for (const callback of plan.verifyCallbacks) await verifyCallback(callback, fetchFn);
+  let temporaryDirectory;
+  try {
+    temporaryDirectory = fs.mkdtempSync(path.join(tempRoot, "pvme-guide-pr-env-"));
+    const envFile = path.join(temporaryDirectory, "environment.json");
+    // JSON is valid YAML. Secrets never enter shell arguments or console output.
+    fs.writeFileSync(envFile, JSON.stringify(plan.environment), { encoding: "utf8", mode: 0o600, flag: "wx" });
+    const latest = describeFunction(execute);
+    if (latest.serviceConfig.revision !== plan.revision || latest.updateTime !== current.updateTime
+      || JSON.stringify(latest.serviceConfig) !== JSON.stringify(current.serviceConfig)) {
+      throw new Error("Production configuration changed during preflight. No deployment was started.");
+    }
+    const result = execute(["functions", "deploy", TARGET.name, "--gen2", `--project=${TARGET.project}`,
+      `--region=${TARGET.region}`, "--runtime=nodejs22", `--source=${__dirname}`, `--entry-point=${TARGET.name}`,
+      `--service-account=${plan.serviceAccount}`, `--env-vars-file=${envFile}`, "--quiet",
+      "--format=json(name,state,serviceConfig.revision)"]);
+    // Do not pass --set-secrets, IAM flags or clear flags: preserve all existing
+    // secret env/volume bindings, public invoker policy and infrastructure settings.
+    if (result.error || result.status !== 0) {
+      throw new Error("Production deployment failed. Inspect the function/build status; raw CLI output was withheld to protect configuration values.");
+    }
+    return { previousRevision: plan.revision };
+  } finally {
+    if (temporaryDirectory) {
+      const target = path.resolve(temporaryDirectory);
+      if (!target.startsWith(`${path.resolve(tempRoot)}${path.sep}`)
+        || !path.basename(target).startsWith("pvme-guide-pr-env-")) {
+        throw new Error("Refusing to clean up an unexpected deployment temporary path.");
+      }
+      fs.rmSync(target, { recursive: true, force: true });
     }
   }
 }
@@ -183,30 +202,13 @@ function parseEnvValue(value) {
   return trimmed.replace(/\s+#.*$/, "");
 }
 
-function addOptionalEnv(name, fallbackName) {
-  const value = getEnv(name, fallbackName);
+module.exports = { TARGET, PRODUCTION, loadProductionEnv, buildDeploymentPlan, deploy };
 
-  if (value) {
-    envVars.push([name, value]);
-  }
-}
-
-function getEnv(name, fallbackName) {
-  return process.env[name] || (fallbackName ? process.env[fallbackName] : "");
-}
-
-function getSecretName(value, defaultName) {
-  if (!value) return "";
-  if (/^[a-f0-9]{40}$/i.test(value)) return defaultName;
-  return value;
-}
-
-function createEnvVarsFile(values) {
-  const file = path.join(os.tmpdir(), `pvme-guide-pr-env-${Date.now()}.yaml`);
-  const body = values
-    .map(([name, value]) => `${name}: ${JSON.stringify(String(value))}`)
-    .join("\n");
-
-  fs.writeFileSync(file, `${body}\n`, "utf8");
-  return file;
+if (require.main === module) {
+  deploy().then(result => {
+    console.log(`Production deployment completed. Previous revision: ${result.previousRevision}`);
+  }).catch(error => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
 }

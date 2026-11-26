@@ -74,64 +74,36 @@ Keep `DRY_RUN=true`. Automated integration tests mock GitHub writes and require 
 
 The backend is a Google Cloud Function in `cloud-functions/guide-pr`. Discord contributors submit through the GitHub App; GitHub contributors use their own OAuth identity and fork.
 
-Required Google Secret Manager secrets:
+The deployment command updates only the existing production function in `pvmebackend` / `europe-west1`. It reads the deployed configuration and preserves all credentials, Secret Manager bindings (including secret-bound GitHub client ID/callback), reviewer settings, runtime service account and IAM policy. It cannot create a new function or change credential bindings.
 
-```text
-github-guide-editor-private-key
-discord-client-secret
-GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET
-guide-editor-auth-cookie-secret
-```
+Only `.env.production` and `.env.production.local` are loaded; exported variables take precedence. Generic and development env files are never loaded. The production settings below must be explicit. `DRY_RUN=true`, local callbacks, insecure cookies, development placeholders and credential/binding changes are rejected.
 
-From repo root, in a separate PowerShell terminal from local development. The deployment script also loads local environment files; explicitly set the production values below so they take precedence:
+From the repository root, using the authenticated production GCP account:
 
 ```powershell
-$env:PVME_SUBMIT_SECRET = "..."
-$env:DISCORD_CLIENT_ID = "..."
-$env:GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID = "..."
-$env:DISCORD_REDIRECT_URI = "https://guide-api.pvme.io/auth/discord/callback"
-$env:GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI = "https://guide-api.pvme.io/auth/github/callback"
-$env:FRONTEND_ORIGIN = "https://pvme.io/guide-editor/"
+$env:GCLOUD_PROJECT_ID = "pvmebackend"
+$env:GCLOUD_REGION = "europe-west1"
 $env:ALLOWED_ORIGIN = "https://pvme.io"
 $env:TRUSTED_ORIGIN = "https://pvme.io"
+$env:FRONTEND_ORIGIN = "https://pvme.io/guide-editor/"
+$env:DISCORD_REDIRECT_URI = "https://guide-api.pvme.io/auth/discord/callback"
+$env:GUIDE_EDITOR_GITHUB_OAUTH_REDIRECT_URI = "https://guide-api.pvme.io/auth/github/callback"
 $env:AUTH_COOKIE_SECURE = "true"
 $env:AUTH_COOKIE_SAMESITE = "None"
 $env:DRY_RUN = "false"
-$env:GITHUB_INSTALLATION_ID = "128427383"
-
-$env:GITHUB_APP_PRIVATE_KEY_SECRET = "github-guide-editor-private-key"
-$env:DISCORD_CLIENT_SECRET_SECRET = "discord-client-secret"
-$env:GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET = "GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET"
-$env:GUIDE_EDITOR_REVIEWER_GITHUB_LOGINS = "Crisnyc,Chrash1,Ferroric,Rcm37,rsnx222,Porfet,Tinky1rs,zzLinie,Mioneee"
-$env:AUTH_COOKIE_SECRET_SECRET = "guide-editor-auth-cookie-secret"
-
 npm run deploy:guide-pr
 ```
 
-GitHub OAuth setup:
+Existing credentials do not need to be copied into local environment files. The script merges the deployed environment before replacing it, leaves existing secret bindings untouched, verifies the effective secret-bound GitHub callback through the public OAuth start route, and aborts if configuration changes during preflight. Temporary sensitive configuration is deleted after success or failure. Raw CLI output is withheld to prevent configuration leakage; inspect function/build status if deployment fails.
 
-Create a GitHub OAuth app for the guide editor with:
+The existing OAuth applications must retain these callbacks:
 
 ```text
-Homepage URL: https://pvme.io/guide-editor/
-Authorization callback URL: https://guide-api.pvme.io/auth/github/callback
+Discord: https://guide-api.pvme.io/auth/discord/callback
+GitHub: https://guide-api.pvme.io/auth/github/callback
 ```
 
-Store the client secret as `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_SECRET_SECRET` in Secret Manager and set `GUIDE_EDITOR_GITHUB_OAUTH_CLIENT_ID` when deploying. Requested scopes: `repo read:user`. GitHub submissions use the contributor's fork and account for both commits and PRs; no workflow permission is requested.
-
-Deploy with submission writes disabled (this still deploys the real Cloud Function):
-
-```powershell
-$env:DRY_RUN = "true"
-npm run deploy:guide-pr
-```
-
-Live deploy:
-
-```powershell
-$env:DRY_RUN = "false"
-npm run deploy:guide-pr
-```
+Both `https://pvme.io/guide-editor/` and `https://pvme.io/pvme-website/` are supported return paths on the same trusted origin. GitHub scopes remain `repo read:user`; no workflow permission is requested. Production dry-run deployments are deliberately unsupported; use the local Functions Framework for dry-run integration tests.
 
 Health check:
 
