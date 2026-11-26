@@ -25,9 +25,6 @@ jobs:
         env:
           NPM_CONFIG_ENGINE_STRICT: "true"
 
-      - name: Install backend test dependencies
-        run: npm --prefix cloud-functions/guide-pr ci
-
       - name: Test
         run: npm test
 
