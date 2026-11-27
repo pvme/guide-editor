@@ -10,6 +10,7 @@ export const disclaimer = `.
 
 export const bossGuide = `# <Boss Name> — Boss Guide
 .img:https://img.pvme.io/images/dx3gXBIgpJ.png
+*Note: a **Table of Contents** can be found at the bottom, or in pins.*
 
 .
 ## __General Information__
@@ -70,7 +71,7 @@ Other guides: link to forum of rotation guides, mechanics if they exist, afk if 
 
 export const afkGuide = `# __AFK Boss Name__
 .img:https://img.pvme.io/images/ssAwdSFcqC.png
-*Note: a **Table of Contents** can be found in the pins.*
+*Note: a **Table of Contents** can be found at the bottom, or in pins.*
 
 .
 ## __Disclaimer__
@@ -146,7 +147,7 @@ Content maintained by: [<@123>]
 .pin:delete`;
 
 export const slayerGuide = `# __[Slayer Creature Name]__
-*Note: a **Table of Contents** can be found in the pins.*
+*Note: a **Table of Contents** can be found at the bottom, or in pins.*
 
 .
 ## __Introduction__
