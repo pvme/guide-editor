@@ -55,6 +55,11 @@
             buttons: [
                 { cmd: "wikiLink", icon: Link45deg, title: "Insert Wiki Link" }
             ]
+        },
+        {
+            buttons: [
+                { cmd: "normaliseLineEndings", glyph: "↵", title: "Normalise line endings" }
+            ]
         }
     ];
 

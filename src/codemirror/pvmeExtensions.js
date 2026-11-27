@@ -24,6 +24,7 @@ import { closeBrackets, autocompletion } from "@codemirror/autocomplete";
 import { bracketMatching } from "@codemirror/language";
 
 import {
+  normaliseLineEndings,
   toggleBold,
   toggleItalic,
   toggleUnderline,
@@ -96,6 +97,9 @@ export function pvmeExtensions(textStore, syncApi, editorSettings = {}) {
     markdown(),
     guideSyntaxHighlighting,
     EditorView.lineWrapping,
+    EditorView.clipboardInputFilter.of(text =>
+      text.replace(/\r\n?/g, "\n")
+    ),
     highlightActiveLine(),
     editorRowFlash,
     highlightSelectionMatches({ minSelectionLength: 3 }),
@@ -131,6 +135,7 @@ export function pvmeExtensions(textStore, syncApi, editorSettings = {}) {
 
     // Toolbar commands
     commandDispatch.of({
+      normaliseLineEndings,
       bold: toggleBold,
       italic: toggleItalic,
       underline: toggleUnderline,

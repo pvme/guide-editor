@@ -250,6 +250,28 @@ export const formatCodeBlock = ({ state, dispatch }) => {
   return true;
 };
 
+/* ------------------------------------------------------------------
+Line endings normalisation
+------------------------------------------------------------------- */
+
+export const normaliseLineEndings = (view) => {
+  const source = view.state.doc.toString();
+
+  const changes = [...source.matchAll(/\r\n?/g)].map(match => ({
+    from: match.index,
+    to: match.index + match[0].length,
+    insert: "\n"
+  }));
+
+  if (!changes.length) return false;
+
+  view.dispatch({
+    changes,
+    filter: false
+  });
+
+  return true;
+};
 
 /* ------------------------------------------------------------------
    INSERT LIST ITEM COMMANDS (Toolbar only)
