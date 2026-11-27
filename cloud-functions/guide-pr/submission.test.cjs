@@ -147,6 +147,22 @@ for (const expected of [undefined, null, {}, { state: 'none', headSha: reviewSha
   });
 }
 
+for (const [app, label] of [[undefined, 'PvME Website'], ['website', 'PvME Website'], ['guide-editor', 'PvME Guide Editor']]) {
+  for (const present of [false, true]) {
+    test(`${label} attribution ${present ? 'updates an existing' : 'creates a new'} PR (${app})`, async t => {
+      const calls = mockStrictSubmission(t, { present });
+      const req = strictRequest(present ? { expectedReview, replaceExistingReview: true } : {}, {},
+        app ? { 'x-pvme-app': app } : {});
+      const res = response();
+      await submitGuideUpdate(req, res);
+      assert.equal(res.statusCode, present ? 200 : 201);
+      const pr = calls.find(c => c.route.includes('/pulls') && c.method !== 'GET');
+      assert.ok(pr.body.body.startsWith(`Submitted from the ${label}.\n`));
+      assert.ok(res.headers['access-control-allow-headers'].includes('X-PVME-App'));
+    });
+  }
+}
+
 for (const source of ['master', 'user-pr']) {
   test(`strict ${source} accepts matching version and returns captured contributor`, async t => {
     const calls = mockStrictSubmission(t);

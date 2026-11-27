@@ -318,7 +318,8 @@ async function handleSubmitGuideUpdate(req, res, strict = false) {
     assertReviewPrIdentity(payload.expectedReview, currentPr);
   }
   const prTitle = payload.title || `Update ${payload.path}`;
-  const prBody = createPullRequestBody(payload, user, openPr?.body || "");
+  const appName = req.get("x-pvme-app") === "guide-editor" ? "PvME Guide Editor" : "PvME Website";
+  const prBody = createPullRequestBody(payload, user, openPr?.body || "", appName);
   const pr = openPr
     ? await github(`/repos/${owner}/${repo}/pulls/${openPr.number}`, {
         method: "PATCH",
@@ -2007,7 +2008,7 @@ function createSubmittedByLine(user) {
   return `Submitted by Discord user: ${userDisplayName(user)} (${user.discordId})`;
 }
 
-function createPullRequestBody(payload, user, existingBody = "") {
+function createPullRequestBody(payload, user, existingBody = "", appName = "PvME Website") {
   const summaries = getExistingUpdateSummaries(existingBody);
   if (payload.notes) {
     summaries.push(payload.notes);
@@ -2015,7 +2016,7 @@ function createPullRequestBody(payload, user, existingBody = "") {
   const visibleSummaries = summaries.slice(-MAX_PR_SUMMARIES);
 
   const lines = [
-    "Submitted from the PvME Guide Editor.",
+    `Submitted from the ${appName}.`,
     "",
     `Guide file: \`${payload.path}\``,
     `Submitted by: ${userDisplayName(user)}`,
@@ -2120,7 +2121,7 @@ function setCorsHeaders(req, res) {
 
   res.set("Vary", "Origin");
   res.set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, X-PVME-Submit-Secret, X-PVME-CSRF-Token");
+  res.set("Access-Control-Allow-Headers", "Content-Type, X-PVME-Submit-Secret, X-PVME-CSRF-Token, X-PVME-App");
   res.set("Access-Control-Max-Age", "3600");
   return true;
 }

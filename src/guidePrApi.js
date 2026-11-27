@@ -73,7 +73,7 @@ export async function submitGuideUpdateStrict(payload, { csrf, allowUnverified =
   return requestJsonAttempt("/v2/submissions", {
     method: "POST",
     body: JSON.stringify(payload),
-    headers: { 'X-PVME-CSRF-Token': csrf },
+    headers: { 'X-PVME-CSRF-Token': csrf, 'X-PVME-App': 'guide-editor' },
     parseResult: (data, status) => parseSubmissionResult(data, payload, status)
   }, false);
 }

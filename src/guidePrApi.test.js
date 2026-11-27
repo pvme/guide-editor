@@ -32,6 +32,7 @@ test('authenticated submissions keep CSRF protection and return the contributor 
       return { ok: true, json: async () => ({ user: { githubId: '123', csrfToken: 'csrf-from-session' } }) };
     }
     assert.equal(options.headers['X-PVME-CSRF-Token'], 'csrf-from-session');
+    assert.equal(options.headers['X-PVME-App'], 'guide-editor');
     return { ok: true, status: 201, json: async () => ({ contractVersion: 2, contributor: 'github:123',
       path: strictPayload.path, branch: 'guide-editor/github-123/guides-test', reusedReview: false,
       prUrl: 'https://github.com/pvme/pvme-guides/pull/42' }) };

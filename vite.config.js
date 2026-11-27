@@ -134,6 +134,10 @@ function createProxyHeaders(env, req, frontendOrigin) {
     headers["X-PVME-CSRF-Token"] = req.headers["x-pvme-csrf-token"];
   }
 
+  if (req.headers["x-pvme-app"]) {
+    headers["X-PVME-App"] = req.headers["x-pvme-app"];
+  }
+
   return headers;
 }
 

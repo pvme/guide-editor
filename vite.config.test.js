@@ -64,10 +64,13 @@ for (const status of [201, 403, 404, 409, 500]) {
       assert.equal(url, 'http://localhost:8080/v2/submissions');
       assert.equal(init.method, 'POST');
       assert.equal(init.headers['X-PVME-CSRF-Token'], 'csrf');
+      assert.equal(init.headers['X-PVME-App'], 'guide-editor');
       assert.equal(init.body.toString(), body);
       return { status, text: async () => '{"contractVersion":2}', headers: { get: () => null, getSetCookie: () => [] } };
     });
-    const res = response(); await handler()(request('/v2/submissions', 'POST', body), res);
+    const req = request('/v2/submissions', 'POST', body);
+    req.headers['x-pvme-app'] = 'guide-editor';
+    const res = response(); await handler()(req, res);
     assert.equal(res.statusCode, status); assert.equal(mock.mock.callCount(), 1);
     assert.equal(res.headers["cache-control"], "no-store");
   });
