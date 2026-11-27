@@ -4,8 +4,6 @@ import { usersFormat, channelsFormat, emojisFormat, emojiSearch, channels } from
 import { editorSettingsFacet } from "./editorSettings.js";
 import { getEmojiId } from '../parser/guideParser.js';
 
-const DEBUG = false;
-const log = (...args) => DEBUG && console.log("[AUTOFORMAT]", ...args);
 const ROTATION_EMOJI_MODIFIER = /[rs_]/;
 
 export function autocompletionSource(context) {

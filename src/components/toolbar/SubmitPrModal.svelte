@@ -1,13 +1,17 @@
 <script>
   import Modal from "./Modal.svelte";
   import { createEventDispatcher, tick } from "svelte";
-  import { authUser, getGuideSourceContext, loadedGuide, text } from "../../stores";
+  import { activeDraft, authUser, getGuideSourceContext, loadedGuide, text } from "../../stores";
   import findStyleErrors from "../../syntax/style";
   import findSyntaxErrors from "../../syntax/syntax";
   import {
     getAuthenticatedUser,
-    submitGuideUpdate
+    submitGuideUpdateStrict, loadGuideForReview, isLocalDryRun, verifyLocalDryRun
   } from "../../guidePrApi";
+
+  import { contributorIdentity, sourceBinding, validateSource, prepareSubmission,
+    assertSourceUnchanged, validateRecoveredSource, submissionRecovery } from "../../contributorSubmission.js";
+  import { captureGuideLoad } from "../../contributorSource.js";
 
   export let open = false;
   export let authError = "";
@@ -19,9 +23,13 @@
   let status = "idle";
   let message = "";
   let prUrl = "";
+  let receiptContributor = "";
   let forkSyncUrl = "";
   let issueAcknowledged = false;
-  let replaceExistingReview = false;
+  let consent = "";
+  let binding = "";
+  let recoveryBusy = false;
+  let inFlight = false;
   let authStatus = "idle";
   let authCheckedForOpen = false;
   let submitAttempted = false;
@@ -36,9 +44,17 @@
   $: hasIssues = issues.length > 0;
   $: isAuthenticated = Boolean($authUser?.discordId || $authUser?.githubId);
   $: hasNotes = notes.trim().length > 0;
-  $: replacesExistingReview = $loadedGuide?.source === "master" && Boolean($loadedGuide?.existingReviewBranch);
+  $: nextBinding = sourceBinding($loadedGuide) + contributorIdentity($authUser);
+  $: if (binding !== nextBinding) { binding = nextBinding; consent = ""; }
+  $: replacesExistingReview = $loadedGuide?.source === "master" && $loadedGuide?.reviewState?.state === "present";
+  $: replaceExistingReview = consent === sourceBinding($loadedGuide);
+  $: sourceError = getSourceError($loadedGuide, $authUser);
   $: canSubmit = hasChanges
     && isAuthenticated
+    && !sourceError
+    && !recoveryBusy
+    && !inFlight
+    && status !== "submitting"
     && hasNotes
     && (!hasIssues || issueAcknowledged)
     && (!replacesExistingReview || replaceExistingReview);
@@ -60,7 +76,7 @@
     message = "";
     prUrl = "";
     forkSyncUrl = "";
-    replaceExistingReview = false;
+    consent = "";
     authCheckedForOpen = false;
     submitAttempted = false;
     lastAuthError = "";
@@ -100,6 +116,7 @@
     const hasGuideText = $text.trim().length > 0;
 
     return [
+      { done: !sourceError, label: "Validate source and contributor", error: sourceError },
       {
         done: validGuide,
         label: "Load a valid guide",
@@ -140,6 +157,7 @@
   }
 
   async function submitPr() {
+    if (inFlight || recoveryBusy) return;
     submitAttempted = true;
 
     const validationError = validateLoadedGuide($loadedGuide);
@@ -149,63 +167,71 @@
       return;
     }
 
+    if (status === "submitting" || recoveryBusy) return;
+    // Snapshot before any asynchronous work. Nothing below reads mutable editor text.
+    const guide = structuredClone($loadedGuide);
+    const user = structuredClone($authUser);
+    const content = $text;
+    const capturedConsent = consent;
+    const allowUnverified = isLocalDryRun() && guide.dryRun === true;
     status = "submitting";
+    inFlight = true;
     message = "";
     prUrl = "";
     forkSyncUrl = "";
-
     try {
-      authUser.set(await getAuthenticatedUser());
-    } catch {
-      authUser.set(null);
-      status = "error";
-      message = "Please log in again, then try again.";
-      return;
-    }
-
-    const payload = {
-      type: "update",
-      repo: "pvme/pvme-guides",
-      baseBranch: "master",
-      path: $loadedGuide.path,
-      content: $text,
-      originalContent: $loadedGuide.originalText || "",
-      title: defaultTitle,
-      notes: notes.trim(),
-      source: $loadedGuide.source || "master",
-      branch: $loadedGuide.branch || "master",
-      existingReviewBranch: $loadedGuide.existingReviewBranch || "",
-      replaceExistingReview: replacesExistingReview && replaceExistingReview
-    };
-
-    try {
-      const data = await submitGuideUpdate(payload);
-
-      prUrl = data.prUrl || data.url || "";
-      status = "success";
-      const modeLabel = data.dryRun ? " (DEV MODE)" : "";
-      message = `Thank you for contributing to PvME - your update has been submitted for review.${modeLabel}`;
-
-      if (data.branch) {
-        loadedGuide.update((guide) => guide
-          ? {
-            ...guide,
-            source: "user-pr",
-            branch: data.branch,
-            prUrl,
-            existingReviewBranch: "",
-            existingReviewUrl: "",
-            originalText: $text
-          }
-          : guide);
+      const payload = prepareSubmission({ guide, user, content, title: defaultTitle,
+        notes, consent: capturedConsent, allowUnverified });
+      const currentUser = await getAuthenticatedUser();
+      authUser.set(currentUser);
+      if (contributorIdentity(currentUser) !== payload.expectedContributor) {
+        throw Object.assign(new Error("Account changed before submission."), { code: "CONTRIBUTOR_MISMATCH" });
       }
+      const fresh = await captureGuideLoad(() => loadGuideForReview(guide.path, guide.source === "user-pr" ? "review" : "master"));
+      assertSourceUnchanged(guide, fresh, currentUser, allowUnverified);
+      // Explicit CSRF belongs to the same revalidated contributor; POST is never retried.
+      const data = await submitGuideUpdateStrict(payload, { csrf: currentUser.csrfToken, allowUnverified });
+      prUrl = data.prUrl || "";
+      receiptContributor = data.contributor;
+      status = "success";
+      message = data.dryRun
+        ? "Local dry-run validation passed. No update was published; your draft is retained."
+        : "Thank you for contributing to PvME - your update has been submitted for review. Your draft is retained; load a fresh source before the next update.";
+      // A receipt has no immutable next head. Never fabricate one or rewrite a draft
+      // using the currently displayed account, file or newer in-flight edits.
     } catch (err) {
       status = "error";
-      message = normalizeSubmitError(err);
-      if (err.code === "FORK_SYNC_REQUIRED" && $authUser?.githubLogin) {
-        forkSyncUrl = `https://github.com/${encodeURIComponent($authUser.githubLogin)}/pvme-guides`;
+      consent = "";
+      message = submissionRecovery(err);
+      if (err.code === "FORK_SYNC_REQUIRED" && user?.githubLogin) {
+        forkSyncUrl = `https://github.com/${encodeURIComponent(user.githubLogin)}/pvme-guides`;
       }
-    }
+    } finally { inFlight = false; }
+  }
+
+  function getSourceError(guide, user) {
+    try { validateSource(guide, user, isLocalDryRun() && guide?.dryRun === true); return ""; }
+    catch (error) { return error.message; }
+  }
+
+  async function recoverSource() {
+    if (recoveryBusy || status === "submitting") return;
+    const captured = structuredClone($loadedGuide);
+    const draftId = $activeDraft.draft.id;
+    recoveryBusy = true;
+    consent = "";
+    try {
+      const fresh = await captureGuideLoad(() => loadGuideForReview(captured.path, captured.source === "user-pr" ? "review" : "master"));
+      const user = await getAuthenticatedUser();
+      authUser.set(user);
+      validateRecoveredSource(captured, fresh, user, isLocalDryRun() && fresh.dryRun === true);
+      if ($activeDraft.draft.id !== draftId || sourceBinding($loadedGuide) !== sourceBinding(captured)) {
+        throw new Error("Draft changed during validation. Validate the selected draft again.");
+      }
+      loadedGuide.set({ ...captured, ...fresh });
+      message = "Exact source validated. Inspect the captured review and give fresh consent before submitting.";
+    } catch (err) { status = "error"; message = submissionRecovery(err); }
+    finally { recoveryBusy = false; }
   }
 
   async function refreshAuth() {
@@ -214,7 +240,12 @@
     authCheckedForOpen = true;
 
     try {
-      authUser.set(await getAuthenticatedUser());
+      const user = await getAuthenticatedUser();
+      if ($loadedGuide?.reviewState?.state === 'unverified') {
+        try { await verifyLocalDryRun(); }
+        catch (err) { status = 'error'; message = submissionRecovery(err); }
+      }
+      authUser.set(user);
     } catch {
       authUser.set(null);
     } finally {
@@ -232,20 +263,7 @@
     notesEl?.focus();
   }
 
-  function normalizeSubmitError(err) {
-    const text = err?.message || "";
 
-    if (!text) return "Submit failed. Try again in a moment.";
-    if (/log in/i.test(text)) return /again/i.test(text)
-      ? "Please log in again, then try again."
-      : "Please log in to submit your update.";
-    if (text.includes("No guide changes") || text.includes("make a guide change")) return "You must make a guide change to submit a guide update.";
-    if (text.includes("summary of what changed") || text.includes("describe what changed")) return "You must describe what changed to submit a guide update.";
-    if (text.includes("changed since it was loaded")) return text;
-    if (text.includes("replace your existing open review") || text.includes("replace your existing submitted update")) return text;
-
-    return text.endsWith(".") ? text : `${text}.`;
-  }
 </script>
 
 <Modal {open} {close} panelClass="max-w-lg !p-0">
@@ -254,6 +272,7 @@
       <h2 class="text-xl font-semibold text-emerald-200">
         {message}
       </h2>
+      <p class="text-sm text-slate-300">Contributor: {receiptContributor}</p>
 
       {#if prUrl}
         <a
@@ -282,6 +301,15 @@
       </div>
 
       <div class="space-y-5 px-6 py-5">
+        {#if sourceError}
+          <p class="text-sm text-amber-200">{sourceError}</p>
+          {#if $loadedGuide?.path && (!$loadedGuide?.reviewState || !$loadedGuide?.expectedContributor) && isAuthenticated}
+            <button type="button" class="toolbar-btn toolbar-btn--secondary" disabled={recoveryBusy || status === "submitting"} on:click={recoverSource}>
+              Validate recovered draft source
+            </button>
+            <p class="text-xs text-slate-400">Checks exact original source and captures a fresh review version for this account. Your edits stay saved. If source changed, load a new draft and apply edits manually.</p>
+          {/if}
+        {/if}
         {#if !isAuthenticated}
           <div class="pr-auth-gate">
             <div>
@@ -326,15 +354,17 @@
             {/if}
           </label>
 
-          {#if replacesExistingReview}
+          {#if replacesExistingReview && !sourceError}
             <label class="flex items-start gap-3 rounded border border-amber-700/50 bg-amber-950/20 p-3">
               <input
                 class="mt-1"
                 type="checkbox"
-                bind:checked={replaceExistingReview}
+                checked={replaceExistingReview}
+                on:change={(event) => consent = event.currentTarget.checked ? sourceBinding($loadedGuide) : ""}
               />
               <span class="text-sm text-amber-50">
                 This will replace your existing submitted update with this draft started from the PvME guide.
+                <a class="underline" href={$loadedGuide.reviewState.prUrl} target="_blank" rel="noreferrer">Inspect captured PR</a>
               </span>
             </label>
           {/if}
@@ -417,6 +447,7 @@
             <button
               class="toolbar-btn rounded font-medium"
               aria-describedby="submit-update-help"
+              disabled={inFlight || recoveryBusy}
               type="submit"
             >
               Submit update

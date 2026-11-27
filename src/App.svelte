@@ -4,6 +4,8 @@
   import Toolbar from "./components/toolbar/Toolbar.svelte";
 
   import { EditorState } from "@codemirror/state";
+  import { exactDocument, exactLineSeparator } from './codemirror/exactDocument.js';
+  import { captureGuideLoad } from './contributorSource.js';
   import { EditorView } from "@codemirror/view";
   import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
@@ -142,7 +144,7 @@
     guideLoadStatus = "confirm";
     guideLoadError = "";
     try {
-      const loaded = await loadGuideText(pendingGuide, "auto");
+      const loaded = await captureGuideLoad(() => loadGuideText(pendingGuide, "auto"));
 
       if (loaded.hasExistingReview) {
         pendingGuide = {
@@ -192,7 +194,7 @@
     guideLoadStatus = "review";
     guideLoadError = "";
     try {
-      const loaded = await loadGuideText(pendingGuide, "review");
+      const loaded = await captureGuideLoad(() => loadGuideText(pendingGuide, "review"));
       applyLoadedGuide(loaded, "Loaded your submitted update.");
       pendingGuide = null;
       showGuideModal = false;
@@ -208,7 +210,7 @@
     guideLoadStatus = "live";
     guideLoadError = "";
     try {
-      const loaded = await loadGuideText(pendingGuide, "master");
+      const loaded = await captureGuideLoad(() => loadGuideText(pendingGuide, "master"));
       applyLoadedGuide(loaded, "Started a new draft from the PvME guide. Submitting will replace your existing submitted update.");
       pendingGuide = null;
       showGuideModal = false;
@@ -232,6 +234,9 @@
       prUrl: loaded.prUrl || "",
       existingReviewBranch: loaded.existingReviewBranch || "",
       existingReviewUrl: loaded.existingReviewUrl || "",
+      reviewState: loaded.reviewState,
+      expectedContributor: loaded.expectedContributor,
+      dryRun: loaded.dryRun,
       originalText: guideText
     };
 
@@ -396,8 +401,9 @@
     removeGlobalKeydown = () => document.removeEventListener("keydown", handleGlobalKeydown);
 
     const state = EditorState.create({
-      doc: initialDoc,
+      doc: exactDocument(initialDoc),
       extensions: [
+        exactLineSeparator,
         pvmeExtensions(text, {
           getMessageAtEditorLine: _getMessageAtEditorLine,
           scrollPreviewToMessage,
@@ -450,7 +456,7 @@
       const next = skipLoadDueToReview ? cur : (draft.content || "");
       if (cur !== next) {
         editor.dispatch({
-          changes: { from: 0, to: cur.length, insert: next }
+          changes: { from: 0, to: cur.length, insert: exactDocument(next) }
         });
       }
 
@@ -529,7 +535,7 @@
       const cur = editor.state.doc.toString();
       if (cur !== v) {
         editor.dispatch({
-          changes: { from: 0, to: cur.length, insert: v }
+          changes: { from: 0, to: cur.length, insert: exactDocument(v) }
         });
         confirmedTrailingWhitespaceLines = getTrailingWhitespaceLines(editor.state.doc);
       }

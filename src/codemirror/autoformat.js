@@ -13,8 +13,6 @@ import {
 } from "../pvmeSettings";
 import { editorSettingsFacet } from "./editorSettings.js";
 
-const DEBUG = false;
-const log = (...args) => DEBUG && console.log("[AUTOFORMAT]", ...args);
 
 const ARROW   = /->$/;
 const USER    = /;@([^;]+);/;
@@ -216,7 +214,6 @@ function replacePresetMakerUrls(text) {
 
 export function autoformatOnUpdate() {
   return EditorState.transactionFilter.of(tr => {
-    log("──── TRANSACTION START ────");
 
     if (!tr.docChanged) return tr;
 
@@ -228,7 +225,6 @@ export function autoformatOnUpdate() {
         insert: inserted.toString()
       });
     });
-    log("changeIter:", changes);
 
     if (changes.length !== 1) return tr;
     const { fromA, toA, insert: typed } = changes[0];
@@ -236,8 +232,6 @@ export function autoformatOnUpdate() {
     const newDoc = tr.newDoc;
     const cursor = tr.newSelection.main.head;
 
-    log("newDoc:", `"${newDoc.toString()}"`);
-    log("cursor:", cursor);
 
     if (typed.length > 1) {
       const replacement = replacePresetMakerUrls(typed);
@@ -282,11 +276,9 @@ export function autoformatOnUpdate() {
       })
 
     if (!match) {
-      log("no match → passthrough");
       return tr;
     }
 
-    log("MATCH:", match);
 
     const { fromB, insert } = changes[0];
     const insertedLen = insert.length;
@@ -300,7 +292,6 @@ export function autoformatOnUpdate() {
     const startFrom = mapPos(match.from);
     const startTo   = mapPos(match.to);
 
-    log("Mapped to startState:", { startFrom, startTo });
 
     const replacement = match.insert;
 
@@ -314,7 +305,6 @@ export function autoformatOnUpdate() {
       annotations: tr.annotations
     });
 
-    log("RETURN UPDATED TX:", updated);
     return updated;
   });
 }

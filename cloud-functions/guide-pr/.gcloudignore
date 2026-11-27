@@ -8,6 +8,5 @@ npm-debug.log
 .env.*
 README.md
 deploy.js
-smoke-payload.json
 *.test.cjs
 fixtures/

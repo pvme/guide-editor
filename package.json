@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "node --test \"src/**/*.test.js\" vite.config.test.js",
+    "test:browser": "node scripts/verify-strict-browser.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -20,22 +21,20 @@
     "svelte": "^5.57.2",
     "svelte-bootstrap-icons": "^3.3.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^6.4.4"
+    "vite": "^6.4.5"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.0",
     "@codemirror/commands": "^6.10.0",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/language": "^6.11.3",
-    "@codemirror/lint": "^6.4.2",
     "@codemirror/search": "^6.5.3",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.8",
     "@lezer/json": "1.0.3",
     "@macfja/svelte-persistent-store": "^2.4.2",
     "@pvme/guide-parser": "^0.5.0",
-    "ajv": "^8.11.0",
-    "codemirror": "^6.0.2"
+    "ajv": "^8.11.0"
   },
   "allowScripts": {
     "esbuild@0.25.12": true

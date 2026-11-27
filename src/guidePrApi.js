@@ -1,3 +1,4 @@
+import { parseSubmissionResult, validateStrictUpdate } from './submission-contract.js';
 const DEV_API_BASE = "/api/guide-pr";
 const DEFAULT_LIVE_API_BASE = "https://guide-api.pvme.io";
 const env = import.meta.env || {};
@@ -6,6 +7,7 @@ const LIVE_API_BASE =
   env.VITE_GUIDE_PR_ENDPOINT ||
   DEFAULT_LIVE_API_BASE;
 let csrfToken = "";
+let localDryRunVerified = false;
 
 export function getGuidePrApiBase() {
   return env.DEV ? DEV_API_BASE : LIVE_API_BASE.replace(/\/$/, "");
@@ -55,16 +57,62 @@ export async function completeGithubDevLogin(token) {
   return data.user || null;
 }
 
-export async function submitGuideUpdate(payload) {
-  return requestJson("/", {
+// Callers must retain the contributor and immutable review version
+// captured when editing/consenting. Never fall back to the legacy route.
+export async function submitGuideUpdateStrict(payload, { csrf, allowUnverified = false } = {}) {
+  payload = structuredClone(payload);
+  if (payload?.expectedReview?.state === 'unverified' && allowUnverified) {
+    await verifyLocalDryRun();
+  }
+  validateStrictUpdate(payload, undefined, allowUnverified && isLocalDryRun());
+  if (typeof csrf !== 'string' || !csrf.trim()) {
+    const error = new Error('Refresh your session and confirm the original contributor before submitting. Your draft is retained.');
+    error.code = 'CSRF_INVALID';
+    throw error;
+  }
+  return requestJsonAttempt("/v2/submissions", {
     method: "POST",
-    body: JSON.stringify(payload)
-  });
+    body: JSON.stringify(payload),
+    headers: { 'X-PVME-CSRF-Token': csrf },
+    parseResult: (data, status) => parseSubmissionResult(data, payload, status)
+  }, false);
+}
+
+export function isLocalDryRun() {
+  return localDryRunVerified && hasLocalBackend();
+}
+
+function hasLocalBackend() {
+  if (!env.DEV || !['localhost', '127.0.0.1'].includes(globalThis.location?.hostname)) return false;
+  try {
+    const endpoint = new URL(env.VITE_GUIDE_PR_ENDPOINT_LOCAL);
+    return endpoint.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(endpoint.hostname);
+  } catch { return false; }
+}
+
+export async function verifyLocalDryRun() {
+  localDryRunVerified = false;
+  if (!hasLocalBackend()) throw new Error('Unverified review metadata is disabled outside configured local development. Your draft is retained.');
+  const health = await requestJsonAttempt('/', {}, false);
+  if (health.ok !== true || health.mode !== 'dry-run'
+    || health.repo !== 'pvme/pvme-guides' || health.baseBranch !== 'master') {
+    throw new Error('Local backend dry-run mode could not be verified. Your draft is retained.');
+  }
+  localDryRunVerified = true;
+  return true;
 }
 
 export async function loadGuideForReview(path, source = "auto") {
   const params = new URLSearchParams({ path, source });
-  return requestJson(`/guides/load?${params}`);
+  const guide = await requestJson(`/guides/load?${params}`);
+  if (guide.reviewState?.state === 'unverified') {
+    if (guide.dryRun !== true) {
+      localDryRunVerified = false;
+      throw new Error('Unverified review metadata requires a local dry-run source. Your draft is retained.');
+    }
+    await verifyLocalDryRun();
+  }
+  return guide;
 }
 
 export async function listReviewPulls() {
@@ -134,6 +182,7 @@ async function requestJsonAttempt(path, options = {}, canRetryAuth = false) {
       ...(options.headers || {})
     },
     credentials: "include",
+    cache: "no-store",
     body: options.body
   });
   const data = await res.json().catch(() => ({}));
@@ -149,7 +198,7 @@ async function requestJsonAttempt(path, options = {}, canRetryAuth = false) {
     throw error;
   }
 
-  return data;
+  return options.parseResult ? options.parseResult(data, res.status) : data;
 }
 
 function shouldRefreshSessionAndRetry(res, data, options) {

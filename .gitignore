@@ -1,34 +1,35 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
+# Local configuration and credentials
 .env
 .env.*
-!.env.development
-!.env.production
-!.env.test
-.env.local
-.env.*.local
-
-node_modules
-dist
-dist-ssr
 *.local
+*.pem
+*.key
 
-# Editor directories and files
+# Dependencies, builds and caches
+node_modules/
+dist/
+dist-ssr/
+.cache/
+.vite/
+coverage/
+playwright-report/
+test-results/
+.tmp/
+*-verification-work/
+.security-deployment-work/
+
+# Logs
+logs/
+*.log
+
+# Editor and operating-system files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env.development
-.env.production

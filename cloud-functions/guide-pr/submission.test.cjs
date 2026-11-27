@@ -8,6 +8,9 @@ const cookieSecret = 'submission-test-secret';
 const branch = 'guide-editor/github-123/dpm-advice-dpm-advice-melee';
 const path = 'dpm-advice/dpm-advice-melee.txt';
 const originalContent = 'Original guide';
+const reviewSha = 'a'.repeat(40);
+const expectedReview = { state: 'present', repository: 'contributor/pvme-guides', branch,
+  headSha: reviewSha, prId: 4242, prNumber: 42, prUrl: 'https://github.com/pvme/pvme-guides/pull/42' };
 const payload = {
   type: 'update', repo: 'pvme/pvme-guides', baseBranch: 'master', path,
   content: 'Updated guide', originalContent, notes: 'Update abilities',
@@ -64,6 +67,246 @@ function response() {
   };
 }
 
+function strictRequest(body = {}, session = {}, headers = {}) {
+  return request(['repo'], { url: '/v2/submissions', body: { ...payload, contractVersion: 2,
+    expectedContributor: 'github:123', expectedReview: { state: 'none' },
+    sourcePreservation: 'exact', replaceExistingReview: false, ...body } }, session, headers);
+}
+
+// Full synthetic live lifecycle. All network is intercepted; stages can change
+// independently to exercise GitHub's separate ref and PR resources.
+function mockStrictSubmission(t, options = {}) {
+  const calls = []; let prReads = 0; let published = false;
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    const parsed = new URL(url), route = parsed.pathname, method = init.method;
+    assert.equal(init.headers.Authorization, 'Bearer test-oauth-token');
+    const body = init.body ? JSON.parse(init.body) : null;
+    calls.push({ route, method, body, ref: parsed.searchParams.get('ref') });
+    options.onCall?.({ route, method, body });
+    let status = 200, data;
+    const current = options.state ? options.state(prReads + 1) : (options.present === false ? null : expectedReview);
+    if (route.endsWith('/git/ref/heads/master')) data = { object: { sha: 'b'.repeat(40) } };
+    else if (route.includes('/git/ref/heads/guide-editor/')) {
+      if (!current || options.missingBranch) { status = 404; data = {}; }
+      else data = { object: { sha: published ? 'c'.repeat(40) : current.headSha } };
+    } else if (route.endsWith('/pulls') && method === 'GET') {
+      prReads++;
+      data = current ? [{ id: current.prId, number: current.prNumber, html_url: current.prUrl,
+        state: options.closed ? 'closed' : 'open', body: '',
+        head: { sha: published ? 'c'.repeat(40) : current.headSha, ref: current.branch,
+          repo: { full_name: current.repository } },
+        base: { ref: 'master', repo: { full_name: 'pvme/pvme-guides' } } }] : [];
+    } else if (route.includes('/contents/')) data = { type: 'file', sha: 'file-sha', content: Buffer.from(originalContent).toString('base64') };
+    else if (route.includes('/git/commits/') && method === 'GET') data = { tree: { sha: 'tree' } };
+    else if (route.endsWith('/git/trees')) data = { sha: 'edited-tree' };
+    else if (route.endsWith('/git/commits')) data = { sha: 'c'.repeat(40) };
+    else if (route.includes('/git/refs')) {
+      status = options.refStatus || 200; published = status < 400; data = {};
+    } else if (route.includes('/pulls') && method !== 'GET') data = { html_url: expectedReview.prUrl };
+    else throw new Error(`Unexpected strict mock ${method} ${route}`);
+    return { ok: status < 400, status, json: async () => data };
+  });
+  return calls;
+}
+
+for (const expected of [undefined, '', '123', 'GitHub:123', 'github:0', {}, 'github:123:456']) {
+  test(`strict contributor rejects malformed assertion ${JSON.stringify(expected)} before any access`, async () => {
+    const res = response(); await submitGuideUpdate(strictRequest({ expectedContributor: expected }), res);
+    assert.equal(res.statusCode, 400); assert.equal(res.body.code, 'INVALID_CONTRIBUTOR');
+  });
+}
+
+for (const [before, after] of [
+  ['github:123', { githubId: '456' }],
+  ['github:123', { provider: 'discord', discordId: '123', pvmeMember: true, pvmeGuildId: '534508796639182860' }],
+  ['discord:123', { provider: 'discord', discordId: '456', pvmeMember: true, pvmeGuildId: '534508796639182860' }],
+  ['discord:123', { githubId: '123' }],
+]) {
+  test(`account switch after auth/me rejects ${before} -> ${JSON.stringify(after)}`, async () => {
+    const me = response();
+    const [provider, id] = before.split(':');
+    await submitGuideUpdate(request(['repo'], { method: 'GET', url: '/auth/me' },
+      { provider, githubId: id, discordId: id }), me);
+    assert.equal(me.body.user.provider, provider);
+    const res = response(); await submitGuideUpdate(strictRequest({ expectedContributor: before }, after), res);
+    assert.equal(res.statusCode, 409); assert.equal(res.body.code, 'CONTRIBUTOR_MISMATCH');
+  });
+}
+
+for (const token of ['', 'wrong']) test(`strict CSRF rejects ${JSON.stringify(token)} despite trusted origin`, async () => {
+  const res = response(); await submitGuideUpdate(strictRequest({}, {}, { 'x-pvme-csrf-token': token }), res);
+  assert.equal(res.statusCode, 403); assert.equal(res.body.code, 'CSRF_INVALID');
+});
+
+for (const expected of [undefined, null, {}, { state: 'none', headSha: reviewSha },
+  { ...expectedReview, headSha: 'master' }, { ...expectedReview, prId: '4242' },
+  { ...expectedReview, branch: 'other' }, { state: 'unverified' }]) {
+  test(`strict rejects malformed review assertion ${JSON.stringify(expected)}`, async () => {
+    const res = response(); await submitGuideUpdate(strictRequest({ expectedReview: expected }), res);
+    assert.equal(res.statusCode, 400); assert.equal(res.body.code, 'INVALID_REVIEW_STATE');
+  });
+}
+
+for (const source of ['master', 'user-pr']) {
+  test(`strict ${source} accepts matching version and returns captured contributor`, async t => {
+    const calls = mockStrictSubmission(t);
+    const req = strictRequest({ source, branch: source === 'master' ? 'master' : branch,
+      expectedReview, replaceExistingReview: source === 'master' });
+    const captured = JSON.stringify(req.body);
+    const res = response(); await submitGuideUpdate(req, res);
+    assert.equal(res.statusCode, 200); assert.equal(res.body.contributor, 'github:123');
+    assert.equal(res.body.contractVersion, 2); assert.equal(res.body.reusedReview, true);
+    assert.equal(JSON.stringify(req.body), captured);
+    assert.equal(calls.find(c => c.route.includes('/git/refs')).body.force, false);
+    assert.equal(calls.filter(c => c.route.endsWith('/pulls') && c.method === 'GET').length, 4);
+    assert.ok(!JSON.stringify(res.body).includes('test-oauth-token'));
+  });
+
+  for (const change of ['head', 'id', 'number', 'url', 'closed', 'missing', 'missing-branch']) {
+    test(`strict ${source} rejects stale ${change} with zero mutations`, async t => {
+      const altered = { ...expectedReview };
+      if (change === 'head') altered.headSha = 'd'.repeat(40);
+      if (change === 'id') altered.prId++;
+      if (change === 'number') { altered.prNumber++; altered.prUrl = altered.prUrl.replace('42', '43'); }
+      if (change === 'url') altered.prUrl = 'https://github.com/other/repo/pull/42';
+      const calls = mockStrictSubmission(t, { present: change !== 'missing', state: () => change === 'missing' ? null : altered,
+        closed: change === 'closed', missingBranch: change === 'missing-branch' });
+      const res = response(); await submitGuideUpdate(strictRequest({ source,
+        branch: source === 'master' ? 'master' : branch, expectedReview, replaceExistingReview: source === 'master' }), res);
+      assert.equal(res.statusCode, 409); assert.equal(res.body.code, 'REVIEW_STATE_CONFLICT');
+      assert.equal(calls.filter(c => c.method !== 'GET').length, 0);
+    });
+  }
+}
+
+test('strict absent-review assertion rejects a newly appeared review before writes', async t => {
+  const calls = mockStrictSubmission(t); const res = response();
+  await submitGuideUpdate(strictRequest(), res);
+  assert.equal(res.body.code, 'REVIEW_STATE_CONFLICT');
+  assert.equal(calls.filter(c => c.method !== 'GET').length, 0);
+});
+
+test('strict replacement requires explicit consent before any GitHub access', async () => {
+  const res = response(); await submitGuideUpdate(strictRequest({ expectedReview }), res);
+  assert.equal(res.statusCode, 409); assert.equal(res.body.code, 'REPLACEMENT_CONSENT_REQUIRED');
+});
+
+test('strict no-review submission creates a new PR', async t => {
+  const calls = mockStrictSubmission(t, { present: false }); const res = response();
+  await submitGuideUpdate(strictRequest(), res);
+  assert.equal(res.statusCode, 201); assert.equal(res.body.contributor, 'github:123');
+  assert.equal(res.body.reusedReview, false);
+  assert.equal(calls.find(c => c.route.endsWith('/git/refs')).body.ref, `refs/heads/${branch}`);
+});
+
+for (const stage of [2, 3, 4]) test(`strict detects PR replacement at recheck ${stage}`, async t => {
+  const calls = mockStrictSubmission(t, { state: n => n >= stage ? { ...expectedReview, prId: 9999 } : expectedReview });
+  const res = response(); await submitGuideUpdate(strictRequest({ expectedReview, replaceExistingReview: true }), res);
+  assert.equal(res.statusCode, 409); assert.equal(res.body.code, 'REVIEW_STATE_CONFLICT');
+  if (stage === 2) assert.equal(calls.filter(c => c.method !== 'GET').length, 0);
+  if (stage === 3) assert.equal(calls.filter(c => c.route.includes('/git/refs')).length, 0);
+  assert.equal(calls.filter(c => c.route.includes('/pulls') && c.method !== 'GET').length, 0);
+});
+
+test('strict review advance before publication leaves ref untouched', async t => {
+  const calls = mockStrictSubmission(t, { state: n => n >= 3 ? { ...expectedReview, headSha: 'd'.repeat(40) } : expectedReview });
+  const res = response(); await submitGuideUpdate(strictRequest({ expectedReview, replaceExistingReview: true }), res);
+  assert.equal(res.body.code, 'REVIEW_STATE_CONFLICT');
+  assert.equal(calls.filter(c => c.route.includes('/git/refs')).length, 0);
+});
+
+test('strict non-fast-forward publication never forces, retries or updates PR', async t => {
+  const calls = mockStrictSubmission(t, { refStatus: 409 }); const res = response();
+  await submitGuideUpdate(strictRequest({ expectedReview, replaceExistingReview: true }), res);
+  assert.equal(res.statusCode, 409); assert.equal(res.body.code, 'SOURCE_CONFLICT');
+  const refs = calls.filter(c => c.route.includes('/git/refs'));
+  assert.equal(refs.length, 1); assert.equal(refs[0].body.force, false);
+  assert.equal(calls.filter(c => c.route.includes('/pulls') && c.method !== 'GET').length, 0);
+});
+
+test('review source and version use one captured immutable SHA', async t => {
+  const calls = mockStrictSubmission(t); const res = response();
+  await submitGuideUpdate(request(['repo'], { method: 'GET', url: '/guides/load', query: { path, source: 'review' } }), res);
+  assert.equal(res.statusCode, 200); assert.deepEqual(res.body.reviewState, expectedReview);
+  assert.equal(calls.find(c => c.route.includes('/contents/')).ref, res.body.reviewState.headSha);
+  assert.equal(res.body.originalText, originalContent);
+});
+
+for (const provider of ['github', 'discord']) test(`strict dry-run returns ${provider} identity with zero external calls`, async () => {
+  process.env.DRY_RUN = 'true'; const contributor = `${provider}:123`;
+  const res = response(); await submitGuideUpdate(strictRequest({ expectedContributor: contributor,
+    expectedReview: { state: 'unverified' } }, { provider, discordId: '123', pvmeMember: true,
+    pvmeGuildId: '534508796639182860' }), res);
+  assert.equal(res.statusCode, 200); assert.equal(res.body.contributor, contributor);
+  assert.equal(res.body.reviewStateVerified, false); assert.equal(res.body.dryRun, true);
+  assert.equal(res.body.user.githubToken, undefined);
+});
+
+test('strict contract never falls back through legacy routes or an unknown version', async () => {
+  for (const url of ['/', '/submit-guide-update', '/submitGuideUpdate/']) {
+    const req = strictRequest(); req.url = url; const res = response();
+    await submitGuideUpdate(req, res);
+    assert.equal(res.statusCode, 400); assert.equal(res.body.code, 'STRICT_ROUTE_REQUIRED');
+  }
+  const wrong = strictRequest({ contractVersion: 1 }); const res = response();
+  await submitGuideUpdate(wrong, res); assert.equal(res.body.code, 'INVALID_CONTRACT');
+  const unknown = strictRequest(); unknown.url = '/v3/submissions'; const missing = response();
+  await submitGuideUpdate(unknown, missing); assert.equal(missing.statusCode, 404);
+});
+
+test('an accepted strict request keeps its captured session after browser account switching', async t => {
+  const req = strictRequest({ expectedReview, replaceExistingReview: true });
+  let switched = false;
+  const calls = mockStrictSubmission(t, { onCall() {
+    if (!switched) {
+      switched = true;
+      // Replace all request cookie/header reads as if another tab changed login.
+      const other = request(['repo'], {}, { githubId: '999', githubLogin: 'other', githubToken: 'other-token' });
+      req.get = other.get;
+    }
+  } });
+  const res = response(); await submitGuideUpdate(req, res);
+  assert.equal(res.statusCode, 200); assert.equal(res.body.contributor, 'github:123');
+  assert.ok(calls.filter(c => c.method !== 'GET' && !c.route.includes('/pulls'))
+    .every(c => c.route.startsWith('/repos/contributor/')));
+  assert.match(calls.find(c => c.route.endsWith('/git/commits')).body.message, /contributor \(123\)/);
+});
+
+for (const present of [true, false]) {
+  test(`load metadata is explicit for ${present ? 'existing' : 'absent'} review`, async t => {
+    mockStrictSubmission(t, { present });
+    for (const source of ['auto', 'master']) {
+      const res = response(); await submitGuideUpdate(request(['repo'], { method: 'GET', url: '/guides/load', query: { path, source } }), res);
+      assert.equal(res.statusCode, 200);
+      assert.deepEqual(res.body.reviewState, present ? expectedReview : { state: 'none' });
+    }
+  });
+}
+
+for (const stage of [2, 3]) {
+  test(`new review appearing at recheck ${stage} never publishes over it`, async t => {
+    const calls = mockStrictSubmission(t, { state: n => n >= stage ? expectedReview : null });
+    const res = response(); await submitGuideUpdate(strictRequest(), res);
+    assert.equal(res.body.code, 'REVIEW_STATE_CONFLICT');
+    if (stage === 2) assert.equal(calls.filter(c => c.method !== 'GET').length, 0);
+    assert.equal(calls.filter(c => c.route.includes('/git/refs')).length, 0);
+  });
+}
+
+for (const stage of [2, 3, 4]) {
+  test(`review disappearing at recheck ${stage} requires fresh consent`, async t => {
+    const calls = mockStrictSubmission(t, { state: n => n >= stage ? null : expectedReview });
+    const res = response(); await submitGuideUpdate(strictRequest({ expectedReview, replaceExistingReview: true }), res);
+    assert.equal(res.body.code, 'REVIEW_STATE_CONFLICT');
+    assert.equal(calls.filter(c => c.route.includes('/pulls') && c.method !== 'GET').length, 0);
+  });
+}
+
+for (const field of ['sourcePreservation', 'replaceExistingReview']) test(`strict requires explicit ${field}`, async () => {
+  const req = strictRequest(); delete req.body[field]; const res = response();
+  await submitGuideUpdate(req, res); assert.equal(res.body.code, 'INVALID_CONTRACT');
+});
+
 test('GitHub login requests repository access without workflow access', async () => {
   const res = response();
   await submitGuideUpdate(request([], { method: 'GET', url: '/auth/github/start' }), res);
@@ -88,7 +331,9 @@ test('existing GitHub sessions receive reauthorization instructions before any G
 function mockForkSubmission(t, options = {}) {
   const calls = [];
   const original = options.originalContent ?? originalContent;
-  const pr = { number: 42, html_url: 'https://github.com/pvme/pvme-guides/pull/42', body: '' };
+  const pr = { id: 4242, number: 42, state: 'open', html_url: 'https://github.com/pvme/pvme-guides/pull/42', body: '',
+    head: { sha: 'a'.repeat(40), ref: branch, repo: { full_name: 'contributor/pvme-guides' } },
+    base: { ref: 'master', repo: { full_name: 'pvme/pvme-guides' } } };
   const workflow = sha => [{ type: 'file', name: 'publish-guides.yml', path: '.github/workflows/publish-guides.yml', sha }];
   t.mock.method(globalThis, 'fetch', async (url, init) => {
     const parsed = new URL(url);
@@ -107,7 +352,7 @@ function mockForkSubmission(t, options = {}) {
       data = { object: { sha: route.includes('/contributor/') ? 'old-fork-sha' : 'upstream-sha' } };
     } else if (route.includes('/git/ref/heads/guide-editor/')) {
       status = options.existingPr ? 200 : 404;
-      data = { object: { sha: 'review-sha' }, message: 'Not Found' };
+      data = { object: { sha: 'a'.repeat(40) }, message: 'Not Found' };
     } else if (route.endsWith('/contents/.github/workflows')) {
       const upstream = route.startsWith('/repos/pvme/');
       assert.equal(parsed.searchParams.get('ref'), upstream ? 'upstream-sha' : 'master');
@@ -500,7 +745,7 @@ for (const replace of [false, true]) {
     const res = response(); await submitGuideUpdate(req, res);
     assert.equal(res.statusCode, replace ? 200 : 201);
     const commit = calls.find(c => c.route.endsWith('/git/commits') && c.method === 'POST');
-    assert.deepEqual(commit.body.parents, replace ? ['review-sha', 'upstream-sha'] : ['upstream-sha']);
+    assert.deepEqual(commit.body.parents, replace ? ['a'.repeat(40), 'upstream-sha'] : ['upstream-sha']);
     assert.equal(commit.body.author, undefined);
     assert.match(commit.body.message, /Submitted by GitHub user: contributor \(123\)/);
     const tree = calls.find(c => c.route.endsWith('/git/trees'));
@@ -514,8 +759,8 @@ for (const replace of [false, true]) {
   });
 }
 
-test('two concurrent editors cannot publish sibling commits over each other', async t => {
-  let reviewHead = 'review-sha'; let commitCount = 0; let publications = 0;
+for (const strict of [false, true]) test(`two concurrent editors cannot publish sibling commits over each other (strict=${strict})`, async t => {
+  let reviewHead = reviewSha; let commitCount = 0; let publications = 0;
   const parents = new Map(); let release;
   const bothReady = new Promise(resolve => { release = resolve; });
   t.mock.method(globalThis, 'fetch', async (url, init) => {
@@ -525,7 +770,7 @@ test('two concurrent editors cannot publish sibling commits over each other', as
     if (route.endsWith('/git/ref/heads/master')) data = { object: { sha: 'upstream-sha' } };
     else if (route.includes('/git/ref/heads/guide-editor/')) data = { object: { sha: reviewHead } };
     else if (route.includes('/contents/')) {
-      assert.equal(new URL(url).searchParams.get('ref'), 'review-sha');
+      assert.equal(new URL(url).searchParams.get('ref'), reviewSha);
       data = { type: 'file', sha: 'old-file-sha', content: Buffer.from(originalContent).toString('base64') };
     } else if (route.includes('/git/commits/')) data = { tree: { sha: 'review-tree' } };
     else if (route.endsWith('/git/trees')) data = { sha: 'new-tree' };
@@ -536,20 +781,23 @@ test('two concurrent editors cannot publish sibling commits over each other', as
       assert.equal(body.force, false);
       if (parents.get(body.sha) !== reviewHead) { status = 422; data = { message: 'Update is not a fast forward' }; }
       else { reviewHead = body.sha; publications++; data = { object: { sha: reviewHead } }; }
-    } else if (route.includes('/pulls')) data = method === 'GET' ? [{ number: 42, html_url: 'https://github.com/pvme/pvme-guides/pull/42', body: '' }] : { html_url: 'https://github.com/pvme/pvme-guides/pull/42' };
+    } else if (route.includes('/pulls')) data = method === 'GET' ? [{ id: 4242, number: 42, state: 'open',
+      html_url: expectedReview.prUrl, body: '', head: { sha: reviewHead, ref: branch, repo: { full_name: expectedReview.repository } },
+      base: { ref: 'master', repo: { full_name: 'pvme/pvme-guides' } } }] : { html_url: expectedReview.prUrl };
     else throw new Error(`Unexpected request ${route}`);
     return { ok: status < 400, status, json: async () => data };
   });
   const responses = [response(), response()];
   await Promise.all(responses.map((res, i) => {
-    const req = request(['repo']); Object.assign(req.body, { source: 'user-pr', branch, content: `Editor ${i}` });
+    const req = strict ? strictRequest({ expectedReview }) : request(['repo']);
+    Object.assign(req.body, { source: 'user-pr', branch, content: `Editor ${i}` });
     return submitGuideUpdate(req, res);
   }));
   assert.deepEqual(responses.map(r => r.statusCode).sort(), [200, 409]);
   assert.equal(publications, 1); assert.equal(responses.find(r => r.statusCode === 409).body.code, 'SOURCE_CONFLICT');
 });
 
-test('Discord contributors use the App identity, shared branch naming and Discord attribution', async t => {
+for (const strict of [false, true]) test(`Discord contributors use the App identity, shared branch naming and Discord attribution (strict=${strict})`, async t => {
   process.env.GITHUB_APP_ID = '123'; process.env.GITHUB_INSTALLATION_ID = '456';
   process.env.GITHUB_APP_PRIVATE_KEY = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' });
   const discordBranch = 'guide-editor/discord-456/dpm-advice-dpm-advice-melee'; const writes = [];
@@ -574,8 +822,11 @@ test('Discord contributors use the App identity, shared branch naming and Discor
     return { ok: status < 400, status, json: async () => data };
   });
   const res = response();
-  await submitGuideUpdate(request([], {}, { provider: 'discord', discordId: '456', username: 'discord-contributor', pvmeMember: true, pvmeGuildId: '534508796639182860' }), res);
+  const session = { provider: 'discord', discordId: '456', username: 'discord-contributor', pvmeMember: true, pvmeGuildId: '534508796639182860' };
+  const req = strict ? strictRequest({ expectedContributor: 'discord:456' }, session) : request([], {}, session);
+  await submitGuideUpdate(req, res);
   assert.equal(res.statusCode, 201); assert.equal(res.body.branch, discordBranch);
+  if (strict) assert.equal(res.body.contributor, 'discord:456');
   const commit = writes.find(c => c.route.endsWith('/git/commits'));
   assert.deepEqual(commit.body.author, { name: 'discord-contributor', email: '456@discord.pvme.io' });
   assert.match(commit.body.message, /Submitted by Discord user/);

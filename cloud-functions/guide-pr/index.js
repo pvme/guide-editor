@@ -120,10 +120,10 @@ exports.submitGuideUpdate = async (req, res) => {
     }
 
     if (
-      (route === "/" || route === "/submit-guide-update") &&
+      (route === "/" || route === "/submit-guide-update" || route === "/v2/submissions") &&
       req.method === "POST"
     ) {
-      await handleSubmitGuideUpdate(req, res);
+      await handleSubmitGuideUpdate(req, res, route === "/v2/submissions");
       return;
     }
 
@@ -144,14 +144,27 @@ exports.submitGuideUpdate = async (req, res) => {
   }
 };
 
-async function handleSubmitGuideUpdate(req, res) {
+async function handleSubmitGuideUpdate(req, res, strict = false) {
+  res.set("Cache-Control", "no-store");
+  // Capture once. Every authorization, client, branch and author uses this session.
   const user = requirePvmeMemberSession(req);
-  validateCsrfToken(req, user, { allowTrustedOriginFallback: true });
+  if (!strict && ["contractVersion", "expectedContributor", "expectedReview"].some(key =>
+    Object.prototype.hasOwnProperty.call(req.body || {}, key))) {
+    throw contractError("STRICT_ROUTE_REQUIRED", "Strict submissions must use /v2/submissions.");
+  }
+  try {
+    validateCsrfToken(req, user, { allowTrustedOriginFallback: !strict });
+  } catch (err) {
+    if (strict) err.code = "CSRF_INVALID";
+    throw err;
+  }
   const payload = normalizePayload(req.body);
-  validatePayload(payload);
 
   const [owner, repo] = REPO.split("/");
   const reviewBranch = createReviewBranchNameForUser(user, payload.path);
+  const contributor = contributorIdentity(user);
+  if (strict) validateStrictSubmission(req.body, payload, contributor, reviewBranch, user);
+  validatePayload(payload);
   validateSubmissionSource(payload, reviewBranch);
 
   if (isDryRun()) {
@@ -167,6 +180,7 @@ async function handleSubmitGuideUpdate(req, res) {
       source: payload.source,
       branch: payload.branch,
       reviewBranch,
+      ...(strict ? { contractVersion: 2, contributor, reviewStateVerified: false } : {}),
     });
     return;
   }
@@ -174,14 +188,18 @@ async function handleSubmitGuideUpdate(req, res) {
   const github = await createSubmitGithubClient(user, owner, repo);
   const baseRef = await github(`/repos/${owner}/${repo}/git/ref/heads/${BASE_BRANCH}`);
   const baseSha = baseRef.object.sha;
-  const writeRepo = await getSubmissionWriteRepo(github, user, owner, repo);
+  // Read and check consent before ensureGithubFork can create anything.
+  const writeRepo = strict ? getReviewWriteRepo(user, owner, repo)
+    : await getSubmissionWriteRepo(github, user, owner, repo);
   const head = writeRepo.owner === owner
     ? reviewBranch
     : `${writeRepo.owner}:${reviewBranch}`;
   const branchRef = await getBranchRef(github, writeRepo.owner, writeRepo.repo, reviewBranch);
-  const existingPr = branchRef
+  const existingPr = (branchRef || strict)
     ? await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner)
     : null;
+  if (strict) assertReviewState(payload.expectedReview,
+    reviewState(branchRef, existingPr, writeRepo, reviewBranch));
   const staleReviewBranch = Boolean(branchRef && !existingPr);
   let resetReviewBranchFromBase = !branchRef || staleReviewBranch;
 
@@ -195,17 +213,17 @@ async function handleSubmitGuideUpdate(req, res) {
     );
 
     if (currentMasterFile.text !== payload.originalContent) {
-      throw httpError(
+      throw (strict ? submissionConflict() : httpError(
         409,
         "This guide has changed since it was loaded. You must reload the guide and apply your edits again to submit a guide update.",
-      );
+      ));
     }
 
     if (existingPr && !payload.replaceExistingReview) {
-      throw httpError(
+      throw (strict ? submissionConflict() : httpError(
         409,
         "This will replace your existing submitted update with this version based on the live guide.",
-      );
+      ));
     }
 
     if (existingPr && payload.replaceExistingReview) {
@@ -228,10 +246,10 @@ async function handleSubmitGuideUpdate(req, res) {
     );
 
     if (currentReviewFile.text !== payload.originalContent) {
-      throw httpError(
+      throw (strict ? submissionConflict() : httpError(
         409,
         "Your submitted update has changed since it was loaded. You must reload it and apply your edits again to submit a guide update.",
-      );
+      ));
     }
   }
 
@@ -243,6 +261,10 @@ async function handleSubmitGuideUpdate(req, res) {
   const snapshot = await getFile(github, treeSourceOwner, repo, payload.path, treeSourceSha);
   if (snapshot.text !== payload.originalContent) throw submissionConflict();
   const treeSource = await github(`/repos/${treeSourceOwner}/${repo}/git/commits/${treeSourceSha}`);
+  if (strict) {
+    await recheckReviewState(github, owner, repo, writeRepo, reviewBranch, payload.expectedReview);
+    if (user.provider === "github") await ensureGithubFork(github, owner, repo, user.githubLogin);
+  }
   const tree = await github(`/repos/${writeRepo.owner}/${writeRepo.repo}/git/trees`, {
     method: "POST",
     body: {
@@ -276,6 +298,7 @@ async function handleSubmitGuideUpdate(req, res) {
     const latest = await getFile(github, owner, repo, payload.path, BASE_BRANCH);
     if (latest.text !== payload.originalContent) throw submissionConflict();
   }
+  if (strict) await recheckReviewState(github, owner, repo, writeRepo, reviewBranch, payload.expectedReview);
   try {
     await setSubmissionReviewBranch(github, user, writeRepo, reviewBranch,
       commit.sha, Boolean(branchRef), baseSha);
@@ -285,7 +308,13 @@ async function handleSubmitGuideUpdate(req, res) {
   }
 
   const openPr =
-    existingPr || (await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner));
+    strict ? existingPr : existingPr || (await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner));
+  // Detect PR closure/replacement after ref publication. A conflict here may
+  // already have published source; refs and PR metadata are not transactional.
+  if (strict) {
+    const currentPr = await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner);
+    assertReviewPrIdentity(payload.expectedReview, currentPr);
+  }
   const prTitle = payload.title || `Update ${payload.path}`;
   const prBody = createPullRequestBody(payload, user, openPr?.body || "");
   const pr = openPr
@@ -311,10 +340,12 @@ async function handleSubmitGuideUpdate(req, res) {
     branch: reviewBranch,
     path: payload.path,
     reusedReview: Boolean(openPr),
+    ...(strict ? { contractVersion: 2, contributor } : {}),
   });
 }
 
 async function handleLoadGuide(req, res) {
+  res.set("Cache-Control", "no-store");
   const path = String(req.query.path || "");
   const source = String(req.query.source || "auto");
   const user = getSessionUser(req);
@@ -343,6 +374,7 @@ async function handleLoadGuide(req, res) {
       prUrl: "",
       originalText: fallbackText,
       dryRun: true,
+      reviewState: { state: "unverified" },
     });
     return;
   }
@@ -361,15 +393,15 @@ async function handleLoadGuide(req, res) {
     const reviewBranch = createReviewBranchNameForUser(user, path);
     const writeRepo = getReviewWriteRepo(user, owner, repo);
     const branchRef = await getBranchRef(github, writeRepo.owner, writeRepo.repo, reviewBranch);
-    const openPr = branchRef
-      ? await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner)
-      : null;
+    const openPr = await getOpenPullRequest(github, owner, repo, reviewBranch, writeRepo.owner);
+    const version = reviewState(branchRef, openPr, writeRepo, reviewBranch);
 
     if (branchRef && openPr) {
       existingReview = {
         reviewBranch,
         writeRepo,
         prUrl: openPr.html_url,
+        version,
       };
     }
   }
@@ -384,6 +416,7 @@ async function handleLoadGuide(req, res) {
       prUrl: existingReview.prUrl,
       liveBranch: BASE_BRANCH,
       baseBranch: BASE_BRANCH,
+      reviewState: existingReview.version,
     });
     return;
   }
@@ -398,7 +431,7 @@ async function handleLoadGuide(req, res) {
       existingReview.writeRepo.owner,
       existingReview.writeRepo.repo,
       path,
-      existingReview.reviewBranch,
+      existingReview.version.headSha,
     );
     sendJson(
       res,
@@ -409,6 +442,7 @@ async function handleLoadGuide(req, res) {
         source: "user-pr",
         branch: existingReview.reviewBranch,
         prUrl: existingReview.prUrl,
+        reviewState: existingReview.version,
       }),
     );
     return;
@@ -421,6 +455,7 @@ async function handleLoadGuide(req, res) {
     source: "master",
     branch: BASE_BRANCH,
     prUrl: "",
+    reviewState: existingReview?.version || { state: "none" },
   });
 
   if (existingReview) {
@@ -849,7 +884,7 @@ function redirectAuthFailure(req, res, message) {
   res.redirect(redirectUrl.toString());
 }
 
-function createLoadedGuide({ path, text, source, branch, prUrl }) {
+function createLoadedGuide({ path, text, source, branch, prUrl, reviewState }) {
   return {
     path,
     name: guideNameFromPath(path),
@@ -859,6 +894,7 @@ function createLoadedGuide({ path, text, source, branch, prUrl }) {
     baseBranch: BASE_BRANCH,
     prUrl,
     originalText: text,
+    reviewState,
   };
 }
 
@@ -866,6 +902,103 @@ function submissionConflict() {
   const err = httpError(409, "The guide or review branch changed during submission. Keep your draft and reload the source before trying again.");
   err.code = "SOURCE_CONFLICT";
   return err;
+}
+
+function contractError(code, message, status = 400) {
+  const err = httpError(status, message);
+  err.code = code;
+  return err;
+}
+
+function contributorIdentity(user) {
+  return user.provider === "github" ? `github:${user.githubId}` : `discord:${user.discordId}`;
+}
+
+const REVIEW_VERSION_KEYS = ["state", "repository", "branch", "headSha", "prId", "prNumber", "prUrl"];
+function validReviewVersion(value) {
+  return value && !Array.isArray(value) && value.state === "present"
+    && Object.keys(value).length === REVIEW_VERSION_KEYS.length
+    && REVIEW_VERSION_KEYS.every(key => Object.prototype.hasOwnProperty.call(value, key))
+    && typeof value.repository === "string" && typeof value.branch === "string"
+    && typeof value.headSha === "string" && /^[a-f0-9]{40}$/.test(value.headSha)
+    && Number.isSafeInteger(value.prId) && value.prId > 0
+    && Number.isSafeInteger(value.prNumber) && value.prNumber > 0
+    && value.prUrl === `https://github.com/${REPO}/pull/${value.prNumber}`;
+}
+
+function validateStrictSubmission(body, payload, contributor, branch, user) {
+  if (body.contractVersion !== 2) throw contractError("INVALID_CONTRACT", "contractVersion must be 2.");
+  if (typeof payload.expectedContributor !== "string"
+    || !/^(github|discord):[1-9]\d*$/.test(payload.expectedContributor)) {
+    throw contractError("INVALID_CONTRIBUTOR", "A provider-qualified expectedContributor is required.");
+  }
+  if (payload.expectedContributor !== contributor) {
+    throw contractError("CONTRIBUTOR_MISMATCH", "Your account changed. Keep your draft and sign in with the expected contributor.", 409);
+  }
+  if (!["type", "repo", "baseBranch", "path", "content", "originalContent", "notes", "source", "branch"]
+    .every(key => typeof body[key] === "string")
+    || (body.title !== undefined && typeof body.title !== "string")
+    || (body.existingReviewBranch !== undefined && typeof body.existingReviewBranch !== "string")) {
+    throw contractError("INVALID_CONTRACT", "Strict submission fields must use their documented types.");
+  }
+  if (body.sourcePreservation !== "exact" || typeof body.replaceExistingReview !== "boolean") {
+    throw contractError("INVALID_CONTRACT", "Strict submissions require exact source preservation and boolean replacement consent.");
+  }
+  const expected = payload.expectedReview;
+  const emptyState = expected && !Array.isArray(expected) && Object.keys(expected).length === 1
+    && (expected.state === "none" || (isDryRun() && expected.state === "unverified"));
+  const [owner, repo] = REPO.split("/");
+  const writeRepo = getReviewWriteRepo(user, owner, repo);
+  if (!emptyState && !(validReviewVersion(expected) && expected.branch === branch
+    && expected.repository === `${writeRepo.owner}/${writeRepo.repo}`)) {
+    throw contractError("INVALID_REVIEW_STATE", "An explicit expectedReview version or no-review assertion is required.");
+  }
+  if (payload.source === "user-pr" && expected.state !== "present") {
+    throw contractError("INVALID_REVIEW_STATE", "Review-source updates require an existing review version.");
+  }
+  if (payload.source === "master" && expected.state === "present" && !payload.replaceExistingReview) {
+    throw contractError("REPLACEMENT_CONSENT_REQUIRED", "Confirm replacement of the loaded review before submitting.", 409);
+  }
+  if (payload.replaceExistingReview && (payload.source !== "master" || expected.state !== "present")) {
+    throw contractError("INVALID_REVIEW_STATE", "Replacement consent must identify an existing review on a master-source update.");
+  }
+}
+
+function reviewConflict() {
+  return contractError("REVIEW_STATE_CONFLICT", "Your review changed or is no longer available. Keep your draft, reload the source and obtain fresh replacement consent.", 409);
+}
+
+function reviewState(branchRef, pr, writeRepo, branch) {
+  if (!pr) return { state: "none" };
+  const version = {
+    state: "present", repository: `${writeRepo.owner}/${writeRepo.repo}`, branch,
+    headSha: branchRef?.object?.sha, prId: pr.id, prNumber: pr.number, prUrl: pr.html_url,
+  };
+  // PR metadata and refs are separate resources: fail closed on inconsistent reads.
+  if (!validReviewVersion(version) || pr.state !== "open" || pr.head?.sha !== version.headSha
+    || pr.head?.ref !== branch || pr.head?.repo?.full_name !== version.repository
+    || pr.base?.ref !== BASE_BRANCH || pr.base?.repo?.full_name !== REPO) throw reviewConflict();
+  return version;
+}
+
+function assertReviewState(expected, actual) {
+  const keys = expected.state === "present" ? REVIEW_VERSION_KEYS : ["state"];
+  if (keys.some(key => expected[key] !== actual[key])) throw reviewConflict();
+}
+
+function assertReviewPrIdentity(expected, pr) {
+  if (expected.state === "none") {
+    if (pr) throw reviewConflict();
+  } else if (!pr || pr.state !== "open" || pr.id !== expected.prId
+    || pr.number !== expected.prNumber || pr.html_url !== expected.prUrl
+    || pr.head?.ref !== expected.branch || pr.head?.repo?.full_name !== expected.repository
+    || pr.base?.ref !== BASE_BRANCH || pr.base?.repo?.full_name !== REPO) throw reviewConflict();
+}
+
+async function recheckReviewState(github, owner, repo, writeRepo, branch, expected) {
+  const ref = await getBranchRef(github, writeRepo.owner, writeRepo.repo, branch);
+  const pr = await getOpenPullRequest(github, owner, repo, branch, writeRepo.owner);
+  assertReviewState(expected, reviewState(ref, pr, writeRepo, branch));
 }
 
 function preserveLineEndings(content, existingContent) {
@@ -882,6 +1015,9 @@ function normalizePayload(body) {
   }
 
   return {
+    expectedContributor: body.expectedContributor,
+    expectedReview: body.expectedReview && typeof body.expectedReview === "object"
+      ? { ...body.expectedReview } : body.expectedReview,
     sourcePreservation: body.sourcePreservation,
     type: String(body.type || ""),
     repo: String(body.repo || ""),

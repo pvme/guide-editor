@@ -54,6 +54,22 @@ test('unavailable local backend never falls back to production', async t => {
   assert.equal(res.statusCode, 502); assert.equal(mock.mock.callCount(), 1);
 });
 
+for (const status of [201, 403, 404, 409, 500]) {
+  test(`strict proxy preserves v2 route, assertions and CSRF without retry after ${status}`, async t => {
+    const body = JSON.stringify({ contractVersion: 2, expectedContributor: 'github:123',
+      expectedReview: { state: 'none' }, sourcePreservation: 'exact', replaceExistingReview: false });
+    const mock = t.mock.method(globalThis, 'fetch', async (url, init) => {
+      assert.equal(url, 'http://localhost:8080/v2/submissions');
+      assert.equal(init.method, 'POST');
+      assert.equal(init.headers['X-PVME-CSRF-Token'], 'csrf');
+      assert.equal(init.body.toString(), body);
+      return { status, text: async () => '{"contractVersion":2}', headers: { get: () => null, getSetCookie: () => [] } };
+    });
+    const res = response(); await handler()(request('/v2/submissions', 'POST', body), res);
+    assert.equal(res.statusCode, status); assert.equal(mock.mock.callCount(), 1);
+  });
+}
+
 test('proxy delegates OAuth cancellation state validation to backend', async t => {
   t.mock.method(globalThis, 'fetch', async url => {
     assert.equal(url, 'http://localhost:8080/auth/github/callback?error=access_denied&state=untrusted');
