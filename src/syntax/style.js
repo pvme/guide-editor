@@ -242,12 +242,12 @@ function checkToc(document, posts, { add, range, lines }) {
 export function validateGuideStyle(document, source = document.source, options = {}) {
   const ctx = createStyleContext(document, source);
   const { add } = ctx;
-  
-  for (const match of source.matchAll(/\r(?!\n)/g)) {
+
+  for (const match of source.matchAll(/\r/g)) {
     add(
-      'STANDALONE_CARRIAGE_RETURN',
+      'NON_STANDARD_LINE_ENDING',
       ctx.range(match.index, match.index + 1),
-      'Unexpected character at the end of this line. Delete it and press Enter to insert a normal line break.'
+      'Unexpected hidden line break character. Delete the affected line break and reinsert it using Enter.'
     );
   }
 
