@@ -29,6 +29,8 @@ const MAX_SESSION_ROLES = 40;
 const authRateLimits = new Map();
 
 exports.submitGuideUpdate = async (req, res) => {
+  // Includes reviewer reads, denied origins and early failures.
+  res.set("Cache-Control", "no-store");
   if (!setCorsHeaders(req, res)) {
     sendJson(res, 403, {
       error: "Guide update submission is not authorized from this origin.",
@@ -134,7 +136,7 @@ exports.submitGuideUpdate = async (req, res) => {
       status === 500 ? "Guide update submission failed." : err.message;
 
     if (status === 500) {
-      console.error(err);
+      logSafeDiagnostic("error", "request-failed", status);
     }
 
     sendJson(res, status, {
@@ -636,10 +638,7 @@ async function handleDiscordCallback(req, res) {
   const tokenData = await tokenRes.json().catch(() => ({}));
 
   if (!tokenRes.ok || !tokenData.access_token) {
-    console.warn(
-      "Discord OAuth token exchange failed:",
-      getDiscordOAuthError(tokenData) || tokenRes.status,
-    );
+    logSafeDiagnostic("warn", "discord-oauth-exchange", tokenRes.status);
     redirectAuthFailure(req, res, "Discord login could not be verified.");
     return;
   }
@@ -742,10 +741,7 @@ async function handleGithubCallback(req, res) {
   const tokenData = await tokenRes.json().catch(() => ({}));
 
   if (!tokenRes.ok || !tokenData.access_token) {
-    console.warn(
-      "GitHub OAuth token exchange failed:",
-      tokenData.error || tokenRes.status,
-    );
+    logSafeDiagnostic("warn", "github-oauth-exchange", tokenRes.status);
     redirectAuthFailure(req, res, "GitHub login could not be verified.");
     return;
   }
@@ -1381,7 +1377,7 @@ async function mergeReviewPullWithFallback(github, owner, repo, pr) {
       throw err;
     }
 
-    console.warn("Reviewer OAuth merge failed; falling back to GitHub App:", err.status || "", err.message || err);
+    logSafeDiagnostic("warn", "reviewer-merge-fallback", err.status);
     const appGithub = await createGithubAppInstallationClient(owner, repo);
     return {
       result: await mergeReviewPullWithGithub(appGithub, owner, repo, pr),
@@ -1410,7 +1406,7 @@ async function closeReviewPullWithFallback(github, user, owner, repo, pr, reason
       throw err;
     }
 
-    console.warn("Reviewer OAuth close comment failed; falling back to GitHub App:", err.status || "", err.message || err);
+    logSafeDiagnostic("warn", "reviewer-comment-fallback", err.status);
     const appGithub = await createGithubAppInstallationClient(owner, repo);
     comment = await commentReviewCloseWithGithub(appGithub, user, owner, repo, pr, reason);
     return {
@@ -1431,7 +1427,7 @@ async function closeReviewPullWithFallback(github, user, owner, repo, pr, reason
       throw err;
     }
 
-    console.warn("Reviewer OAuth close failed; falling back to GitHub App:", err.status || "", err.message || err);
+    logSafeDiagnostic("warn", "reviewer-close-fallback", err.status);
     const appGithub = await createGithubAppInstallationClient(owner, repo);
     return {
       comment,
@@ -1915,7 +1911,7 @@ function createGithubClient(token) {
     if (!res.ok) {
       const message =
         data.message || `GitHub request failed with status ${res.status}.`;
-      console.warn("GitHub request failed:", options.method || "GET", path, res.status, message);
+      logSafeDiagnostic("warn", "github-request-failed", res.status);
       throw httpError(res.status, message);
     }
 
@@ -1941,7 +1937,7 @@ async function githubGraphql(token, query, variables = {}) {
     const message = Array.isArray(data.errors) && data.errors.length > 0
       ? data.errors.map((error) => error.message || "Unknown GraphQL error.").join("; ")
       : data.message || `GitHub GraphQL request failed with status ${res.status}.`;
-    console.warn("GitHub GraphQL request failed:", res.status, message);
+    logSafeDiagnostic("warn", "github-graphql-failed", res.status);
     throw httpError(res.status || 502, message);
   }
 
@@ -2797,6 +2793,12 @@ function sleep(ms) {
 
 function isDryRun() {
   return process.env.DRY_RUN === "true";
+}
+
+function logSafeDiagnostic(level, event, status) {
+  // Fixed event names and numeric status only; no errors, headers, URLs or bodies.
+  console[level]("Guide API diagnostic", { event,
+    status: Number.isInteger(status) && status >= 100 && status <= 599 ? status : 0 });
 }
 
 function sendJson(res, status, body) {

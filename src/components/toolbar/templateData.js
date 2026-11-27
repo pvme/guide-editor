@@ -23,7 +23,7 @@ Other guides: link to forum of rotation guides, mechanics if they exist, afk if 
 .
 ## __Gear, Relics and Familiars__
 .tag:GearRelicsFamiliars
-:Combat style icon: [Combat style name](<preset_link>)
+:Combat style icon: [Combat style name](preset_link)
 
 .
 ## __Fight Mechanics__
@@ -31,21 +31,23 @@ Other guides: link to forum of rotation guides, mechanics if they exist, afk if 
 ⬥ <Key requirements or notable restrictions that cover the entire fight>
 
 .
-### Attack Rotation
+### __Attack Rotation__
 <High-level boss attack order>
 *Repeat*
 
 .
-### <Name of Mechanic 1> [(Example gif link)](<example_link>)
+### __<Name of Mechanic 1>__ [(Example gif link)](<example_link>)
 **Mechanic:**
 <What the boss does>
+
 **Solution:**
 ⬥ <Responses>
 
 .
-### <Name of Mechanic 2> [(Example gif link)](<example_link>)
+### __<Name of Mechanic 2>__ [(Example gif link)](<example_link>)
 **Mechanic:**
 <What the boss does>
+
 **Solution:**
 ⬥ <Responses>
 
@@ -53,7 +55,7 @@ Other guides: link to forum of rotation guides, mechanics if they exist, afk if 
 .
 ## __Videos__
 .tag:videos
-⬥ [Example kill](<video_link>)
+⬥ [Example kill](video_link)
 
 .
 {

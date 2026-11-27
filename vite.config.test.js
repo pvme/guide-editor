@@ -41,6 +41,7 @@ for (const port of [5173, 4321]) {
     const res = response();
     await handler(localEnv, { frontendOrigin: `http://localhost:${port}` })(request('/auth/dev-session', 'POST', '{"token":"encrypted"}'), res);
     assert.equal(mock.mock.callCount(), 1); assert.equal(res.statusCode, 302);
+    assert.equal(res.headers["cache-control"], "no-store");
     assert.equal(res.headers.location, `http://localhost:${port}/pvme-website/?edit=1`);
     assert.deepEqual(res.headers['set-cookie'], ['a=one; Path=/; HttpOnly; SameSite=Lax', 'b=two; SameSite=Lax']);
   });
@@ -52,6 +53,7 @@ test('unavailable local backend never falls back to production', async t => {
   });
   const res = response(); await handler()(request('/guides/load?path=guide.txt'), res);
   assert.equal(res.statusCode, 502); assert.equal(mock.mock.callCount(), 1);
+  assert.equal(res.headers["cache-control"], "no-store");
 });
 
 for (const status of [201, 403, 404, 409, 500]) {
@@ -67,6 +69,7 @@ for (const status of [201, 403, 404, 409, 500]) {
     });
     const res = response(); await handler()(request('/v2/submissions', 'POST', body), res);
     assert.equal(res.statusCode, status); assert.equal(mock.mock.callCount(), 1);
+    assert.equal(res.headers["cache-control"], "no-store");
   });
 }
 

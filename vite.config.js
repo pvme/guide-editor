@@ -38,6 +38,8 @@ export function guideSubmitProxy(env, { frontendOrigin = "http://localhost:5173"
     name: "pvme-guide-submit-proxy",
     configureServer(server) {
       server.middlewares.use(DEV_API_PROXY_PREFIX, async (req, res) => {
+        // Do not lose upstream auth/private-response cache protection at the proxy.
+        res.setHeader("Cache-Control", "no-store");
         if (!["GET", "POST", "PUT"].includes(req.method || "")) {
           res.statusCode = 405;
           res.setHeader("Content-Type", "application/json");
