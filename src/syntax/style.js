@@ -242,6 +242,15 @@ function checkToc(document, posts, { add, range, lines }) {
 export function validateGuideStyle(document, source = document.source, options = {}) {
   const ctx = createStyleContext(document, source);
   const { add } = ctx;
+  
+  for (const match of source.matchAll(/\r(?!\n)/g)) {
+    add(
+      'STANDALONE_CARRIAGE_RETURN',
+      ctx.range(match.index, match.index + 1),
+      'Unexpected character at the end of this line. Delete it and press Enter to insert a normal line break.'
+    );
+  }
+
   const posts = projectDiscordMessages(document);
   if (options.pvmeSpreadsheet != null) {
     for (const reference of document.references) {

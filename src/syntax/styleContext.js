@@ -20,10 +20,11 @@ export function inlineText(nodes = []) {
 
 export function createStyleContext(document, source) {
   const lines = [];
-  let start = 0;
-  for (const raw of source.split('\n')) {
-    lines.push({ start, text: raw.endsWith('\r') ? raw.slice(0, -1) : raw });
-    start += raw.length + 1;
+  const re = /([^\r\n]*)(\r\n|\r|\n|$)/g;
+  let match;
+  while ((match = re.exec(source))) {
+    lines.push({ start: match.index, text: match[1] });
+    if (!match[2]) break;
   }
   function position(offset) {
     let low = 0, high = lines.length;
